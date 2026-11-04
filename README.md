@@ -4,6 +4,12 @@ A public service platform simplifying access to integrated community care.
 
 돌봄e음 팀의 프로젝트 계획과 산출물을 관리하는 저장소입니다.
 
+## 프로젝트 일정
+
+![돌봄e음 프로젝트 간트차트: 2026년 11월 4~8일 조사, 9~10일 설계, 11~15일 개발·통합, 16일부터 검증·수정](docs/assets/project/project-gantt.png)
+
+검증·수정은 **김예랑·이보미 공동 주관, 전원 참여**로 진행합니다. 검증 종료일과 최종 제출일은 미정입니다.
+
 ## 프로젝트 문서
 
 | 문서 | 용도 |
@@ -27,7 +33,7 @@ Markdown은 이미지 파일의 경로를 참조합니다. 이미지도 함께 �
 ![통합돌봄의 공식 절차](docs/assets/policy/care-process.png)
 ```
 
-프로젝트 진행도는 수정하기 쉬운 Mermaid 코드로 작성했습니다.
+프로젝트 진행도는 수정하기 쉬운 Mermaid 코드로 작성했고, 위 간트차트는 PNG 이미지로 저장했습니다.
 
 ## 기준 자료
 
