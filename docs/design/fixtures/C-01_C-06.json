@@ -1,0 +1,448 @@
+{
+  "basePath": "/api/v1",
+  "instructions": "각 사례를 별도 초기화된 시연 DB에서 commonSteps, 선택한 scenarios, finalCheck 순으로 실행한다. actor의 세션과 앱 Origin을 사용한다. capture는 응답 JSON Pointer의 값을 저장한다. 경로 안 변수는 문자열로, JSON 값 전체인 변수는 캡처한 JSON 타입 그대로 치환한다. expect.body는 객체의 지정 키를 재귀 비교한다. 배열은 길이와 순서까지 비교한다. expect.errorCode는 error.code를 비교한다.",
+  "accounts": {
+    "town": { "username": "demo-town-a", "role": "TOWN", "districtCode": "DEMO-A", "townCode": "DEMO-A-1" },
+    "district": { "username": "demo-district-a", "role": "DISTRICT", "districtCode": "DEMO-A", "townCode": null },
+    "outside": { "username": "demo-town-b", "role": "TOWN", "districtCode": "DEMO-B", "townCode": "DEMO-B-1" },
+    "otherTown": { "username": "demo-town-a2", "role": "TOWN", "districtCode": "DEMO-A", "townCode": "DEMO-A-2" }
+  },
+  "profile": {
+    "code": "DEMO-ELDER-01",
+    "beneficiaryName": "가상 대상자 01",
+    "applicantName": "가상 대리 신청인 01",
+    "noticeRecipientName": "가상 대리 신청인 01",
+    "region": { "districtCode": "DEMO-A", "townCode": "DEMO-A-1", "sido": "충청북도", "sigungu": "음성군" }
+  },
+  "commonSteps": [
+    {
+      "actor": "town", "method": "POST", "path": "/cases",
+      "headers": { "Idempotency-Key": "demo-receive-01" },
+      "body": { "profileCode": "DEMO-ELDER-01", "receivedOn": "2026-11-01", "noticeMethod": "SMS", "evidenceChecked": true },
+      "expect": {
+        "http": 201,
+        "body": {
+          "status": "RECEIVED", "version": 1, "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01", "noticeMethod": "SMS", "evidenceChecked": true,
+          "profile": { "code": "DEMO-ELDER-01", "applicantName": "가상 대리 신청인 01", "noticeRecipientName": "가상 대리 신청인 01" },
+          "screening": null, "assessment": null, "plan": null, "monitoring": null,
+          "events": [{ "action": "RECEIVE", "fromStatus": null, "toStatus": "RECEIVED", "actorRole": "TOWN", "version": 1, "itemId": null }],
+          "allowedActions": [{ "action": "RECORD_SCREENING", "itemId": null }]
+        }
+      },
+      "capture": { "caseId": "/id", "receiptNumber": "/receiptNumber" }
+    },
+    {
+      "actor": "town", "method": "POST", "path": "/cases",
+      "headers": { "Idempotency-Key": "demo-receive-01" },
+      "body": { "profileCode": "DEMO-ELDER-01", "receivedOn": "2026-11-01", "noticeMethod": "SMS", "evidenceChecked": true },
+      "expect": {
+        "http": 200,
+        "body": {
+          "id": "{{caseId}}", "receiptNumber": "{{receiptNumber}}", "status": "RECEIVED", "version": 1,
+          "events": [{ "action": "RECEIVE", "version": 1 }]
+        }
+      }
+    },
+    {
+      "actor": "town", "method": "POST", "path": "/cases",
+      "headers": { "Idempotency-Key": "demo-receive-01" },
+      "body": { "profileCode": "DEMO-ELDER-01", "receivedOn": "2026-11-02", "noticeMethod": "SMS", "evidenceChecked": true },
+      "expect": { "http": 409, "errorCode": "IDEMPOTENCY_CONFLICT", "body": { "error": { "field": null } } }
+    },
+    {
+      "actor": "town", "method": "GET", "path": "/cases",
+      "expect": {
+        "http": 200,
+        "body": {
+          "items": [{ "id": "{{caseId}}", "receiptNumber": "{{receiptNumber}}", "receivedOn": "2026-11-01", "version": 1 }],
+          "page": 1, "pageSize": 20, "total": 1
+        }
+      }
+    },
+    {
+      "actor": "outside", "method": "GET", "path": "/cases/{{caseId}}",
+      "expect": { "http": 404, "errorCode": "NOT_FOUND" }
+    },
+    {
+      "actor": "otherTown", "method": "GET", "path": "/cases/{{caseId}}",
+      "expect": { "http": 404, "errorCode": "NOT_FOUND" }
+    },
+    {
+      "actor": "otherTown", "method": "GET", "path": "/cases",
+      "expect": { "http": 200, "body": { "items": [], "page": 1, "pageSize": 20, "total": 0 } }
+    },
+    {
+      "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/screening",
+      "body": { "version": 1, "screenedOn": "2026-10-31", "method": "PHONE", "outcome": "NHIS_ASSESSMENT_REQUIRED" },
+      "expect": { "http": 422, "errorCode": "VALIDATION_ERROR", "body": { "error": { "field": "screenedOn" } } }
+    },
+    {
+      "actor": "town", "method": "GET", "path": "/cases/{{caseId}}",
+      "expect": { "http": 200, "body": { "version": 1, "screening": null, "events": [{ "action": "RECEIVE", "version": 1 }] } }
+    },
+    {
+      "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/screening",
+      "body": { "version": 1, "screenedOn": "2026-11-02", "method": "PHONE", "outcome": "NHIS_ASSESSMENT_REQUIRED" },
+      "expect": { "http": 200, "body": { "status": "SCREENED", "version": 2, "allowedActions": [] } }
+    },
+    {
+      "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/plan",
+      "body": { "version": 2, "preparedOn": "2026-11-04", "goal": "가상 판정 전 초안", "serviceIds": ["nhis_20260630_r00001"] },
+      "expect": { "http": 409, "errorCode": "INVALID_TRANSITION" }
+    },
+    {
+      "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/assessment",
+      "body": { "version": 2, "assessedOn": "2026-11-03", "resultReceivedOn": "2026-11-03", "outcome": "SUPPORT_PLAN_REQUIRED" },
+      "expect": { "http": 200, "body": { "status": "ASSESSED", "version": 3 } }
+    },
+    {
+      "actor": "town", "method": "GET", "path": "/catalog/nhis-services",
+      "query": { "sido": "충청북도", "sigungu": "음성군", "q": "다제약물" },
+      "expect": {
+        "http": 200,
+        "body": {
+          "page": 1, "pageSize": 20, "total": 1,
+          "items": [{
+            "id": "nhis_20260630_r00001", "datasetVersion": "v1.4",
+            "programName": "다제약물 관리사업", "providerName": "국민건강보험공단", "providerPhone": "1577-1000",
+            "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+            "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do", "referenceDate": "2026-06-30"
+          }]
+        }
+      }
+    },
+    {
+      "actor": "town", "method": "GET", "path": "/catalog/nhis-services",
+      "query": { "sido": "충청북도", "sigungu": "음성군", "q": "검증용검색어없음123" },
+      "expect": { "http": 200, "body": { "items": [], "page": 1, "pageSize": 20, "total": 0 } }
+    },
+    {
+      "actor": "town", "method": "GET", "path": "/catalog/nhis-services",
+      "query": { "sido": "충청북도", "sigungu": "음성군", "categoryLarge": "보건의료", "page": 2, "pageSize": 1 },
+      "expect": {
+        "http": 200,
+        "body": { "items": [{ "id": "nhis_20260630_r52406", "categoryLarge": "보건의료" }], "page": 2, "pageSize": 1, "total": 32 }
+      }
+    },
+    {
+      "actor": "town", "method": "GET", "path": "/catalog/nhis-filters",
+      "query": { "sido": "충청북도" },
+      "expect": {
+        "http": 200,
+        "body": {
+          "sigungus": ["괴산군", "단양군", "보은군", "영동군", "옥천군", "음성군", "제천시", "증평군", "진천군", "청주시", "충주시"],
+          "categoriesLarge": ["건강관리예방", "기타", "보건의료", "일상생활돌봄", "장기요양", "주거복지"]
+        }
+      }
+    },
+    {
+      "actor": "town", "method": "GET", "path": "/catalog/nhis-services/nhis_20260630_r00015",
+      "expect": { "http": 200, "body": { "id": "nhis_20260630_r00015", "providerPhone": null } }
+    },
+    {
+      "actor": "town", "method": "GET", "path": "/catalog/nhis-services/nhis_20260630_r00931",
+      "expect": { "http": 404, "errorCode": "NOT_FOUND" }
+    },
+    {
+      "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/plan",
+      "body": {
+        "version": 3, "preparedOn": "2026-11-04", "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+        "serviceIds": ["nhis_20260630_r00001", "nhis_20260630_r52411", "nhis_20260630_r52405"]
+      },
+      "expect": {
+        "http": 200,
+        "body": {
+          "status": "PLAN_DRAFTED", "version": 4,
+          "plan": { "preparedOn": "2026-11-04", "confirmation": null, "notice": null },
+          "allowedActions": [{ "action": "SAVE_DRAFT", "itemId": null }]
+        }
+      },
+      "capture": { "itemA": "/plan/items/0/id", "itemB": "/plan/items/1/id", "itemC": "/plan/items/2/id" }
+    },
+    {
+      "actor": "district", "method": "GET", "path": "/cases/{{caseId}}",
+      "expect": {
+        "http": 200,
+        "body": { "status": "PLAN_DRAFTED", "version": 4, "allowedActions": [{ "action": "CONFIRM_PLAN", "itemId": null }] }
+      }
+    },
+    {
+      "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/plan",
+      "body": {
+        "version": 3, "preparedOn": "2026-11-04", "goal": "오래된 초안 요청",
+        "serviceIds": ["nhis_20260630_r00001"]
+      },
+      "expect": { "http": 409, "errorCode": "VERSION_CONFLICT" }
+    },
+    {
+      "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/plan/confirmation",
+      "body": { "version": 4, "meetingOn": "2026-11-05", "outcome": "APPROVED" },
+      "expect": { "http": 403, "errorCode": "FORBIDDEN" }
+    },
+    {
+      "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/confirmation",
+      "body": { "version": 4, "meetingOn": "2026-11-05", "outcome": "APPROVED" },
+      "expect": {
+        "http": 200,
+        "body": {
+          "status": "PLAN_CONFIRMED", "version": 5,
+          "plan": { "confirmation": { "meetingOn": "2026-11-05", "outcome": "APPROVED" }, "notice": null },
+          "allowedActions": [{ "action": "RECORD_NOTICE", "itemId": null }]
+        }
+      }
+    },
+    {
+      "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/items/{{itemA}}/linkage",
+      "body": { "version": 5, "linkedOn": "2026-11-06", "method": "DEPARTMENT_REFERRAL", "destinationLabel": "가상 담당부서" },
+      "expect": { "http": 409, "errorCode": "INVALID_TRANSITION" }
+    },
+    {
+      "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/notice",
+      "body": { "version": 5, "announcedOn": "2026-11-05" },
+      "expect": {
+        "http": 200,
+        "body": {
+          "status": "PLAN_CONFIRMED", "version": 6, "plan": { "notice": { "announcedOn": "2026-11-05" } },
+          "allowedActions": [
+            { "action": "RECORD_LINKAGE", "itemId": "{{itemA}}" },
+            { "action": "RECORD_LINKAGE", "itemId": "{{itemB}}" },
+            { "action": "RECORD_LINKAGE", "itemId": "{{itemC}}" }
+          ]
+        }
+      }
+    },
+    {
+      "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/items/{{itemA}}/linkage",
+      "body": { "version": 6, "linkedOn": "2026-11-06", "method": "DEPARTMENT_REFERRAL", "destinationLabel": "가상 담당부서" },
+      "expect": { "http": 200, "body": { "status": "SERVICE_TRACKING", "version": 7 } }
+    },
+    {
+      "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/items/{{itemB}}/linkage",
+      "body": { "version": 7, "linkedOn": "2026-11-06", "method": "PROVIDER_REFERRAL" },
+      "expect": { "http": 200, "body": { "status": "SERVICE_TRACKING", "version": 8 } }
+    },
+    {
+      "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/items/{{itemC}}/linkage",
+      "body": { "version": 8, "linkedOn": "2026-11-06", "method": "PERSON_GUIDANCE" },
+      "expect": { "http": 200, "body": { "status": "SERVICE_TRACKING", "version": 9 } }
+    },
+    {
+      "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/items/{{itemA}}/delivery",
+      "body": { "version": 9, "observedOn": "2026-11-08", "status": "IN_USE" },
+      "expect": { "http": 200, "body": { "status": "SERVICE_TRACKING", "version": 10 } }
+    },
+    {
+      "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/items/{{itemC}}/delivery",
+      "body": { "version": 10, "observedOn": "2026-11-08", "status": "UNKNOWN", "reason": "가상 대상자가 기관을 검토 중" },
+      "expect": { "http": 200, "body": { "status": "SERVICE_TRACKING", "version": 11 } }
+    },
+    {
+      "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/monitoring",
+      "body": { "version": 11, "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED", "reviewNeeded": false },
+      "expect": { "http": 409, "errorCode": "INVALID_TRANSITION" }
+    },
+    {
+      "actor": "town", "method": "GET", "path": "/cases/{{caseId}}",
+      "expect": {
+        "http": 200,
+        "body": {
+          "version": 11, "monitoring": null, "allowedActions": [],
+          "plan": { "items": [{ "id": "{{itemA}}" }, { "id": "{{itemB}}", "delivery": null }, { "id": "{{itemC}}" }] }
+        }
+      }
+    }
+  ],
+  "scenarios": {
+    "C-01": [
+      {
+        "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/items/{{itemB}}/delivery",
+        "body": { "version": 11, "observedOn": "2026-11-08", "status": "IN_USE" },
+        "expect": {
+          "http": 200,
+          "body": {
+            "status": "SERVICE_TRACKING", "version": 12,
+            "plan": { "items": [
+              { "id": "{{itemA}}" },
+              { "id": "{{itemB}}", "delivery": { "observedOn": "2026-11-08", "status": "IN_USE", "reason": null } },
+              { "id": "{{itemC}}" }
+            ] }
+          }
+        },
+        "capture": { "itemBDelivery": "/plan/items/1/delivery" }
+      },
+      {
+        "actor": "town", "method": "GET", "path": "/cases/{{caseId}}",
+        "expect": { "http": 200, "body": { "version": 12, "allowedActions": [{ "action": "RECORD_MONITORING", "itemId": null }] } }
+      },
+      {
+        "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/monitoring",
+        "body": { "version": 12, "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED", "reviewNeeded": false },
+        "expect": {
+          "http": 200,
+          "body": {
+            "status": "FIRST_MONITORING_RECORDED", "version": 13, "allowedActions": [],
+            "monitoring": {
+              "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
+              "reviewNeeded": false, "reviewReason": null,
+              "observations": [
+                { "itemId": "{{itemA}}", "status": "IN_USE", "reason": null },
+                { "itemId": "{{itemB}}", "status": "IN_USE", "reason": null },
+                { "itemId": "{{itemC}}", "status": "UNKNOWN", "reason": "가상 대상자가 기관을 검토 중" }
+              ]
+            }
+          }
+        },
+        "capture": { "monitoringResult": "/monitoring" }
+      }
+    ],
+    "C-06": [
+      {
+        "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/items/{{itemB}}/delivery",
+        "body": { "version": 11, "observedOn": "2026-11-08", "status": "NOT_STARTED" },
+        "expect": { "http": 422, "errorCode": "VALIDATION_ERROR", "body": { "error": { "field": "reason" } } }
+      },
+      {
+        "actor": "district", "method": "GET", "path": "/cases/{{caseId}}",
+        "expect": {
+          "http": 200,
+          "body": {
+            "version": 11,
+            "plan": { "items": [{ "id": "{{itemA}}" }, { "id": "{{itemB}}", "delivery": null }, { "id": "{{itemC}}" }] }
+          }
+        }
+      },
+      {
+        "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/items/{{itemB}}/delivery",
+        "body": { "version": 11, "observedOn": "2026-11-08", "status": "UNKNOWN", "reason": "가상 개시 여부 확인 전" },
+        "expect": {
+          "http": 200,
+          "body": {
+            "status": "SERVICE_TRACKING", "version": 12,
+            "plan": { "items": [
+              { "id": "{{itemA}}" },
+              { "id": "{{itemB}}", "delivery": { "observedOn": "2026-11-08", "status": "UNKNOWN", "reason": "가상 개시 여부 확인 전" } },
+              { "id": "{{itemC}}" }
+            ] }
+          }
+        },
+        "capture": { "itemBDelivery": "/plan/items/1/delivery" }
+      },
+      {
+        "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/monitoring",
+        "body": {
+          "version": 12, "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
+          "reviewNeeded": true, "reviewReason": "가상 미개시 항목의 후속 확인",
+          "observations": [{ "itemId": "{{itemB}}", "status": "NOT_STARTED" }]
+        },
+        "expect": { "http": 422, "errorCode": "VALIDATION_ERROR", "body": { "error": { "field": "observations.0.reason" } } }
+      },
+      {
+        "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/monitoring",
+        "body": {
+          "version": 12, "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
+          "reviewNeeded": false, "observations": [{ "itemId": "other-case-item", "status": "IN_USE" }]
+        },
+        "expect": { "http": 422, "errorCode": "VALIDATION_ERROR", "body": { "error": { "field": "observations.0.itemId" } } }
+      },
+      {
+        "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/monitoring",
+        "body": {
+          "version": 12, "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
+          "reviewNeeded": false,
+          "observations": [{ "itemId": "{{itemB}}", "status": "IN_USE" }, { "itemId": "{{itemB}}", "status": "UNKNOWN" }]
+        },
+        "expect": { "http": 422, "errorCode": "VALIDATION_ERROR", "body": { "error": { "field": "observations.1.itemId" } } }
+      },
+      {
+        "actor": "town", "method": "GET", "path": "/cases/{{caseId}}",
+        "expect": {
+          "http": 200,
+          "body": { "version": 12, "monitoring": null, "allowedActions": [{ "action": "RECORD_MONITORING", "itemId": null }] }
+        }
+      },
+      {
+        "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/monitoring",
+        "body": {
+          "version": 12, "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
+          "reviewNeeded": true, "reviewReason": "가상 미개시 항목의 후속 확인",
+          "observations": [{ "itemId": "{{itemB}}", "status": "NOT_STARTED", "reason": "가상 개시일 미정" }]
+        },
+        "expect": {
+          "http": 200,
+          "body": {
+            "status": "FIRST_MONITORING_RECORDED", "version": 13, "allowedActions": [],
+            "monitoring": {
+              "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
+              "reviewNeeded": true, "reviewReason": "가상 미개시 항목의 후속 확인",
+              "observations": [
+                { "itemId": "{{itemA}}", "status": "IN_USE", "reason": null },
+                { "itemId": "{{itemB}}", "status": "NOT_STARTED", "reason": "가상 개시일 미정" },
+                { "itemId": "{{itemC}}", "status": "UNKNOWN", "reason": "가상 대상자가 기관을 검토 중" }
+              ]
+            }
+          }
+        },
+        "capture": { "monitoringResult": "/monitoring" }
+      },
+      {
+        "actor": "district", "method": "PUT", "path": "/cases/{{caseId}}/plan/items/{{itemB}}/delivery",
+        "body": { "version": 13, "observedOn": "2026-11-09", "status": "IN_USE" },
+        "expect": { "http": 409, "errorCode": "INVALID_TRANSITION" }
+      }
+    ]
+  },
+  "finalCheck": {
+    "actor": "district", "method": "GET", "path": "/cases/{{caseId}}",
+    "expect": {
+      "http": 200,
+      "body": {
+        "id": "{{caseId}}", "receiptNumber": "{{receiptNumber}}", "status": "FIRST_MONITORING_RECORDED", "version": 13,
+        "receivedOn": "2026-11-01", "noticeMethod": "SMS", "evidenceChecked": true,
+        "screening": { "screenedOn": "2026-11-02", "method": "PHONE", "outcome": "NHIS_ASSESSMENT_REQUIRED" },
+        "assessment": { "assessedOn": "2026-11-03", "resultReceivedOn": "2026-11-03", "outcome": "SUPPORT_PLAN_REQUIRED" },
+        "plan": {
+          "preparedOn": "2026-11-04", "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+          "confirmation": { "meetingOn": "2026-11-05", "outcome": "APPROVED" }, "notice": { "announcedOn": "2026-11-05" },
+          "items": [
+            {
+              "id": "{{itemA}}",
+              "catalog": { "id": "nhis_20260630_r00001", "programName": "다제약물 관리사업", "providerName": "국민건강보험공단", "datasetVersion": "v1.4", "referenceDate": "2026-06-30" },
+              "linkage": { "linkedOn": "2026-11-06", "method": "DEPARTMENT_REFERRAL", "destinationLabel": "가상 담당부서" },
+              "delivery": { "observedOn": "2026-11-08", "status": "IN_USE", "reason": null }
+            },
+            {
+              "id": "{{itemB}}",
+              "catalog": { "id": "nhis_20260630_r52411", "programName": "찾아가는 보건소", "providerName": "보건소", "datasetVersion": "v1.4", "referenceDate": "2026-06-30" },
+              "linkage": { "linkedOn": "2026-11-06", "method": "PROVIDER_REFERRAL", "destinationLabel": "보건소" },
+              "delivery": "{{itemBDelivery}}"
+            },
+            {
+              "id": "{{itemC}}",
+              "catalog": { "id": "nhis_20260630_r52405", "programName": "일차의료 방문진료 수가 시범사업(한의과)", "providerName": "무극한의원", "datasetVersion": "v1.4", "referenceDate": "2026-06-30" },
+              "linkage": { "linkedOn": "2026-11-06", "method": "PERSON_GUIDANCE", "destinationLabel": null },
+              "delivery": { "observedOn": "2026-11-08", "status": "UNKNOWN", "reason": "가상 대상자가 기관을 검토 중" }
+            }
+          ]
+        },
+        "monitoring": "{{monitoringResult}}",
+        "allowedActions": [],
+        "events": [
+          { "version": 13, "action": "RECORD_MONITORING", "actorRole": "TOWN", "toStatus": "FIRST_MONITORING_RECORDED", "itemId": null },
+          { "version": 12, "action": "RECORD_DELIVERY", "actorRole": "DISTRICT", "itemId": "{{itemB}}" },
+          { "version": 11, "action": "RECORD_DELIVERY", "actorRole": "DISTRICT", "itemId": "{{itemC}}" },
+          { "version": 10, "action": "RECORD_DELIVERY", "actorRole": "DISTRICT", "itemId": "{{itemA}}" },
+          { "version": 9, "action": "RECORD_LINKAGE", "actorRole": "DISTRICT", "itemId": "{{itemC}}" },
+          { "version": 8, "action": "RECORD_LINKAGE", "actorRole": "DISTRICT", "itemId": "{{itemB}}" },
+          { "version": 7, "action": "RECORD_LINKAGE", "actorRole": "DISTRICT", "itemId": "{{itemA}}" },
+          { "version": 6, "action": "RECORD_NOTICE", "actorRole": "DISTRICT", "itemId": null },
+          { "version": 5, "action": "CONFIRM_PLAN", "actorRole": "DISTRICT", "itemId": null },
+          { "version": 4, "action": "SAVE_DRAFT", "actorRole": "TOWN", "itemId": null },
+          { "version": 3, "action": "RECORD_ASSESSMENT", "actorRole": "DISTRICT", "itemId": null },
+          { "version": 2, "action": "RECORD_SCREENING", "actorRole": "TOWN", "itemId": null },
+          { "version": 1, "action": "RECEIVE", "actorRole": "TOWN", "fromStatus": null, "toStatus": "RECEIVED", "itemId": null }
+        ]
+      }
+    }
+  }
+}
