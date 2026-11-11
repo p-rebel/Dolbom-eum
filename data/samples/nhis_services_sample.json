@@ -5,7 +5,7 @@
     "is_sample": true,
     "sample_size": 15,
     "full_rows": 90081,
-    "source_csv": "data/processed/versions/v1.4/nhis_services.csv",
+    "source_csv": "data/processed/nhis_services.csv",
     "generated_by": "script/build_samples_v1_4.py",
     "selection": "조건별 결정적 선택(정렬 후 첫 행). 무작위·가공·가상 데이터 없음",
     "selection_criteria": [
