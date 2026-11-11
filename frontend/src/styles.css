@@ -492,9 +492,16 @@ fieldset.form-group {
 }
 
 /* ── 로그인 (KRDS 피그마 서비스패턴_로그인 Step 3) ───── */
-/* 헤더 아래 → 안내 문구 88px: 피그마 Step 3에서 경로 표시 줄(breadcrumb 88px)이 차지하는 간격 */
+/*
+ * 로그인 본문은 헤더와 푸터 사이 세로 가운데에 둔다(위아래 빈 공간을 같게).
+ * 위아래 최소 간격은 피그마 Step 3의 경로 표시 줄 높이 88px. 화면이 낮으면 88px부터 시작한다.
+ */
 .login-page {
-  padding: 8.8rem var(--krds-padding-6) 8rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* 아래는 푸터 위 여백(.app-footer margin-top 4rem)을 빼서 위아래 88px을 같게 한다. */
+  padding: 8.8rem var(--krds-padding-6) 4.8rem;
 }
 
 /* 본문 폭 792px(피그마 contents_area) */
