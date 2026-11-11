@@ -64,6 +64,11 @@ code {
   text-decoration: none;
 }
 
+/* 로그인 전에는 주 메뉴가 없으므로 헤더 아래 구분선을 직접 둔다(피그마 헤더 아래선). */
+#krds-header.no-menu .header-container {
+  border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
 .app-account {
   align-items: center;
   flex-wrap: wrap;
@@ -486,34 +491,81 @@ fieldset.form-group {
   padding: var(--krds-padding-8);
 }
 
-/* ── 로그인 (KRDS 로그인 정보 입력 패턴) ───────────── */
+/* ── 로그인 (KRDS 피그마 서비스패턴_로그인 Step 3) ───── */
 .login-page {
-  display: grid;
-  gap: var(--krds-gap-6);
-  justify-items: center;
-  align-content: start;
-  min-height: 100%;
-  padding: 8rem var(--krds-padding-6) 6rem;
+  padding: var(--krds-padding-9) var(--krds-padding-6) 8rem;
 }
 
+/* 본문 폭 792px(피그마 contents_area) */
 .login-box {
   display: grid;
-  gap: var(--krds-gap-6);
+  gap: var(--krds-gap-8);
   width: 100%;
-  max-width: 48rem;
+  max-width: 79.2rem;
+  margin: 0 auto;
+}
+
+.login-head {
+  display: grid;
+  gap: var(--krds-gap-4);
 }
 
 .login-service {
-  color: var(--krds-light-color-text-primary);
-  font-size: var(--krds-pc-font-size-body-medium);
+  color: var(--krds-light-color-text-basic);
+  font-size: var(--krds-pc-font-size-body-small);
   font-weight: 700;
+}
+
+/* 위아래 1px 구분선 안에 입력 열(왼쪽)과 안내 열(오른쪽). 피그마 열 너비 323.5px, 안쪽 여백 32px. */
+.login-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 40rem);
+  padding: var(--krds-padding-8);
+  border-top: 1px solid var(--krds-light-color-divider-gray-light);
+  border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
+.login-panel.has-aside {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.login-main {
+  display: grid;
+  align-content: start;
+  gap: var(--krds-gap-5);
+}
+
+.login-panel.has-aside .login-main {
+  padding-right: var(--krds-padding-8);
+}
+
+.login-aside {
+  padding-left: var(--krds-padding-8);
+  border-left: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
+@media (max-width: 767px) {
+  .login-panel,
+  .login-panel.has-aside {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--krds-padding-8) 0;
+  }
+
+  .login-panel.has-aside .login-main {
+    padding-right: 0;
+  }
+
+  .login-aside {
+    margin-top: var(--krds-gap-8);
+    padding: var(--krds-padding-8) 0 0;
+    border-top: 1px solid var(--krds-light-color-divider-gray-light);
+    border-left: 0;
+  }
 }
 
 .login-form {
   display: grid;
   gap: var(--krds-gap-6);
-  padding-top: var(--krds-padding-8);
-  border-top: 2px solid var(--krds-light-color-border-gray-darker);
 }
 
 .login-submit {

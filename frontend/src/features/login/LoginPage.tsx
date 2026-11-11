@@ -3,6 +3,7 @@ import { ApiError } from '../../api/client';
 import { MOCK_API_ENABLED, MOCK_PASSWORD } from '../../api/mockFlag';
 import { useAuth } from '../../auth/AuthContext';
 import { AppFooter } from '../../layout/AppFooter';
+import { AppHeader } from '../../layout/AppHeader';
 import { TextField } from '../../components/TextField';
 import { PageTitle } from '../../router';
 import { HealthStatus } from '../health/HealthStatus';
@@ -64,11 +65,17 @@ export function LoginPage({ notice }: { notice: string | null }) {
 
   return (
     <>
+    <AppHeader logoTo="/login" />
     <main id="main" className="login-page">
+      {/* KRDS 피그마 서비스패턴_로그인 Step 3: 792px 본문, 작은 안내 + 큰 제목, 위아래 구분선 안에 왼쪽 입력·오른쪽 안내 */}
       <section className="login-box" aria-labelledby="login-title">
-        <p className="login-service">돌봄e음 · 가상 사례 시연</p>
-        <PageTitle id="login-title">가상 계정 로그인</PageTitle>
+        <div className="login-head">
+          <p className="login-service">돌봄e음 · 가상 사례 시연</p>
+          <PageTitle id="login-title">가상 계정 로그인</PageTitle>
+        </div>
 
+        <div className={MOCK_API_ENABLED ? 'login-panel has-aside' : 'login-panel'}>
+        <div className="login-main">
         {notice && (
           <div className="form-group" role="status">
             <p className="form-hint-information">{notice}</p>
@@ -105,12 +112,15 @@ export function LoginPage({ notice }: { notice: string | null }) {
               inputRef={passwordRef}
             />
           </div>
-          <button type="submit" className="krds-btn xlarge primary login-submit" disabled={submitting}>
+          {/* KRDS 피그마 로그인 버튼은 입력칸과 같은 56px(large), 입력 열 전체 너비 */}
+          <button type="submit" className="krds-btn large primary login-submit" disabled={submitting}>
             {submitting ? '로그인 중…' : '로그인'}
           </button>
         </form>
+        </div>
 
         {MOCK_API_ENABLED && (
+          <aside className="login-aside" aria-label="목업 모드 안내">
           <div className="mock-note">
             <span className="krds-badge bg-light-warning">목업 모드</span>
             <p>
@@ -133,11 +143,14 @@ export function LoginPage({ notice }: { notice: string | null }) {
             </button>
             {mockReset && <p role="status">목업 사례를 모두 지웠습니다.</p>}
           </div>
+          </aside>
         )}
+        </div>
+
+        <div className="login-footer">
+          <HealthStatus />
+        </div>
       </section>
-      <div className="login-footer">
-        <HealthStatus />
-      </div>
     </main>
     {/* KRDS 로그인 패턴(피그마 서비스패턴_로그인)도 공통 푸터를 둔다. 체크리스트: 모든 화면 같은 위치. */}
     <AppFooter />
