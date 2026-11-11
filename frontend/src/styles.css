@@ -65,7 +65,7 @@ code {
 }
 
 /* 로그인 전에는 주 메뉴가 없으므로 헤더 아래 구분선을 직접 둔다(피그마 헤더 아래선). */
-#krds-header.no-menu .header-container {
+#krds-header:not(:has(.krds-main-menu)) .header-container {
   border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
 }
 
@@ -122,8 +122,9 @@ code {
   flex-shrink: 0;
 }
 
+/* 본문과 푸터 사이 간격은 본문 아래 여백 하나로만 둔다(푸터에는 위 여백 없음). */
 .app-main {
-  padding-bottom: 12rem;
+  padding-bottom: 16rem;
 }
 
 .page {
@@ -370,6 +371,13 @@ fieldset.form-group {
   padding-top: 3.4rem;
 }
 
+/* 좁은 화면에서는 버튼이 검색어 칸 아래 줄로 내려가므로 레이블 줄만큼 띄울 필요가 없다. */
+@media (max-width: 767px) {
+  .filter-buttons {
+    padding-top: 0;
+  }
+}
+
 /* KRDS 목록·검색 패턴: ‘검색 결과 24개’처럼 결과 수를 굵게, 숫자는 강조색으로. */
 .result-summary {
   color: var(--krds-light-color-text-basic);
@@ -517,8 +525,7 @@ fieldset.form-group {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  /* 아래는 푸터 위 여백(.app-footer margin-top 4rem)을 빼서 위아래 88px을 같게 한다. */
-  padding: 8.8rem var(--krds-padding-6) 4.8rem;
+  padding: 8.8rem var(--krds-padding-6);
 }
 
 /* 본문 폭 792px(피그마 contents_area) */
@@ -632,10 +639,6 @@ fieldset.form-group {
 }
 
 /* ── 공통 하단(KRDS krds-footer, 시연 앱 정보만) ──── */
-.app-footer {
-  margin-top: 4rem;
-}
-
 .app-footer-name {
   font-size: var(--krds-pc-font-size-heading-xsmall);
   font-weight: 700;

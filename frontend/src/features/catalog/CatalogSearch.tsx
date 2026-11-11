@@ -196,7 +196,8 @@ function CatalogResult({ item, pick, keyword }: { item: CatalogItem; pick?: Cata
         {/* KRDS 펼치기(disclosure). 닫힌 내용은 KRDS가 높이만 0으로 두므로 렌더링하지 않아 Tab 이동에서 빠지게 한다. */}
         <div className={open ? 'krds-disclosure conts-expand-area active' : 'krds-disclosure conts-expand-area'}>
           <button type="button" className="btn-conts-expand" aria-expanded={open} aria-controls={detailId} onClick={() => setOpen((value) => !value)}>
-            자세히 보기<span className="sr-only"> {orMissing(item.programName)}</span>
+            {open ? '접기' : '자세히 보기'}
+            <span className="sr-only"> {orMissing(item.programName)}</span>
           </button>
           <div className="expand-wrap" id={detailId}>
         {open && (

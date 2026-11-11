@@ -13,7 +13,7 @@ export function AppHeader({ logoTo, account, menu }: { logoTo: string; account?:
       <div id="krds-skip-link">
         <a href="#main">본문 바로가기</a>
       </div>
-      <header id="krds-header" className={menu ? undefined : 'no-menu'}>
+      <header id="krds-header">
         <div className="header-in">
           <div className="header-container">
             <div className="inner">

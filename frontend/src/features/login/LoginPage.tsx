@@ -121,8 +121,8 @@ export function LoginPage({ notice }: { notice: string | null }) {
 
         {MOCK_API_ENABLED && (
           <aside className="login-aside" aria-label="목업 모드 안내">
+          {/* ‘목업 모드’ 배지는 공통 상단에 있으므로 여기서는 다시 붙이지 않는다. */}
           <div className="mock-note">
-            <span className="krds-badge bg-light-warning">목업 모드</span>
             <p>
               계정 <code>demo-town-a</code>(읍면동) 또는 <code>demo-district-a</code>(시군구), 목업 전용 비밀번호{' '}
               <code>{MOCK_PASSWORD}</code>. 실제 서버와 관계없습니다.

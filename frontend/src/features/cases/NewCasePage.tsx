@@ -129,7 +129,8 @@ function NewCaseForm() {
       <PageHead parents={CRUMBS} title="새 접수" />
 
       <form className="form-column" onSubmit={handleSubmit} noValidate aria-labelledby="new-case-form-title">
-      <section className="form-box" aria-labelledby="new-case-form-title">
+      {/* 이름은 바깥 form 랜드마크에만 둔다(같은 이름의 랜드마크가 겹치지 않게). */}
+      <div className="form-box">
         <h2 id="new-case-form-title" className="section-title">
           접수 정보
         </h2>
@@ -205,7 +206,7 @@ function NewCaseForm() {
             />
             </fieldset>
         )}
-      </section>
+      </div>
 
         {profiles.data && (
           <div className="form-actions">

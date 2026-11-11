@@ -1,6 +1,7 @@
 // KRDS 입력 컴포넌트 구조(select, radio_button, checkbox, textarea)를 React로 옮긴 부품.
 
 import type { ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import { sizeClass, type FieldSize } from './fieldSize';
 
 interface FieldFrameProps {
   id: string;
@@ -51,11 +52,8 @@ interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>,
   hint?: string;
   error?: string;
   selectRef?: Ref<HTMLSelectElement>;
-  /**
-   * KRDS 선택상자 크기. 기본은 large(56px, 입력폼). 검색·필터 영역은 medium(48px)으로
-   * 검색어 칸·버튼과 높이를 맞춘다(DEV-03 크기 규칙).
-   */
-  fieldSize?: 'medium';
+  /** KRDS 선택상자 크기(`fieldSize.ts`). 검색·필터 영역은 medium. */
+  fieldSize?: FieldSize;
 }
 
 export function SelectField({ id, label, options, emptyOption, optional, hint, error, selectRef, fieldSize, ...rest }: SelectFieldProps) {
@@ -64,7 +62,7 @@ export function SelectField({ id, label, options, emptyOption, optional, hint, e
       <select
         ref={selectRef}
         id={id}
-        className={fieldSize ? `krds-form-select ${fieldSize}` : 'krds-form-select'}
+        className={sizeClass('krds-form-select', fieldSize)}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(id, hint, error)}
         {...rest}

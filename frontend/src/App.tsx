@@ -7,6 +7,8 @@ import { CaseDetailPage } from './features/cases/CaseDetailPage';
 import { CaseListPage } from './features/cases/CaseListPage';
 import { NewCasePage } from './features/cases/NewCasePage';
 import { NotFoundPage } from './features/placeholder/PlaceholderPage';
+import { AppFooter } from './layout/AppFooter';
+import { AppHeader } from './layout/AppHeader';
 import { AppShell } from './layout/AppShell';
 import { matchPath, navigate, usePath } from './router';
 
@@ -32,26 +34,35 @@ function Routes() {
     }
   }, [state.status, path]);
 
+  // 로그인 상태 확인 중·실패 화면에도 공통 상단·푸터를 둔다(모든 화면 같은 위치).
   if (state.status === 'loading') {
     return (
-      <main id="main" className="page-state">
-        <div className="krds-spinner" role="status">
-          <span className="sr-only">로그인 상태를 확인하는 중입니다.</span>
-        </div>
-      </main>
+      <>
+        <AppHeader logoTo="/login" />
+        <main id="main" className="page-state">
+          <div className="krds-spinner" role="status">
+            <span className="sr-only">로그인 상태를 확인하는 중입니다.</span>
+          </div>
+        </main>
+        <AppFooter />
+      </>
     );
   }
 
   if (state.status === 'error') {
     return (
-      <main id="main" className="page-state">
-        <div className="form-group" role="alert">
-          <p className="form-hint-invalid">{state.message}</p>
-        </div>
-        <button type="button" className="krds-btn medium primary" onClick={retry}>
-          다시 시도
-        </button>
-      </main>
+      <>
+        <AppHeader logoTo="/login" />
+        <main id="main" className="page-state">
+          <div className="form-group" role="alert">
+            <p className="form-hint-invalid">{state.message}</p>
+          </div>
+          <button type="button" className="krds-btn medium primary" onClick={retry}>
+            다시 시도
+          </button>
+        </main>
+        <AppFooter />
+      </>
     );
   }
 
