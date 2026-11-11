@@ -200,9 +200,27 @@ section[id^='section-'] {
 }
 
 /* ── 입력 폼 ─────────────────────────────────────── */
-/* KRDS 신청 정보입력 폼 패턴(피그마 신청(입력폼)-1): 입력 영역을 흰 바탕·테두리 상자로 묶는다. */
-.form-section {
-  max-width: 72rem;
+/*
+ * KRDS 신청 정보입력 폼 패턴(피그마 신청(입력폼)-1).
+ * 경로 표시는 쪽 왼쪽에 두고, 제목·입력 상자·버튼은 가운데 792px 열(로그인 화면과 같은 폭)에 놓는다.
+ * 입력 영역은 흰 바탕·테두리 상자, 제출 버튼은 상자 아래 오른쪽.
+ */
+.form-page .page-title-row,
+.form-column {
+  width: 100%;
+  max-width: 79.2rem;
+  margin-inline: auto;
+}
+
+.form-column {
+  display: grid;
+  gap: var(--krds-gap-6);
+}
+
+.form-box {
+  display: grid;
+  gap: var(--krds-gap-5);
+  min-width: 0;
   padding: var(--krds-padding-8);
   border: 1px solid var(--krds-light-color-border-gray-light);
   border-radius: var(--krds-radius-large1);

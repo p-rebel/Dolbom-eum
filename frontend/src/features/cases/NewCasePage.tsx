@@ -124,10 +124,12 @@ function NewCaseForm() {
   }
 
   return (
-    <div className="inner page">
+    // KRDS 피그마 신청(입력폼)-1: 경로 표시는 쪽 왼쪽, 제목·입력 상자·버튼은 가운데 792px 열. 제출 버튼은 상자 아래.
+    <div className="inner page form-page">
       <PageHead parents={CRUMBS} title="새 접수" />
 
-      <section className="page-section form-section" aria-labelledby="new-case-form-title">
+      <form className="form-column" onSubmit={handleSubmit} noValidate aria-labelledby="new-case-form-title">
+      <section className="form-box" aria-labelledby="new-case-form-title">
         <h2 id="new-case-form-title" className="section-title">
           접수 정보
         </h2>
@@ -144,7 +146,6 @@ function NewCaseForm() {
         )}
 
         {profiles.data && (
-          <form className="form-stack" onSubmit={handleSubmit} noValidate>
             <fieldset className="form-lock" disabled={!!uncertain}>
               <legend>접수 입력</legend>
             <SelectField
@@ -203,15 +204,17 @@ function NewCaseForm() {
               inputRef={refs.evidenceChecked}
             />
             </fieldset>
-
-            <div className="form-actions">
-              <button type="submit" className="krds-btn xlarge primary" disabled={submitting}>
-                {submitting ? '접수 중…' : uncertain ? '같은 내용으로 다시 시도' : '접수하기'}
-              </button>
-            </div>
-          </form>
         )}
       </section>
+
+        {profiles.data && (
+          <div className="form-actions">
+            <button type="submit" className="krds-btn xlarge primary" disabled={submitting}>
+              {submitting ? '접수 중…' : uncertain ? '같은 내용으로 다시 시도' : '접수하기'}
+            </button>
+          </div>
+        )}
+      </form>
     </div>
   );
 }
