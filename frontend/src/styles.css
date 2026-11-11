@@ -1,25 +1,645 @@
+/*
+ * 화면 스타일은 KRDS(대한민국 정부 디자인 시스템) krds-uiux 1.1.0을 그대로 쓴다.
+ * 출처: 행정안전부 KRDS https://www.krds.go.kr · https://github.com/KRDS-uiux/krds-uiux
+ * 페이지 배치는 KRDS 공식 누리집의 구성(흰 바탕, 헤더·주 메뉴, 경로 표시, 큰 쪽 제목,
+ * 제목과 구분선으로 나눈 영역, 오른쪽 페이지 내 이동)을 따른다.
+ * 이 파일에는 KRDS 코드 키트에 없는 배치만 KRDS 토큰으로 작성한다. KRDS는 1rem=10px이다.
+ */
+
+/* KRDS 기본 서체 Pretendard GOV(SIL OFL 1.1). krds-uiux 패키지에 포함된 파일을 쓴다. */
+@font-face {
+  font-family: 'Pretendard GOV';
+  font-weight: 400;
+  font-display: swap;
+  src: url('../node_modules/krds-uiux/resources/fonts/PretendardGOV-Regular.subset.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard GOV';
+  font-weight: 400;
+  font-display: swap;
+  src: url('../node_modules/krds-uiux/resources/fonts/PretendardGOV-Medium.subset.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard GOV';
+  font-weight: 700;
+  font-display: swap;
+  src: url('../node_modules/krds-uiux/resources/fonts/PretendardGOV-Bold.subset.woff2') format('woff2');
+}
+
 :root {
-  color: #172e29;
-  background: #eef6f3;
-  font-family: system-ui, sans-serif;
+  /* KRDS 토큰은 서체 이름만 지정한다. 서체를 불러오지 못할 때의 대체 서체를 더한다. */
+  --krds-font-family-base: 'Pretendard GOV', 'Malgun Gothic', sans-serif;
 }
 
-body {
+code {
+  font-family: Consolas, monospace;
+  white-space: nowrap;
+}
+
+.text-subtle {
+  color: var(--krds-light-color-text-subtle);
+}
+
+/* ── 헤더 (KRDS krds-header) ───────────────────────── */
+/* 로고 자리에는 KRDS 로고 대신 서비스 이름 글자를 둔다. */
+#krds-header .header-branding {
+  gap: var(--krds-gap-4);
+  flex-wrap: wrap;
+}
+
+#krds-header .header-branding .app-logo {
+  width: auto;
+  height: auto;
+}
+
+#krds-header .header-branding .app-logo a {
+  width: auto;
+  height: auto;
+  background-image: none;
+  color: var(--krds-light-color-text-bolder);
+  font-size: var(--krds-pc-font-size-heading-medium);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* 로그인 전에는 주 메뉴가 없으므로 헤더 아래 구분선을 직접 둔다(피그마 헤더 아래선). */
+#krds-header:not(:has(.krds-main-menu)) .header-container {
+  border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
+.app-account {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--krds-gap-2) var(--krds-gap-4);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+.app-account-meta {
+  margin-left: var(--krds-gap-3);
+  color: var(--krds-light-color-text-subtle);
+}
+
+/* KRDS 코드 키트의 헤더 위아래 여백은 넓은 화면에만 있어 좁은 화면에도 같은 여백을 준다. */
+@media (max-width: 1024px) {
+  #krds-header .header-container .inner {
+    padding-top: var(--krds-padding-5);
+    padding-bottom: var(--krds-padding-5);
+  }
+}
+
+/*
+ * 주 메뉴: KRDS는 1023px 이하에서 PC 메뉴를 숨기고 스크립트로 여는 ‘전체메뉴’를 쓴다.
+ * 이 앱은 ui-script.js를 쓰지 않고 메뉴가 두 개뿐이라 좁은 화면에서도 같은 메뉴를 보여준다.
+ */
+@media (max-width: 1023px) {
+  #krds-header .krds-main-menu {
+    display: block;
+  }
+
+  #krds-header .krds-main-menu .gnb-menu {
+    gap: var(--krds-gap-2);
+  }
+}
+
+/* ── 쪽 배치 ─────────────────────────────────────── */
+/*
+ * 푸터는 내용이 짧아도 화면 맨 아래에 둔다(KRDS 누리집 구성, 체크리스트: 푸터는 모든 화면 같은 위치).
+ * 본문(main)이 남는 높이를 채우고, 내용이 길면 푸터는 내용 뒤로 밀린다.
+ */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#root > main {
+  flex: 1 0 auto;
+}
+
+#root > footer {
+  flex-shrink: 0;
+}
+
+/* 본문과 푸터 사이 간격은 본문 아래 여백 하나로만 둔다(푸터에는 위 여백 없음). */
+.app-main {
+  padding-bottom: 16rem;
+}
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--krds-gap-8);
+  margin: 0 auto;
+}
+
+.page-head {
+  display: grid;
+  gap: var(--krds-gap-6);
+  padding-top: var(--krds-padding-8);
+}
+
+.page-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--krds-gap-4);
+}
+
+/* 쪽 제목: KRDS 누리집과 같은 큰 제목. 화면 이동 시 초점을 받지만(D-02:15) 테두리는 그리지 않는다. */
+.page-title {
+  font-size: var(--krds-pc-font-size-heading-large);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.page-title:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* 영역: 상자 없이 제목과 위쪽 구분선으로 나눈다. */
+.page-section {
+  display: grid;
+  gap: var(--krds-gap-5);
+  min-width: 0;
+  padding-top: var(--krds-padding-9);
+  border-top: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
+section[id^='section-'] {
+  scroll-margin-top: 16rem;
+}
+
+.section-title {
+  font-size: var(--krds-pc-font-size-heading-medium);
+  font-weight: 700;
+}
+
+.sub-title {
+  margin-top: var(--krds-gap-4);
+  font-size: var(--krds-pc-font-size-heading-xsmall);
+  font-weight: 700;
+}
+
+/* 요약·조회 조건처럼 묶어 보여줄 정보는 KRDS 회색 면을 쓴다. */
+.summary-panel,
+.search-panel,
+.saved-plan {
+  display: grid;
+  gap: var(--krds-gap-4);
+  min-width: 0;
+  padding: var(--krds-padding-8);
+  background-color: var(--krds-light-color-surface-gray-subtler);
+  border-radius: var(--krds-radius-large1);
+}
+
+.saved-plan .sub-title {
+  margin-top: 0;
+}
+
+/* ── 입력 폼 ─────────────────────────────────────── */
+/*
+ * KRDS 신청 정보입력 폼 패턴(피그마 신청(입력폼)-1).
+ * 경로 표시는 쪽 왼쪽에 두고, 제목·입력 상자·버튼은 가운데 792px 열(로그인 화면과 같은 폭)에 놓는다.
+ * 입력 영역은 흰 바탕·테두리 상자, 제출 버튼은 상자 아래 오른쪽.
+ */
+.form-page .page-title-row,
+.form-column {
+  width: 100%;
+  max-width: 79.2rem;
+  margin-inline: auto;
+}
+
+.form-column {
+  display: grid;
+  gap: var(--krds-gap-6);
+}
+
+.form-box {
+  display: grid;
+  gap: var(--krds-gap-5);
+  min-width: 0;
+  padding: var(--krds-padding-8);
+  border: 1px solid var(--krds-light-color-border-gray-light);
+  border-radius: var(--krds-radius-large1);
+}
+
+.form-stack,
+.form-lock {
+  display: grid;
+  gap: var(--krds-gap-6);
+  min-width: 0;
+}
+
+.form-lock {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+fieldset.form-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.record-form {
+  max-width: 72rem;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--krds-gap-3);
+}
+
+.form-required-notice {
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+.field-optional {
+  color: var(--krds-light-color-text-subtle);
+  font-weight: 400;
+}
+
+.form-message {
   margin: 0;
 }
 
-main {
-  box-sizing: border-box;
-  max-width: 32rem;
-  margin: 12vh auto 0;
-  padding: 2rem;
+/* ── 정보 목록 ─────────────────────────────────────── */
+/* KRDS 상세 정보 확인 패턴(피그마 신청(상세) ‘서비스개요’): 항목명은 왼쪽 굵게, 값은 오른쪽. */
+.info-list {
+  display: grid;
+  gap: var(--krds-gap-3);
 }
 
-h1 {
-  margin: 0 0 0.75rem;
-  font-size: 2rem;
+.info-list > div {
+  display: grid;
+  grid-template-columns: 16rem minmax(0, 1fr);
+  gap: var(--krds-gap-4);
 }
 
-p {
+.info-list dt {
+  color: var(--krds-light-color-text-basic);
+  font-weight: 700;
+}
+
+.info-list dd {
   margin: 0;
+  font-weight: 400;
+}
+
+@media (max-width: 767px) {
+  .info-list > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--krds-gap-1);
+  }
+}
+
+/* 상단 요약은 짧은 값 여러 개를 한 줄에 놓는다(항목명 위, 값 아래). */
+.info-inline {
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--krds-gap-4) var(--krds-gap-6);
+}
+
+.info-inline > div {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--krds-gap-1);
+}
+
+.info-inline dt {
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
+  font-weight: 400;
+}
+
+.next-step {
+  color: var(--krds-light-color-text-primary);
+  font-weight: 700;
+}
+
+/* ── 조회 조건과 결과 ─────────────────────────────── */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--krds-gap-4);
+}
+
+.filter-row .form-group {
+  flex: 0 1 32rem;
+  min-width: 0;
+}
+
+.filter-form {
+  display: grid;
+  gap: var(--krds-gap-4);
+  padding: var(--krds-padding-8);
+  background-color: var(--krds-light-color-surface-gray-subtler);
+  border-radius: var(--krds-radius-large1);
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--krds-gap-4);
+}
+
+.filter-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--krds-gap-4);
+}
+
+.filter-search .form-group {
+  flex: 1 1 32rem;
+}
+
+/*
+ * 검색어 입력 옆 버튼. 검색·필터 영역은 선택상자·검색어 칸·버튼 모두 medium(48px)으로 맞춘다(DEV-03 크기 규칙).
+ * 위 여백은 입력칸 위 레이블 줄 높이(레이블 + form-group 간격, 실측 34px)만큼이다.
+ */
+.filter-buttons {
+  display: flex;
+  gap: var(--krds-gap-3);
+  padding-top: 3.4rem;
+}
+
+/* 좁은 화면에서는 버튼이 검색어 칸 아래 줄로 내려가므로 레이블 줄만큼 띄울 필요가 없다. */
+@media (max-width: 767px) {
+  .filter-buttons {
+    padding-top: 0;
+  }
+}
+
+/* KRDS 목록·검색 패턴: ‘검색 결과 24개’처럼 결과 수를 굵게, 숫자는 강조색으로. */
+.result-summary {
+  color: var(--krds-light-color-text-basic);
+  font-weight: 700;
+}
+
+.result-count {
+  color: var(--krds-light-color-text-primary);
+}
+
+.catalog-search,
+.catalog-results,
+.plan-catalog {
+  display: grid;
+  gap: var(--krds-gap-5);
+  min-width: 0;
+}
+
+/* KRDS 구조화 목록은 제목을 링크로 보고 화살표를 붙인다. 여기 제목은 링크가 아니므로 뺀다. */
+.catalog-list .card-body .c-text .c-tit::after {
+  content: none;
+}
+
+/* 공단 조회 결과의 KRDS 펼치기(disclosure). 회색 펼침 상자가 구분을 맡으므로 선은 두지 않는다. */
+.catalog-list .krds-disclosure {
+  margin-top: var(--krds-gap-4);
+}
+
+/* 표는 KRDS mob-scroll 변형을 써서 영역 안에서만 가로로 스크롤한다. */
+.krds-table-wrap {
+  overflow-x: auto;
+}
+
+.row-link {
+  cursor: pointer;
+}
+
+.row-link:hover {
+  background-color: var(--krds-light-color-surface-gray-subtler);
+}
+
+/* ── 계획 ─────────────────────────────────────────── */
+.plan-item-list {
+  display: grid;
+  gap: var(--krds-gap-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-item-list > li {
+  padding: var(--krds-padding-6);
+  border: 1px solid var(--krds-light-color-border-gray-light);
+  border-radius: var(--krds-radius-medium2);
+  background-color: var(--krds-light-color-surface-white);
+}
+
+.plan-item-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--krds-gap-4);
+}
+
+.plan-item-title {
+  font-weight: 700;
+}
+
+.plan-item-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--krds-gap-2);
+}
+
+.selected-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--krds-gap-4);
+}
+
+.selected-head .sub-title {
+  margin-top: 0;
+}
+
+.plan-catalog {
+  padding-top: var(--krds-padding-8);
+  border-top: 2px solid var(--krds-light-color-border-primary);
+}
+
+.plan-catalog > .sub-title {
+  margin-top: 0;
+}
+
+.pending-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--krds-gap-4);
+}
+
+/* ── 로딩·오류·빈 결과 ─────────────────────────────── */
+.feedback-block {
+  display: grid;
+  gap: var(--krds-gap-4);
+  justify-items: center;
+  padding: var(--krds-padding-9) var(--krds-padding-6);
+  text-align: center;
+}
+
+.feedback-empty {
+  justify-items: start;
+  padding: 0;
+  color: var(--krds-light-color-text-subtle);
+  text-align: left;
+}
+
+.feedback-empty .feedback-actions {
+  justify-content: flex-start;
+}
+
+.feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--krds-gap-3);
+}
+
+.page-state {
+  display: grid;
+  gap: var(--krds-gap-5);
+  justify-items: center;
+  align-content: center;
+  min-height: 100%;
+  padding: var(--krds-padding-8);
+}
+
+/* ── 로그인 (KRDS 피그마 서비스패턴_로그인 Step 3) ───── */
+/*
+ * 로그인 본문은 헤더와 푸터 사이 세로 가운데에 둔다(위아래 빈 공간을 같게).
+ * 위아래 최소 간격은 피그마 Step 3의 경로 표시 줄 높이 88px. 화면이 낮으면 88px부터 시작한다.
+ */
+.login-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8.8rem var(--krds-padding-6);
+}
+
+/* 본문 폭 792px(피그마 contents_area) */
+.login-box {
+  display: grid;
+  gap: var(--krds-gap-8);
+  width: 100%;
+  max-width: 79.2rem;
+  margin: 0 auto;
+}
+
+.login-head {
+  display: grid;
+  gap: var(--krds-gap-4);
+}
+
+.login-service {
+  color: var(--krds-light-color-text-basic);
+  font-size: var(--krds-pc-font-size-body-small);
+  font-weight: 700;
+}
+
+/* 위아래 1px 구분선 안에 입력 열(왼쪽)과 안내 열(오른쪽). 피그마 열 너비 323.5px, 안쪽 여백 32px. */
+.login-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 40rem);
+  padding: var(--krds-padding-8);
+  border-top: 1px solid var(--krds-light-color-divider-gray-light);
+  border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
+.login-panel.has-aside {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.login-main {
+  display: grid;
+  align-content: start;
+  gap: var(--krds-gap-5);
+}
+
+.login-panel.has-aside .login-main {
+  padding-right: var(--krds-padding-8);
+}
+
+.login-aside {
+  padding-left: var(--krds-padding-8);
+  border-left: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
+@media (max-width: 767px) {
+  .login-panel,
+  .login-panel.has-aside {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--krds-padding-8) 0;
+  }
+
+  .login-panel.has-aside .login-main {
+    padding-right: 0;
+  }
+
+  .login-aside {
+    margin-top: var(--krds-gap-8);
+    padding: var(--krds-padding-8) 0 0;
+    border-top: 1px solid var(--krds-light-color-divider-gray-light);
+    border-left: 0;
+  }
+}
+
+.login-form {
+  display: grid;
+  gap: var(--krds-gap-6);
+}
+
+.login-submit {
+  width: 100%;
+}
+
+.login-footer {
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+.mock-note {
+  display: grid;
+  gap: var(--krds-gap-2);
+  justify-items: start;
+  padding: var(--krds-padding-6);
+  background-color: var(--krds-light-color-surface-warning-subtler);
+  border-radius: var(--krds-radius-medium2);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+/* ── 페이지네이션 전체 쪽 수 ───────────────────────── */
+.pagination-area {
+  display: grid;
+  gap: var(--krds-gap-2);
+  justify-items: center;
+}
+
+.pagination-total {
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+/* ── 검색어 강조(KRDS 검색 패턴) ─────────────────── */
+.search-highlight {
+  color: var(--krds-light-color-text-primary);
+  background: none;
+  font-weight: 700;
+}
+
+/* ── 공통 하단(KRDS krds-footer, 시연 앱 정보만) ──── */
+.app-footer-name {
+  font-size: var(--krds-pc-font-size-heading-xsmall);
+  font-weight: 700;
 }
