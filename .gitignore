@@ -5,3 +5,9 @@
 __pycache__/
 node_modules/
 dist/
+
+# 로컬 SQLite DB와 백업
+var/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
