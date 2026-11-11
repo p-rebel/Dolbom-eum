@@ -99,6 +99,24 @@ code {
 }
 
 /* ── 쪽 배치 ─────────────────────────────────────── */
+/*
+ * 푸터는 내용이 짧아도 화면 맨 아래에 둔다(KRDS 누리집 구성, 체크리스트: 푸터는 모든 화면 같은 위치).
+ * 본문(main)이 남는 높이를 채우고, 내용이 길면 푸터는 내용 뒤로 밀린다.
+ */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#root > main {
+  flex: 1 0 auto;
+}
+
+#root > footer {
+  flex-shrink: 0;
+}
+
 .app-main {
   padding-bottom: 12rem;
 }
