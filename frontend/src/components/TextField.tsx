@@ -11,13 +11,15 @@ interface TextFieldProps extends InputProps {
   /** 오류 문구. 있으면 KRDS 오류 상태(is-error)로 표시한다. */
   error?: string;
   inputRef?: Ref<HTMLInputElement>;
+  /** KRDS 입력칸 크기. 기본은 large(56px, 입력폼). 검색·필터 영역은 medium(48px)으로 다른 조건과 높이를 맞춘다. */
+  fieldSize?: 'medium';
 }
 
 /**
  * KRDS 텍스트 입력(text_input) 구조.
  * form-group > form-tit(label) > form-conts(input) > form-hint / form-hint-invalid
  */
-export function TextField({ id, label, hint, error, inputRef, type = 'text', max, ...inputProps }: TextFieldProps) {
+export function TextField({ id, label, hint, error, inputRef, type = 'text', max, fieldSize, ...inputProps }: TextFieldProps) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = type === 'password';
   const hintId = hint ? `${id}-hint` : undefined;
@@ -35,7 +37,7 @@ export function TextField({ id, label, hint, error, inputRef, type = 'text', max
         <input
           ref={inputRef}
           id={id}
-          className="krds-input"
+          className={fieldSize ? `krds-input ${fieldSize}` : 'krds-input'}
           type={isPassword && passwordVisible ? 'text' : type}
           // 날짜는 최댓값이 없으면 브라우저가 연도를 6자리까지 받는다.
           max={type === 'date' ? (max ?? DATE_MAX) : max}

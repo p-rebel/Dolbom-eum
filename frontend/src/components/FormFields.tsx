@@ -52,8 +52,8 @@ interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>,
   error?: string;
   selectRef?: Ref<HTMLSelectElement>;
   /**
-   * KRDS 선택상자 크기. 기본은 large(56px). 필터 영역 안의 선택상자는 KRDS 피그마
-   * 필터 패턴대로 medium(48px)을 써서 옆의 medium 버튼과 높이를 맞춘다.
+   * KRDS 선택상자 크기. 기본은 large(56px, 입력폼). 검색·필터 영역은 medium(48px)으로
+   * 검색어 칸·버튼과 높이를 맞춘다(DEV-03 크기 규칙).
    */
   fieldSize?: 'medium';
 }

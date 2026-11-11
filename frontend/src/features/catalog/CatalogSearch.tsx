@@ -94,6 +94,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
           <TextField
             id={`${baseId}-q`}
             label="검색어"
+            fieldSize="medium"
             hint="프로그램명 또는 기관명"
             value={draft.q}
             onChange={(event) => setDraft({ ...draft, q: event.target.value })}
@@ -106,10 +107,10 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             error={qError}
           />
           <div className="filter-buttons">
-            <button type="button" className={pick ? "krds-btn large secondary" : "krds-btn large primary"} onClick={runSearch}>
+            <button type="button" className={pick ? "krds-btn medium secondary" : "krds-btn medium primary"} onClick={runSearch}>
               검색
             </button>
-            <button type="button" className="krds-btn large tertiary" onClick={reset}>
+            <button type="button" className="krds-btn medium tertiary" onClick={reset}>
               조건 초기화
             </button>
           </div>

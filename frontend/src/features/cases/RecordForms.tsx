@@ -91,7 +91,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
         </div>
       </dl>
       <div className="form-actions">
-        <button type="submit" className="krds-btn medium primary" disabled={saving}>
+        <button type="submit" className="krds-btn xlarge primary" disabled={saving}>
           {saving ? '저장 중…' : '사전조사 저장'}
         </button>
       </div>
@@ -183,7 +183,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
         </div>
       </dl>
       <div className="form-actions">
-        <button type="submit" className="krds-btn medium primary" disabled={saving}>
+        <button type="submit" className="krds-btn xlarge primary" disabled={saving}>
           {saving ? '저장 중…' : '판정 결과 저장'}
         </button>
       </div>

@@ -187,7 +187,7 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
       )}
 
       <div className="form-actions">
-        <button type="submit" className="krds-btn medium primary" disabled={saving}>
+        <button type="submit" className="krds-btn xlarge primary" disabled={saving}>
           {saving ? '저장 중…' : '초안 저장'}
         </button>
       </div>

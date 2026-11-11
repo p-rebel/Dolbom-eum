@@ -320,7 +320,7 @@ fieldset.form-group {
 }
 
 /*
- * 검색어 입력 옆 버튼. KRDS 피그마 input+button·select+search: 입력칸과 버튼은 같은 높이(56px, large)로 나란히 둔다.
+ * 검색어 입력 옆 버튼. 검색·필터 영역은 선택상자·검색어 칸·버튼 모두 medium(48px)으로 맞춘다(DEV-03 크기 규칙).
  * 위 여백은 입력칸 위 레이블 줄 높이(레이블 + form-group 간격, 실측 34px)만큼이다.
  */
 .filter-buttons {
