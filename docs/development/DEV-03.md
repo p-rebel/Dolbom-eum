@@ -6,7 +6,7 @@
 | 작업표 번호 | [13~23, 24(공동)](WORK_SCHEDULE.md) · 후속 화면 30~34는 DEV-07 |
 | 담당자 / 결과 인수 | 김재현 / 이동수(통합), 김예랑(화면 값·업무 순서), 이보미(프로그램·기관·출처 표시) |
 | 기한 | 11/12 |
-| 상태 | 진행 중 — 13~16번 화면 틀 완료(목업), 17~23번 API 연결 대기 |
+| 상태 | 진행 중 — 13~16번 완료(목업, PR #9 머지), 17~23번 API 연결 대기 |
 | 마지막 문서 확인 커밋 | main `927a5f6` (2026-11-12) |
 
 ## 1. 화면 구현 기준 — KRDS
@@ -278,9 +278,11 @@ KRDS 피그마 ‘📚 Pattern’의 PC 프레임과 5개 화면을 비교했다
 
 | 작업 | PR·커밋 | 확인 근거 | 완료일 |
 | --- | --- | --- | --- |
-| 13 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-01~F-11 | |
-| 14 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-12, F-15~F-25, F-32 | |
-| 15 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-26~F-28, F-30 | |
-| 16 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-29, F-31 | |
+| 13 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-01~F-11 || 11/12 |
+| 14 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-12, F-15~F-25, F-32 || 11/12 |
+| 15 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-26~F-28, F-30 || 11/12 |
+| 16 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-29, F-31 || 11/12 |
+
+AI 검토 2회(/code-review: 1차 10건, 2차 8건 반영)와 브라우저 확인(접수→사전조사→판정→초안 선택, 저장 안 한 입력의 뒤로 가기, 크기·배치 실측) 후 머지.
 
 목업 확인 절차: 로그인 화면의 ‘목업 사례 초기화’ → `demo-town-a` 접수 → 사전조사 → `demo-district-a` 판정 → `demo-town-a` 초안(서비스 검색에서 선택) → 새로고침 후 버전 4·선택 순서 확인. [첫 통합 완료 기준](DEV-01.md#첫-통합-완료-기준)과 같은 순서이며, 기대값 대조는 실제 API 연결(17~24번)에서 한다.
