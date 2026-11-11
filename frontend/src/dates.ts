@@ -11,7 +11,9 @@ export function isValidDate(value: string): boolean {
     return false;
   }
   const [year, month, day] = value.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
+  // Date.UTC는 0~99년을 1900년대로 바꾸므로 연도를 따로 지정한다.
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
   return year >= 1 && date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 

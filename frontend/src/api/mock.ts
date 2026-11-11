@@ -154,8 +154,11 @@ function route(path: string, init?: RequestInit): Response {
 
   if (pathname === '/cases' && method === 'GET') {
     const status = params.get('status');
-    const items = cases.filter((item) => !status || item.status === status);
-    return json(200, { items, page: 1, pageSize: 20, total: items.length });
+    const filtered = cases.filter((item) => !status || item.status === status);
+    const page = Math.max(1, Number(params.get('page')) || 1);
+    const pageSize = Math.max(1, Number(params.get('pageSize')) || 20);
+    const items = filtered.slice((page - 1) * pageSize, page * pageSize);
+    return json(200, { items, page, pageSize, total: filtered.length });
   }
   if (pathname === '/cases' && method === 'POST') {
     const input = body(init);

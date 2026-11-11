@@ -13,8 +13,9 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+/** 화면에 보여줄 경로. 뒤로 가기를 확인하는 동안 주소가 잠시 바뀌어도 화면은 그대로 둔다. */
 function getPath() {
-  return window.location.pathname;
+  return shownPath.split('?')[0];
 }
 
 /** 현재 경로를 구독한다. 경로가 바뀌면 다시 렌더링한다. */
@@ -31,6 +32,15 @@ let leaveRequest: ((leave: boolean) => void) | null = null;
 const promptListeners = new Set<() => void>();
 /** 지금 보여주고 있는 경로. 뒤로 가기를 취소할 때 되돌릴 주소다. */
 let shownPath = window.location.pathname + window.location.search;
+/** 지금 기록의 순번. 뒤로·앞으로 가기를 취소할 때 몇 칸 되돌릴지 계산한다. */
+let shownIndex: number = typeof window.history.state?.idx === 'number' ? window.history.state.idx : 0;
+if (typeof window.history.state?.idx !== 'number') {
+  window.history.replaceState({ idx: shownIndex }, '');
+}
+/** history.go()로 되돌리는 중에 오는 popstate는 화면을 바꾸지 않는다. */
+let restoring = false;
+/** ‘나가기’를 고른 뒤 다시 이동할 때 오는 popstate는 확인 없이 받는다. */
+let allowNextPop = false;
 
 function notifyPrompt() {
   promptListeners.forEach((listener) => listener());
@@ -89,25 +99,49 @@ window.addEventListener('beforeunload', (event) => {
   }
 });
 
-// 뒤로·앞으로 가기: 주소가 이미 바뀌었으므로 되돌려 놓고 확인을 받는다.
-window.addEventListener('popstate', () => {
+// 뒤로·앞으로 가기: 주소가 이미 바뀌었으므로 같은 칸 수만큼 되돌려 놓고 확인을 받는다.
+// 새 기록을 쌓지 않고 history.go()로 움직여 앞으로 가기 기록을 보존한다.
+window.addEventListener('popstate', (event: PopStateEvent) => {
   const target = window.location.pathname + window.location.search;
-  if (window.location.pathname === shownPath.split('?')[0] || !hasUnsavedChanges()) {
+  const index = typeof event.state?.idx === 'number' ? event.state.idx : shownIndex;
+  if (restoring) {
+    restoring = false;
+    shownIndex = index;
+    return;
+  }
+  if (allowNextPop || window.location.pathname === shownPath.split('?')[0] || !hasUnsavedChanges()) {
+    allowNextPop = false;
     shownPath = target;
+    shownIndex = index;
     notify();
     return;
   }
-  window.history.pushState(null, '', shownPath);
+  const delta = shownIndex - index;
+  if (delta === 0) {
+    // 순번을 알 수 없는 기록이면 예전 방식으로 주소만 되돌린다.
+    window.history.pushState({ idx: shownIndex }, '', shownPath);
+  } else {
+    restoring = true;
+    window.history.go(delta);
+  }
   void confirmLeave().then((leave) => {
-    if (leave) navigate(target, { force: true });
+    if (!leave) return;
+    dirtySources.clear();
+    if (delta === 0) {
+      go(target, false);
+    } else {
+      allowNextPop = true;
+      window.history.go(-delta);
+    }
   });
 });
 
 function go(to: string, replace: boolean) {
   if (replace) {
-    window.history.replaceState(null, '', to);
+    window.history.replaceState({ idx: shownIndex }, '', to);
   } else {
-    window.history.pushState(null, '', to);
+    shownIndex += 1;
+    window.history.pushState({ idx: shownIndex }, '', to);
   }
   shownPath = to;
   notify();
@@ -146,7 +180,12 @@ export function matchPath(pattern: string, path: string): Record<string, string>
     const patternPart = patternParts[index];
     const pathPart = pathParts[index];
     if (patternPart.startsWith(':')) {
-      params[patternPart.slice(1)] = decodeURIComponent(pathPart);
+      // 잘못된 % 인코딩 주소는 화면 전체 오류 대신 ‘없는 화면’으로 처리한다.
+      try {
+        params[patternPart.slice(1)] = decodeURIComponent(pathPart);
+      } catch {
+        return null;
+      }
     } else if (patternPart !== pathPart) {
       return null;
     }

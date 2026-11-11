@@ -122,13 +122,15 @@ export function orMissing(value: string | null | undefined): string {
 }
 
 /** 처리 시각(UTC)을 한국 시간으로 표시한다(D-03). */
+const KST_DATE_TIME = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
 export function formatDateTime(iso: string): string {
-  return new Intl.DateTimeFormat('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(iso));
+  return KST_DATE_TIME.format(new Date(iso));
 }

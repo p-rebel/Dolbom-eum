@@ -74,7 +74,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             label="시군구"
             emptyOption={draft.sido ? '전체' : '시도를 먼저 선택'}
             value={draft.sigungu}
-            disabled={!draft.sido}
+            disabled={!draft.sido || filters.loading || !!filters.error}
             options={(filters.data?.sigungus ?? []).map((value) => ({ value, label: value }))}
             onChange={(event) => setDraft({ ...draft, sigungu: event.target.value })}
           />
@@ -115,7 +115,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
 
       <div className="catalog-results">
         <Heading className="sr-only">검색 결과</Heading>
-        {results.data && (
+        {results.data && !results.loading && !results.error && (
           <p className="result-summary" role="status">
             {appliedLabels.join(' · ')} — 총 <strong className="result-count">{results.data.total.toLocaleString('ko-KR')}</strong>건
           </p>

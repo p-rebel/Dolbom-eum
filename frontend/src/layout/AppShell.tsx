@@ -27,7 +27,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       return;
     }
     setLoggingOut(true);
-    await logout();
+    try {
+      await logout();
+    } catch {
+      // 서버 요청이 실패해도 화면은 이미 로그인 화면으로 바뀌었다(AuthContext logout).
+    }
   }
 
   return (

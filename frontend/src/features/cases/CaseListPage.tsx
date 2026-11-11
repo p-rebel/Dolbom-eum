@@ -73,7 +73,7 @@ export function CaseListPage() {
           신청 건
         </h2>
         {/* KRDS 신청목록 패턴: 결과 수는 조건 영역 밖, 목록 바로 위에 둔다. */}
-        {data && (
+        {data && !loading && !error && (
           <p className="result-summary" role="status">
             {status ? `진행 상태 ‘${STATUS_LABEL[status]}’ · ` : ''}총 <strong className="result-count">{data.total}</strong>건
           </p>

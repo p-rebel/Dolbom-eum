@@ -32,7 +32,7 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
   const savedIds = detail.plan?.items.map((item) => item.catalog.id).join(',') ?? '';
   useUnsavedChanges(
     preparedOn !== (detail.plan?.preparedOn ?? '') ||
-      goal !== (detail.plan?.goal ?? '') ||
+      goal.trim() !== (detail.plan?.goal ?? '') ||
       services.map((service) => service.id).join(',') !== savedIds,
   );
   const refs = {
