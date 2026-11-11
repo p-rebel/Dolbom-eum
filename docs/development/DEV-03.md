@@ -278,10 +278,10 @@ KRDS 피그마 ‘📚 Pattern’의 PC 프레임과 5개 화면을 비교했다
 
 | 작업 | PR·커밋 | 확인 근거 | 완료일 |
 | --- | --- | --- | --- |
-| 13 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-01~F-11 || 11/12 |
-| 14 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-12, F-15~F-25, F-32 || 11/12 |
-| 15 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-26~F-28, F-30 || 11/12 |
-| 16 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-29, F-31 || 11/12 |
+| 13 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-01~F-11 | 11/12 |
+| 14 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-12, F-15~F-25, F-32 | 11/12 |
+| 15 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-26~F-28, F-30 | 11/12 |
+| 16 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-29, F-31 | 11/12 |
 
 AI 검토 2회(/code-review: 1차 10건, 2차 8건 반영)와 브라우저 확인(접수→사전조사→판정→초안 선택, 저장 안 한 입력의 뒤로 가기, 크기·배치 실측) 후 머지.
 
