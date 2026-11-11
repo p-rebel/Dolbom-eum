@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 
+from .api.router import api_router
+
 app = FastAPI(title="돌봄e음 API")
-
-
-@app.get("/api/v1/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+app.include_router(api_router)

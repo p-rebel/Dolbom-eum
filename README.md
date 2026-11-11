@@ -27,7 +27,7 @@ npm run dev
 
 브라우저에서 `http://127.0.0.1:5173`을 열어 ‘API 연결됨’을 확인합니다. 같은 출처의 `/api/v1/health`는 Vite를 거쳐 FastAPI에 연결되어 `{"status":"ok"}`를 반환합니다. API 주소를 바꾸면 `frontend/.env`의 `DOLBOMEUM_API_PROXY_TARGET`도 맞춥니다. 프론트 타입 검사와 빌드는 `frontend`에서 `npm run build`로 실행합니다.
 
-팀원이 새로 체크아웃해 확인할 절차와 결과 기록은 [DEV-01 작업 기록](docs/development/DEV-01.md)에 있습니다.
+폴더 구조, 담당자별 작업 경계, 첫 통합 통과 기준과 팀원 실행 절차는 [DEV-01 작업 기록](docs/development/DEV-01.md)에 있습니다.
 
 ## 프로젝트 일정
 
