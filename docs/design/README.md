@@ -12,4 +12,4 @@
 
 설계 입력은 [H-01 조건부 인수 기록](https://github.com/p-rebel/Dolbom-eum/blob/621f082/docs/handoff%20/H-01_research_data_handoff.md)과 [정제 데이터 v1.4](https://github.com/p-rebel/Dolbom-eum/blob/621f082/data/DATA_DOCUMENTATION.md)다.
 
-검토본 3의 판정, 수정 항목, 재검증 근거는 [설계 검증 기록](../verification/DESIGN_VERIFICATION.md)에 있다.
+설계 판정과 검토본 4 변경분의 검증 근거는 [설계 검증 기록](../verification/DESIGN_VERIFICATION.md)에 있다.

@@ -75,7 +75,7 @@
 - `goal`은 공백 제거 후 1~200자다. `serviceIds`는 조회 가능한 고유 ID 1~5개다. 계획 항목은 배열 순서로 저장한다.
 - 연계 `method`는 `DEPARTMENT_REFERRAL`, `PROVIDER_REFERRAL`, `PERSON_GUIDANCE`다. `destinationLabel`은 부서·공단 의뢰에서 1~80자로 필수다. 다른 두 방식의 요청에서는 생략 또는 `null`이다. 제공기관 의뢰 응답에는 선택 시점 기관명을 사용하고, 대상자 안내 응답의 값은 `null`이다.
 - 제공 `status`는 `UNKNOWN`, `IN_USE`, `NOT_STARTED`, `DECLINED`다. `reason`은 최대 200자이며 미개시·이용 거부에서 공백 제거 후 1자 이상 필요하다.
-- 모니터링 `condition`은 `UNCHANGED`, `IMPROVED`, `WORSENED`다. `reviewNeeded`는 불리언이며, `true`면 `reviewReason`이 1~200자로 필요하다. 생략된 선택 문자열은 응답에서 `null`이다.
+- 모니터링 `condition`은 `UNCHANGED`, `IMPROVED`, `WORSENED`다. `reviewNeeded`는 불리언이며, `true`면 `reviewReason`은 양쪽 공백을 제거한 뒤 1~200자여야 한다. 누락하거나 공백만 입력하면 `422 VALIDATION_ERROR`와 `field: "reviewReason"`을 반환한다. 생략된 선택 문자열은 응답에서 `null`이다.
 - 모니터링의 요청 `observations`는 새로 확인한 항목의 `{itemId, status, reason?}[]`다. 생략하거나 빈 배열을 보내면 기존 제공 현황을 사용한다. 같은 사례의 확정 계획 항목만 허용하며 각 항목 ID는 한 번만 보낼 수 있다. `status`와 `reason`에는 제공 현황과 같은 규칙을 적용한다. 응답에는 입력한 관찰을 반영한 **전체** 항목을 계획 순서로 반환한다. 기존 `plan.items[].delivery`는 시군구가 기록한 값으로 보존한다.
 - 역할·전환·날짜 순서와 중복 기록 제약은 [D-05 업무와 상태 전이](D-05_workflow.md)를 따른다. 신청 상세에서 읽은 버전이 모든 후속 저장의 입력이다. 같은 계정이 같은 `Idempotency-Key`와 정규화된 접수 본문을 재전송하면 현재 상세를 `200`으로 반환한다. 요청 키는 공백이 없는 1~128자의 문자열이다.
 

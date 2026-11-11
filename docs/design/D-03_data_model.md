@@ -41,6 +41,8 @@ erDiagram
 3. 조회 대상은 `is_duplicate_extra=N`인 행이다. 프로그램이나 기관명에 대한 검색어는 공백을 정리하고 부분 문자열로 찾는다. 시도는 표준·현행·이전 표기 중 같은 값과 일치시키고, 시군구·대분류는 정확히 일치시킨다. 지역·분류 필터를 함께 주면 모두 충족하는 결과를 반환한다. 공단 행 ID 오름차순으로 결과를 고정한다.
 4. 빈 CSV 필드는 `null`로 변환한다. 전화번호는 문자열로 보존한다. 기관명이 같거나 프로그램명이 비슷한 행은 각각 출처 행으로 취급한다. 메뉴판 자료와 매칭하거나 시연 배포 데이터에 포함하는 작업은 별도 결정 사항이다. [공단 정제 CSV](https://github.com/p-rebel/Dolbom-eum/blob/621f082/data/processed/nhis_services.csv) · [H-01 후속 조건](https://github.com/p-rebel/Dolbom-eum/blob/621f082/docs/handoff%20/H-01_research_data_handoff.md)
 
+`v1.4`는 데이터 버전이다. 샘플 JSON 3종의 `meta.source_csv`는 저장소 루트 기준으로 공단 `data/processed/nhis_services.csv`와 지자체 `data/processed/local_services.csv`를 가리킨다. 공단 적재 입력은 1번의 고정 커밋과 파일을 사용한다.
+
 ## 무결성과 저장 방식
 
 - 날짜는 업무일자 `YYYY-MM-DD`, 서버 처리 시각은 UTC ISO 8601로 저장한다. 사용자 화면에서는 처리 시각을 한국 시간으로 표시한다.

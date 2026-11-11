@@ -355,6 +355,24 @@
         "expect": { "http": 422, "errorCode": "VALIDATION_ERROR", "body": { "error": { "field": "observations.1.itemId" } } }
       },
       {
+        "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/monitoring",
+        "body": {
+          "version": 12, "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
+          "reviewNeeded": true,
+          "observations": [{ "itemId": "{{itemB}}", "status": "NOT_STARTED", "reason": "가상 개시일 미정" }]
+        },
+        "expect": { "http": 422, "errorCode": "VALIDATION_ERROR", "body": { "error": { "field": "reviewReason" } } }
+      },
+      {
+        "actor": "town", "method": "PUT", "path": "/cases/{{caseId}}/monitoring",
+        "body": {
+          "version": 12, "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
+          "reviewNeeded": true, "reviewReason": "   ",
+          "observations": [{ "itemId": "{{itemB}}", "status": "NOT_STARTED", "reason": "가상 개시일 미정" }]
+        },
+        "expect": { "http": 422, "errorCode": "VALIDATION_ERROR", "body": { "error": { "field": "reviewReason" } } }
+      },
+      {
         "actor": "town", "method": "GET", "path": "/cases/{{caseId}}",
         "expect": {
           "http": 200,

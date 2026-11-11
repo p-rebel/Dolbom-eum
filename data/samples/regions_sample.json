@@ -5,8 +5,8 @@
     "is_sample": true,
     "sample_size": 17,
     "source_csv": [
-      "data/processed/versions/v1.4/nhis_services.csv",
-      "data/processed/versions/v1.4/local_services.csv"
+      "data/processed/nhis_services.csv",
+      "data/processed/local_services.csv"
     ],
     "generated_by": "script/build_samples_v1_4.py",
     "note": "두 데이터셋이 쓰는 지역 표기 예시(데이터셋별로 따로 집계, 서로 연결하지 않음). record_count 는 v1.4 전체 기준 행 수",
