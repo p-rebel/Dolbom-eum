@@ -19,6 +19,8 @@
 | 실행 환경과 의존성 재현 | [npm 잠금 파일](../../frontend/package-lock.json) · [Python 고정 의존성](../../backend/requirements.txt) | Node.js 22.15.1, npm 10.9.2, Python 3.12.10에서 `npm ci`, `npm run build`, Python 설치 및 `pip check`를 통과했다. |
 | 팀원 한 명이 새 체크아웃에서 실행 | 아래 팀원 확인 절차 | 대기. 작성 중 수행한 새 체크아웃 시험은 위 세 항목의 근거로 기록했다. |
 
+GitHub 공유 브랜치의 `d38f098`을 별도 폴더에 새로 복제해 설치, 프론트 빌드, FastAPI 직접 호출, Vite 경유 호출과 초기 HTML 응답을 다시 확인했다.
+
 ## 팀원 확인 절차
 
 1. Windows PowerShell에서 새 폴더로 브랜치를 체크아웃하고 커밋을 확인한다.
