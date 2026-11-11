@@ -4,6 +4,31 @@ A public service platform simplifying access to integrated community care.
 
 돌봄e음 팀의 프로젝트 계획과 산출물을 관리하는 저장소입니다.
 
+## 로컬 개발 실행
+
+Node.js 22.12 이상과 Python 3.12가 필요합니다. DEV-01 실행 확인에는 Windows PowerShell, Node.js 22.15.1, npm 10.9.2, Python 3.12.10을 사용했습니다.
+
+저장소 루트에서 API를 시작합니다.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+```
+
+새 터미널의 저장소 루트에서 프론트를 시작합니다.
+
+```powershell
+cd frontend
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+npm ci
+npm run dev
+```
+
+브라우저에서 `http://127.0.0.1:5173`을 열어 ‘API 연결됨’을 확인합니다. 같은 출처의 `/api/v1/health`는 Vite를 거쳐 FastAPI에 연결되어 `{"status":"ok"}`를 반환합니다. API 주소를 바꾸면 `frontend/.env`의 `DOLBOMEUM_API_PROXY_TARGET`도 맞춥니다. 프론트 타입 검사와 빌드는 `frontend`에서 `npm run build`로 실행합니다.
+
+폴더 구조, 담당자별 작업 경계, 첫 통합 통과 기준과 팀원 실행 절차는 [DEV-01 작업 기록](docs/development/DEV-01.md)에 있습니다.
+
 ## 프로젝트 일정
 
 ![돌봄e음 프로젝트 간트차트: 2026년 11월 4~8일 조사, 9~10일 설계, 11~15일 개발·통합, 16일부터 검증·수정](docs/assets/project/project-gantt.png)

@@ -1,0 +1,25 @@
+:root {
+  color: #172e29;
+  background: #eef6f3;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  box-sizing: border-box;
+  max-width: 32rem;
+  margin: 12vh auto 0;
+  padding: 2rem;
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+  font-size: 2rem;
+}
+
+p {
+  margin: 0;
+}
