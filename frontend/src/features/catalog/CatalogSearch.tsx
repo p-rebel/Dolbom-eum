@@ -178,17 +178,9 @@ function CatalogResult({ item, pick, keyword }: { item: CatalogItem; pick?: Cata
               </span>
             </p>
           </div>
+          {/* 선택 버튼은 계획 초안에서만. 빈 버튼 영역이 남지 않게 함께 렌더링한다. */}
+          {pick && (
           <div className="c-btn">
-            <button
-              type="button"
-              className="krds-btn medium tertiary"
-              aria-expanded={open}
-              aria-controls={detailId}
-              onClick={() => setOpen((value) => !value)}
-            >
-              {open ? '접기' : '자세히 보기'}
-            </button>
-            {pick && (
               <button
                 type="button"
                 className="krds-btn medium secondary"
@@ -198,11 +190,18 @@ function CatalogResult({ item, pick, keyword }: { item: CatalogItem; pick?: Cata
                 {selected ? '선택됨' : '선택'}
                 <span className="sr-only"> {orMissing(item.programName)}</span>
               </button>
-            )}
           </div>
+          )}
         </div>
+        {/* KRDS 펼치기(disclosure). 닫힌 내용은 KRDS가 높이만 0으로 두므로 렌더링하지 않아 Tab 이동에서 빠지게 한다. */}
+        <div className={open ? 'krds-disclosure conts-expand-area active' : 'krds-disclosure conts-expand-area'}>
+          <button type="button" className="btn-conts-expand" aria-expanded={open} aria-controls={detailId} onClick={() => setOpen((value) => !value)}>
+            자세히 보기<span className="sr-only"> {orMissing(item.programName)}</span>
+          </button>
+          <div className="expand-wrap" id={detailId}>
         {open && (
-          <dl id={detailId} className="info-list catalog-detail">
+          <div className="expand-in">
+          <dl className="info-list catalog-detail">
             <div>
               <dt>분류</dt>
               <dd>
@@ -237,7 +236,10 @@ function CatalogResult({ item, pick, keyword }: { item: CatalogItem; pick?: Cata
               </dd>
             </div>
           </dl>
+          </div>
         )}
+          </div>
+        </div>
       </div>
     </li>
   );

@@ -375,10 +375,9 @@ fieldset.form-group {
   content: none;
 }
 
-.catalog-detail {
+/* 공단 조회 결과의 KRDS 펼치기(disclosure). 회색 펼침 상자가 구분을 맡으므로 선은 두지 않는다. */
+.catalog-list .krds-disclosure {
   margin-top: var(--krds-gap-4);
-  padding-top: var(--krds-gap-4);
-  border-top: 1px solid var(--krds-light-color-divider-gray-light);
 }
 
 /* 표는 KRDS mob-scroll 변형을 써서 영역 안에서만 가로로 스크롤한다. */
