@@ -51,15 +51,20 @@ interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>,
   hint?: string;
   error?: string;
   selectRef?: Ref<HTMLSelectElement>;
+  /**
+   * KRDS 선택상자 크기. 기본은 large(56px). 필터 영역 안의 선택상자는 KRDS 피그마
+   * 필터 패턴대로 medium(48px)을 써서 옆의 medium 버튼과 높이를 맞춘다.
+   */
+  fieldSize?: 'medium';
 }
 
-export function SelectField({ id, label, options, emptyOption, optional, hint, error, selectRef, ...rest }: SelectFieldProps) {
+export function SelectField({ id, label, options, emptyOption, optional, hint, error, selectRef, fieldSize, ...rest }: SelectFieldProps) {
   return (
     <FieldFrame id={id} label={label} optional={optional} hint={hint} error={error}>
       <select
         ref={selectRef}
         id={id}
-        className="krds-form-select"
+        className={fieldSize ? `krds-form-select ${fieldSize}` : 'krds-form-select'}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(id, hint, error)}
         {...rest}

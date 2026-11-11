@@ -52,6 +52,7 @@ export function CaseListPage() {
           <SelectField
             id="case-status"
             label="진행 상태"
+            fieldSize="medium"
             emptyOption="전체"
             value={draftStatus}
             options={STATUS_ORDER.map((value) => ({ value, label: STATUS_LABEL[value] }))}

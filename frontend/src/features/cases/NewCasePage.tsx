@@ -205,7 +205,7 @@ function NewCaseForm() {
             </fieldset>
 
             <div className="form-actions">
-              <button type="submit" className="krds-btn large primary" disabled={submitting}>
+              <button type="submit" className="krds-btn xlarge primary" disabled={submitting}>
                 {submitting ? '접수 중…' : uncertain ? '같은 내용으로 다시 시도' : '접수하기'}
               </button>
             </div>

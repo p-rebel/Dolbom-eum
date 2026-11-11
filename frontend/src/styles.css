@@ -319,10 +319,14 @@ fieldset.form-group {
   flex: 1 1 32rem;
 }
 
+/*
+ * 검색어 입력 옆 버튼. KRDS 피그마 input+button·select+search: 입력칸과 버튼은 같은 높이(56px, large)로 나란히 둔다.
+ * 위 여백은 입력칸 위 레이블 줄 높이(레이블 + form-group 간격, 실측 34px)만큼이다.
+ */
 .filter-buttons {
   display: flex;
   gap: var(--krds-gap-3);
-  padding-top: 3.2rem;
+  padding-top: 3.4rem;
 }
 
 /* KRDS 목록·검색 패턴: ‘검색 결과 24개’처럼 결과 수를 굵게, 숫자는 강조색으로. */

@@ -65,6 +65,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             id={`${baseId}-sido`}
             label="시도"
             emptyOption="전체"
+            fieldSize="medium"
             value={draft.sido}
             options={(filters.data?.sidos ?? []).map((value) => ({ value, label: value }))}
             onChange={(event) => setDraft({ ...draft, sido: event.target.value, sigungu: '' })}
@@ -73,6 +74,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             id={`${baseId}-sigungu`}
             label="시군구"
             emptyOption={draft.sido ? '전체' : '시도를 먼저 선택'}
+            fieldSize="medium"
             value={draft.sigungu}
             disabled={!draft.sido || filters.loading || !!filters.error}
             options={(filters.data?.sigungus ?? []).map((value) => ({ value, label: value }))}
@@ -82,6 +84,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             id={`${baseId}-category`}
             label="대분류"
             emptyOption="전체"
+            fieldSize="medium"
             value={draft.categoryLarge}
             options={(filters.data?.categoriesLarge ?? []).map((value) => ({ value, label: value }))}
             onChange={(event) => setDraft({ ...draft, categoryLarge: event.target.value })}
@@ -103,10 +106,10 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             error={qError}
           />
           <div className="filter-buttons">
-            <button type="button" className={pick ? "krds-btn medium secondary" : "krds-btn medium primary"} onClick={runSearch}>
+            <button type="button" className={pick ? "krds-btn large secondary" : "krds-btn large primary"} onClick={runSearch}>
               검색
             </button>
-            <button type="button" className="krds-btn medium tertiary" onClick={reset}>
+            <button type="button" className="krds-btn large tertiary" onClick={reset}>
               조건 초기화
             </button>
           </div>
