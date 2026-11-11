@@ -9,11 +9,11 @@
 | `POST /session` | `{username, password}` | `200 Account`, 세션 쿠키 설정 |
 | `GET /session` | 세션 쿠키 | `200 Account` |
 | `DELETE /session` | 세션 쿠키 | `204`, 서버 세션 폐기와 쿠키 제거 |
-| `GET /demo-profiles` | 읍면동 세션 | `200 {items: DemoProfile[]}`, 관할 가상 프로필 목록 |
+| `GET /demo-profiles` | 읍면동 세션 | `200 {items: DemoProfile[]}`, 관할 가상 프로필 목록. 시군구 세션은 `403 FORBIDDEN` |
 
 `Account`는 `id, displayName, role, districtCode, townCode`다. `role`은 `TOWN` 또는 `DISTRICT`이며 시군구의 `townCode`는 `null`이다. `DemoProfile`은 `code, beneficiaryName, applicantName, noticeRecipientName, region`이다. `region`은 `{districtCode, townCode, sido, sigungu}`이며 시도·시군구는 공단 검색 기본값으로 쓴다.
 
-세션 쿠키 이름은 `dolbom_session`이다. `HttpOnly`, `SameSite=Strict`, `Path=/api/v1`을 적용한다. 팀 공유 환경에서는 HTTPS와 `Secure`를 사용한다. 서버는 상태를 변경하는 요청의 `Origin`이 설정된 앱 출처와 일치하는지 확인하고, JSON 본문이 있는 요청은 `Content-Type: application/json`을 요구한다. 로그인 성공 시 세션을 새로 발급한다. 시연 세션 유효시간은 발급 후 8시간으로 제안한다.
+세션 쿠키 이름은 `dolbom_session`이다. `HttpOnly`, `SameSite=Strict`, `Path=/api/v1`을 적용한다. 팀 공유 환경에서는 HTTPS와 `Secure`를 사용한다. 서버는 상태를 변경하는 요청의 `Origin`이 설정된 앱 출처와 일치하는지 확인하고, JSON 본문이 있는 요청은 `Content-Type: application/json`을 요구한다. 로그인 성공 시 세션을 새로 발급한다. 시연 세션 유효시간은 발급 후 8시간으로 제안한다. 허용할 앱 출처와 `Secure` 적용 여부는 서버 환경값으로 둔다. 로컬 개발은 `http://127.0.0.1:5173`과 `Secure` 미적용, 팀 시연 서버는 HTTPS 주소와 `Secure` 적용이다. `localhost`와 `127.0.0.1`은 서로 다른 출처다.
 
 ## 목록과 서비스 조회
 
@@ -71,13 +71,14 @@
 ### 필드 값과 입력 검증
 
 - `noticeMethod`는 `SMS`, `MAIL` 중 하나다. `evidenceChecked`는 `true`여야 한다. 안내방식은 모의 기록으로 보존한다.
+- `profileCode`가 없거나 접수 계정의 읍면동 관할이 아닌 프로필이면 `422 VALIDATION_ERROR`와 `field: "profileCode"`를 반환한다.
 - 사전조사와 모니터링의 `method`는 `PHONE`, `VISIT`다. 사전조사 `outcome`은 `NHIS_ASSESSMENT_REQUIRED`, 판정 결과는 `SUPPORT_PLAN_REQUIRED`, 회의 결과는 `APPROVED`를 사용한다.
 - `goal`은 공백 제거 후 1~200자다. `serviceIds`는 조회 가능한 고유 ID 1~5개다. 계획 항목은 배열 순서로 저장한다.
 - 연계 `method`는 `DEPARTMENT_REFERRAL`, `PROVIDER_REFERRAL`, `PERSON_GUIDANCE`다. `destinationLabel`은 부서·공단 의뢰에서 1~80자로 필수다. 다른 두 방식의 요청에서는 생략 또는 `null`이다. 제공기관 의뢰 응답에는 선택 시점 기관명을 사용하고, 대상자 안내 응답의 값은 `null`이다.
 - 제공 `status`는 `UNKNOWN`, `IN_USE`, `NOT_STARTED`, `DECLINED`다. `reason`은 최대 200자이며 미개시·이용 거부에서 공백 제거 후 1자 이상 필요하다.
 - 모니터링 `condition`은 `UNCHANGED`, `IMPROVED`, `WORSENED`다. `reviewNeeded`는 불리언이며, `true`면 `reviewReason`은 양쪽 공백을 제거한 뒤 1~200자여야 한다. 누락하거나 공백만 입력하면 `422 VALIDATION_ERROR`와 `field: "reviewReason"`을 반환한다. 생략된 선택 문자열은 응답에서 `null`이다.
 - 모니터링의 요청 `observations`는 새로 확인한 항목의 `{itemId, status, reason?}[]`다. 생략하거나 빈 배열을 보내면 기존 제공 현황을 사용한다. 같은 사례의 확정 계획 항목만 허용하며 각 항목 ID는 한 번만 보낼 수 있다. `status`와 `reason`에는 제공 현황과 같은 규칙을 적용한다. 응답에는 입력한 관찰을 반영한 **전체** 항목을 계획 순서로 반환한다. 기존 `plan.items[].delivery`는 시군구가 기록한 값으로 보존한다.
-- 역할·전환·날짜 순서와 중복 기록 제약은 [D-05 업무와 상태 전이](D-05_workflow.md)를 따른다. 신청 상세에서 읽은 버전이 모든 후속 저장의 입력이다. 같은 계정이 같은 `Idempotency-Key`와 정규화된 접수 본문을 재전송하면 현재 상세를 `200`으로 반환한다. 요청 키는 공백이 없는 1~128자의 문자열이다.
+- 역할·전환·날짜 순서와 중복 기록 제약은 [D-05 업무와 상태 전이](D-05_workflow.md)를 따른다. 신청 상세에서 읽은 버전이 모든 후속 저장의 입력이다. 같은 계정이 같은 `Idempotency-Key`와 정규화된 접수 본문을 재전송하면 현재 상세를 `200`으로 반환한다. 요청 키는 공백이 없는 1~128자의 문자열이다. 헤더가 없거나 형식이 다르면 `422 VALIDATION_ERROR`와 `field: "Idempotency-Key"`를 반환한다. 본문 비교 기준은 [D-03 무결성과 저장 방식](D-03_data_model.md#무결성과-저장-방식)을 따른다. 저장이 끝난 사례에 같은 요청을 재전송하면 접수 당시가 아닌 현재 버전의 상세를 반환한다.
 
 ## 오류와 재시도
 
