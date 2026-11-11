@@ -261,9 +261,9 @@ KRDS 피그마 ‘📚 Pattern’의 PC 프레임과 5개 화면을 비교했다
 
 | 작업 | PR·커밋 | 확인 근거 | 완료일 |
 | --- | --- | --- | --- |
-| 13 | (PR 예정) | 2절 F-01~F-11 | |
-| 14 | (PR 예정) | 2절 F-12, F-15~F-25, F-32 | |
-| 15 | (PR 예정) | 2절 F-26~F-28, F-30 | |
-| 16 | (PR 예정) | 2절 F-29, F-31 | |
+| 13 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-01~F-11 | |
+| 14 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-12, F-15~F-25, F-32 | |
+| 15 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-26~F-28, F-30 | |
+| 16 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-29, F-31 | |
 
 목업 확인 절차: 로그인 화면의 ‘목업 사례 초기화’ → `demo-town-a` 접수 → 사전조사 → `demo-district-a` 판정 → `demo-town-a` 초안(서비스 검색에서 선택) → 새로고침 후 버전 4·선택 순서 확인. [첫 통합 완료 기준](DEV-01.md#첫-통합-완료-기준)과 같은 순서이며, 기대값 대조는 실제 API 연결(17~24번)에서 한다.
