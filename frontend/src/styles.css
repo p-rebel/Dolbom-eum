@@ -708,3 +708,12 @@ fieldset.form-group {
   font-size: var(--krds-pc-font-size-heading-xsmall);
   font-weight: 700;
 }
+
+/* 모니터링 전 빠진 기록 목록(D-02:54) */
+.missing-list {
+  display: grid;
+  gap: var(--krds-gap-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
