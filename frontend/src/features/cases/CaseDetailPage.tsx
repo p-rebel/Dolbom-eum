@@ -225,7 +225,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         ) : detail.plan ? (
           <PlanView detail={detail} />
         ) : (
-          <EmptyBlock message="판정 결과가 기록되면 읍면동에서 지원계획 초안을 작성합니다." />
+          <EmptyBlock
+            message={
+              detail.assessment
+                ? '읍면동에서 지원계획 초안을 작성합니다.'
+                : '판정 결과가 기록되면 읍면동에서 지원계획 초안을 작성합니다.'
+            }
+          />
         )}
         {detail.plan && (
           <dl className="info-list">
@@ -536,6 +542,13 @@ function TrackingTable({ detail }: { detail: CaseDetail }) {
                 {item.linkage
                   ? `${item.linkage.linkedOn} ${LINKAGE_METHOD_LABEL[item.linkage.method]}${item.linkage.destinationLabel ? ` · ${item.linkage.destinationLabel}` : ''}`
                   : '연계 전'}
+                {/* 대상자 안내는 제공기관을 후보로 표시한다(D-02:53, expected-results 7~9). */}
+                {item.linkage?.method === 'PERSON_GUIDANCE' && (
+                  <>
+                    <br />
+                    <span className="text-subtle">후보 제공기관 · {orMissing(item.catalog.providerName)}</span>
+                  </>
+                )}
               </td>
               <td>
                 {item.delivery

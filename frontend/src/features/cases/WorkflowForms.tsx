@@ -77,8 +77,13 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
           refs.current[field]?.focus();
         }
       }
-      setMessage(result.message);
-      if (result.reload) onReload(result.message);
+      // 다시 불러오는 경우 상단 알림에 같은 문구가 나오므로 폼 안에는 두지 않는다.
+      if (result.reload) {
+        setMessage(null);
+        onReload(result.message);
+      } else {
+        setMessage(result.message);
+      }
     }
   }
 
@@ -414,7 +419,8 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
     }
     void form.submit({
       errors,
-      order: ['monitoredOn', 'method', 'condition', 'reviewNeeded', 'reviewReason', ...items.map((item) => `obs:${item.id}`)],
+      // 화면 순서대로: 기록일·방법·상태 변화 → 서비스별 확인 → 후속 검토(D-02:67 첫 오류 칸으로 이동)
+      order: ['monitoredOn', 'method', 'condition', ...items.map((item) => `obs:${item.id}`), 'reviewNeeded', 'reviewReason'],
       send: () =>
         recordMonitoring(detail.id, {
           version: detail.version,
