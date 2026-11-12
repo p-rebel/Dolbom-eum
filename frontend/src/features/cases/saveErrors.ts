@@ -23,7 +23,8 @@ export function interpretSaveError(error: unknown): SaveErrorResult {
       const message = error.message || '입력값을 확인해 주세요.';
       return {
         field: error.field ? { name: error.field, root: error.field.split('.')[0], message } : null,
-        message: error.field ? `입력값을 확인해 주세요. ${message}` : message,
+        // 서버 문구가 이미 기본 안내와 같으면 앞에 다시 붙이지 않는다.
+        message: error.field && message !== '입력값을 확인해 주세요.' ? `입력값을 확인해 주세요. ${message}` : message,
         reload: false,
       };
     }
