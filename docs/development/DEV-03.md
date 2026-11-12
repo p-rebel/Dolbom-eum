@@ -304,6 +304,17 @@ KRDS 피그마 ‘📚 Pattern’의 PC 프레임과 5개 화면을 비교했다
 | 15 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-26~F-28, F-30 | 11/12 |
 | 16 | [PR #9](https://github.com/p-rebel/Dolbom-eum/pull/9) | 2절 F-29, F-31 | 11/12 |
 | 17 | [PR #14](https://github.com/p-rebel/Dolbom-eum/pull/14) | 2절 F-01~F-03, F-08, F-09, F-37, F-38. 실제 API 브라우저 시나리오 18개 | 11/13 |
+| 18 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-13, F-17. 실제 API 접수 → 상세 | 11/13 |
+| 19 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-15, F-20, F-32. 관할 밖 목록 0건·상세 차단 | 11/13 |
+| 20 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-23. 사전조사 저장·새로고침 유지 | 11/13 |
+| 21 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-23. 판정 저장 | 11/13 |
+| 22 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-26. 사례 지역 기본 필터·검색·선택 상자 글자색 | 11/13 |
+| 23 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-29, F-31. 초안 버전 4·새로고침 유지 | 11/13 |
+| 30 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-39. 확정 버전 5 | 11/13 |
+| 31 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-40. 안내 버전 6 | 11/13 |
+| 32 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-41, F-44. 연계 버전 7~9 | 11/13 |
+| 33 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-42, F-44. 제공 현황 버전 10~12, 409 뒤 입력 유지 | 11/13 |
+| 34 | [PR #15](https://github.com/p-rebel/Dolbom-eum/pull/15) | 2절 F-33, F-43. 모니터링 버전 13·이력 13건 | 11/13 |
 
 AI 검토 2회(/code-review: 1차 10건, 2차 8건 반영)와 브라우저 확인(접수→사전조사→판정→초안 선택, 저장 안 한 입력의 뒤로 가기, 크기·배치 실측) 후 머지.
 
