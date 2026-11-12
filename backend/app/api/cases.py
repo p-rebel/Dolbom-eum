@@ -7,14 +7,16 @@ import json
 import re
 import sqlite3
 import uuid
-from datetime import UTC, date, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import StrictBool, StrictStr, field_validator
 
 from ..auth import Account, CamelModel, current_account, require_role
-from ..cases import CaseDetail, CaseStatus, CaseSummary, can_access, case_summary, load_case_detail
+from ..cases import (
+    CaseDetail, CaseStatus, CaseSummary, accessible_case, can_access, case_summary, case_timestamp,
+    load_case_detail, validate_business_date,
+)
 from ..db import get_connection, write_transaction
 from ..errors import ApiError
 from .sessions import profile_from_row
@@ -22,7 +24,6 @@ from .sessions import profile_from_row
 router = APIRouter()
 
 _IDEMPOTENCY_KEY = re.compile(r"\S{1,128}")
-_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 class ReceiveRequest(CamelModel):
@@ -34,11 +35,7 @@ class ReceiveRequest(CamelModel):
     @field_validator("received_on")
     @classmethod
     def _business_date(cls, value: str) -> str:
-        # fromisoformat만으로는 20261101 같은 형식도 통과하므로 YYYY-MM-DD를 먼저 확인한다
-        if not _DATE.fullmatch(value):
-            raise ValueError("YYYY-MM-DD 형식이어야 합니다.")
-        date.fromisoformat(value)
-        return value
+        return validate_business_date(value)
 
     @field_validator("evidence_checked")
     @classmethod
@@ -56,10 +53,6 @@ def request_hash(body: ReceiveRequest) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def _now() -> str:
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 @router.post("/cases", status_code=201, response_model=CaseDetail)
 def receive_case(
     body: ReceiveRequest,
@@ -75,8 +68,8 @@ def receive_case(
 
     with write_transaction(conn):
         profile_row = conn.execute(
-            "SELECT * FROM demo_profiles WHERE code = ? AND town_code = ?",
-            (body.profile_code, account.town_code),
+            "SELECT * FROM demo_profiles WHERE code = ? AND district_code = ? AND town_code = ?",
+            (body.profile_code, account.district_code, account.town_code),
         ).fetchone()
         if profile_row is None:
             raise ApiError(422, "VALIDATION_ERROR", "관할 내 가상 프로필을 선택해 주세요.", "profileCode")
@@ -85,6 +78,8 @@ def receive_case(
             "SELECT * FROM cases WHERE created_by = ? AND idempotency_key = ?", (account.id, key)
         ).fetchone()
         if existing is not None:
+            if not can_access(account, existing):
+                raise ApiError(404, "NOT_FOUND", "신청 건을 찾을 수 없습니다.")
             if existing["request_hash"] != digest:
                 raise ApiError(409, "IDEMPOTENCY_CONFLICT", "같은 요청 키로 다른 접수 내용이 이미 저장되었습니다.")
             response.status_code = 200
@@ -93,7 +88,7 @@ def receive_case(
         profile = profile_from_row(profile_row)
         seq = conn.execute("SELECT coalesce(max(receipt_seq), 0) + 1 FROM cases").fetchone()[0]
         case_id = str(uuid.uuid4())
-        now = _now()
+        now = case_timestamp()
         conn.execute(
             """INSERT INTO cases (id, receipt_seq, receipt_number, profile_code, profile_snapshot,
                    district_code, town_code, created_by, idempotency_key, request_hash,
@@ -132,8 +127,11 @@ def list_cases(
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> CasePage:
     # 읍면동은 소속 읍면동, 시군구는 소속 시군구 건만 (D-05 공통 전환 조건)
-    where = "town_code = ?" if account.role == "TOWN" else "district_code = ?"
-    params: list = [account.town_code if account.role == "TOWN" else account.district_code]
+    where = "district_code = ?"
+    params: list[str | None] = [account.district_code]
+    if account.role == "TOWN":
+        where += " AND town_code = ?"
+        params.append(account.town_code)
     if status is not None:
         where += " AND status = ?"
         params.append(status)
@@ -153,8 +151,7 @@ def read_case(
     account: Account = Depends(current_account),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> CaseDetail:
-    row = conn.execute("SELECT * FROM cases WHERE id = ?", (case_id,)).fetchone()
-    # 관할 밖 사례는 존재 여부를 드러내지 않도록 없는 사례와 같은 404 (D-04 오류)
-    if row is None or not can_access(account, row):
-        raise ApiError(404, "NOT_FOUND", "신청 건을 찾을 수 없습니다.")
-    return load_case_detail(conn, row, account)
+    # 여러 테이블에서 읽는 상세 응답은 하나의 SQLite 스냅샷을 사용한다.
+    with conn:
+        conn.execute("BEGIN")
+        return load_case_detail(conn, accessible_case(conn, case_id, account), account)
