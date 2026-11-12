@@ -8,6 +8,7 @@ import { TextField } from '../../components/TextField';
 import { checkDate, minDate } from '../../dates';
 import { useUnsavedChanges } from '../../router';
 import type { SaveHandlers } from './CaseDetailPage';
+import { useFieldErrors } from './fieldErrors';
 import { interpretSaveError } from './saveErrors';
 
 type Props = { detail: CaseDetail } & SaveHandlers;
@@ -16,8 +17,7 @@ type Props = { detail: CaseDetail } & SaveHandlers;
 export function ScreeningForm({ detail, onSaved, onReload }: Props) {
   const [screenedOn, setScreenedOn] = useState('');
   const [method, setMethod] = useState<ContactMethod | ''>('');
-  const [errors, setErrors] = useState<{ screenedOn?: string; method?: string }>({});
-  const [message, setMessage] = useState<string | null>(null);
+  const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<'screenedOn' | 'method'>();
   const [saving, setSaving] = useState(false);
   const dateRef = useRef<HTMLInputElement>(null);
   const methodRef = useRef<HTMLInputElement>(null);
@@ -34,7 +34,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
     if (!method) next.method = '조사 방법을 선택해 주세요.';
     setErrors(next);
     if (next.screenedOn || next.method) {
-      setMessage('입력값을 확인해 주세요.');
+      setMessage('입력값을 확인해 주세요.', true);
       (next.screenedOn ? dateRef : methodRef).current?.focus();
       return;
     }
@@ -54,8 +54,10 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
       if (result.field?.root === 'screenedOn' || result.field?.root === 'method') {
         setErrors({ [result.field.root]: result.field.message });
         (result.field.root === 'screenedOn' ? dateRef : methodRef).current?.focus();
+        setMessage(result.message, true);
+      } else {
+        setMessage(result.message);
       }
-      setMessage(result.message);
       if (result.reload) onReload(result.message);
     }
   }
@@ -71,7 +73,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
         hint={`접수일(${detail.receivedOn})과 같거나 이후 날짜`}
         min={minDate(detail.receivedOn)}
         value={screenedOn}
-        onChange={(event) => setScreenedOn(event.target.value)}
+        onChange={(event) => { setScreenedOn(event.target.value); clearError('screenedOn'); }}
         error={errors.screenedOn}
         inputRef={dateRef}
       />
@@ -80,7 +82,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
         legend="조사 방법"
         value={method}
         options={(['VISIT', 'PHONE'] as const).map((value) => ({ value, label: CONTACT_METHOD_LABEL[value] }))}
-        onChange={setMethod}
+        onChange={(value) => { setMethod(value); clearError('method'); }}
         error={errors.method}
         firstInputRef={methodRef}
       />
@@ -103,8 +105,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
 export function AssessmentForm({ detail, onSaved, onReload }: Props) {
   const [assessedOn, setAssessedOn] = useState('');
   const [resultReceivedOn, setResultReceivedOn] = useState('');
-  const [errors, setErrors] = useState<{ assessedOn?: string; resultReceivedOn?: string }>({});
-  const [message, setMessage] = useState<string | null>(null);
+  const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<'assessedOn' | 'resultReceivedOn'>();
   const [saving, setSaving] = useState(false);
   const assessedRef = useRef<HTMLInputElement>(null);
   const receivedRef = useRef<HTMLInputElement>(null);
@@ -124,7 +125,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
     });
     setErrors(next);
     if (next.assessedOn || next.resultReceivedOn) {
-      setMessage('입력값을 확인해 주세요.');
+      setMessage('입력값을 확인해 주세요.', true);
       (next.assessedOn ? assessedRef : receivedRef).current?.focus();
       return;
     }
@@ -144,8 +145,10 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
       if (result.field?.root === 'assessedOn' || result.field?.root === 'resultReceivedOn') {
         setErrors({ [result.field.root]: result.field.message });
         (result.field.root === 'assessedOn' ? assessedRef : receivedRef).current?.focus();
+        setMessage(result.message, true);
+      } else {
+        setMessage(result.message);
       }
-      setMessage(result.message);
       if (result.reload) onReload(result.message);
     }
   }
@@ -161,7 +164,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
         hint={detail.screening ? `조사일(${detail.screening.screenedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(detail.screening?.screenedOn)}
         value={assessedOn}
-        onChange={(event) => setAssessedOn(event.target.value)}
+        onChange={(event) => { setAssessedOn(event.target.value); clearError('assessedOn'); }}
         error={errors.assessedOn}
         inputRef={assessedRef}
       />
@@ -172,7 +175,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
         hint="판정일과 같거나 이후 날짜"
         min={minDate(detail.screening?.screenedOn, assessedOn)}
         value={resultReceivedOn}
-        onChange={(event) => setResultReceivedOn(event.target.value)}
+        onChange={(event) => { setResultReceivedOn(event.target.value); clearError('resultReceivedOn'); }}
         error={errors.resultReceivedOn}
         inputRef={receivedRef}
       />

@@ -1,4 +1,4 @@
-import { useId, useState, type KeyboardEvent } from 'react';
+import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { CATALOG_PAGE_SIZE, getCatalogFilters, searchCatalog, type CatalogQuery } from '../../api/catalog';
 import { orMissing } from '../../api/labels';
 import type { CatalogItem } from '../../api/types';
@@ -97,7 +97,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             fieldSize="medium"
             hint="프로그램명 또는 기관명"
             value={draft.q}
-            onChange={(event) => setDraft({ ...draft, q: event.target.value })}
+            onChange={(event) => { setDraft({ ...draft, q: event.target.value }); setQError(undefined); }}
             onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
               if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
                 event.preventDefault();
@@ -156,6 +156,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
 
 function CatalogResult({ item, pick, keyword }: { item: CatalogItem; pick?: CatalogSearchProps['pick']; keyword: string }) {
   const [open, setOpen] = useState(false);
+  const pressAt = useRef<{ x: number; y: number } | null>(null);
   const detailId = useId();
   const selected = pick?.selectedIds.includes(item.id) ?? false;
 
@@ -166,9 +167,34 @@ function CatalogResult({ item, pick, keyword }: { item: CatalogItem; pick?: Cata
           <span className="krds-badge bg-light-primary">{orMissing(item.categoryLarge)}</span>
         </div>
         <div className="card-body">
-          <div className="c-text">
+          {/*
+            KRDS 목록은 이 영역(c-text)을 링크로 쓰고 마우스를 올리면 제목에 밑줄을 긋는다.
+            여기서는 같은 영역을 눌러 ‘자세히 보기’를 펼치고 다시 누르면 접는다(사용자 요청 11/13).
+            키보드·화면 읽기는 제목 버튼으로 같은 동작을 한다. 누른 곳에서 끌어 글자를 고른 경우는 펼치지 않는다.
+          */}
+          <div
+            className="c-text c-text-toggle"
+            onMouseDown={(event) => {
+              pressAt.current = { x: event.clientX, y: event.clientY };
+            }}
+            onClick={(event) => {
+              if ((event.target as HTMLElement).closest('button')) return;
+              // 누른 곳에서 끌어 글자를 고른 경우만 무시한다(더블클릭으로 단어가 선택돼도 클릭은 정상 처리).
+              const start = pressAt.current;
+              if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 4) return;
+              setOpen((value) => !value);
+            }}
+          >
             <p className="c-tit">
-              <span className="span"><Highlight text={orMissing(item.programName)} keyword={keyword} /></span>
+              <button
+                type="button"
+                className="c-tit-toggle"
+                aria-expanded={open}
+                aria-controls={detailId}
+                onClick={() => setOpen((value) => !value)}
+              >
+                <span className="span"><Highlight text={orMissing(item.programName)} keyword={keyword} /></span>
+              </button>
             </p>
             <p className="c-txt"><Highlight text={orMissing(item.providerName)} keyword={keyword} /></p>
             <p className="c-date">

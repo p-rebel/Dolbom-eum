@@ -178,9 +178,10 @@ section[id^='section-'] {
   font-weight: 700;
 }
 
+/* 섹션 안 소제목: 본문(17px)보다 한 단계 큰 19px(KRDS 피그마 신청 상세 ‘제공 내용’) */
 .sub-title {
   margin-top: var(--krds-gap-4);
-  font-size: var(--krds-pc-font-size-heading-xsmall);
+  font-size: var(--krds-pc-font-size-heading-small);
   font-weight: 700;
 }
 
@@ -318,6 +319,27 @@ fieldset.form-group {
   font-weight: 400;
 }
 
+/* 신청 상세 요약: 4개 항목을 같은 폭으로(자동 배치는 빈 5번째 칸이 생김) */
+.case-summary .info-inline {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 767px) {
+  .case-summary .info-inline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/*
+ * 상세 정보 목록(KRDS 피그마 신청 상세 ‘서비스 개요’): 위 진한 선·아래 연한 선으로 전체 폭을 잡고,
+ * 항목명은 왼쪽 굵게, 값은 오른쪽. 값이 짧아도 목록이 왼쪽에 몰려 보이지 않는다.
+ */
+.info-table {
+  padding: var(--krds-padding-6) 0;
+  border-top: 1px solid var(--krds-light-color-divider-gray-dark);
+  border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
 .next-step {
   color: var(--krds-light-color-text-primary);
   font-weight: 700;
@@ -442,8 +464,16 @@ fieldset.form-group {
   gap: var(--krds-gap-4);
 }
 
+/* 서비스 카드: 제목 19px 굵게, 기관 17px, 출처·기준일·행 ID는 15px 보조 글씨 */
 .plan-item-title {
+  font-size: var(--krds-pc-font-size-body-large);
   font-weight: 700;
+}
+
+.plan-item-meta {
+  margin-top: var(--krds-gap-1);
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
 }
 
 .plan-item-actions {
@@ -709,11 +739,41 @@ fieldset.form-group {
   font-weight: 700;
 }
 
-/* 모니터링 전 빠진 기록 목록(D-02:54) */
+/* 모니터링 전 빠진 기록 묶음과 목록(D-02:54) */
+.missing-records {
+  display: grid;
+  gap: var(--krds-gap-3);
+}
+
 .missing-list {
   display: grid;
   gap: var(--krds-gap-2);
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* 공단 조회 결과: 제목·기관·출처 영역을 눌러 자세히 보기를 펼치고 접는다(KRDS 목록의 링크 영역과 같은 범위) */
+.c-text-toggle {
+  cursor: pointer;
+}
+
+/* 마우스로 누를 때는 초점 테두리를 숨기고, 키보드로 이동할 때만 보인다 */
+.c-tit-toggle:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.c-tit-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* 처리 이력: 처리 시각과 담당자 이름은 줄을 나누지 않는다(좁은 화면은 표가 가로로 스크롤) */
+.history-table .nowrap {
+  white-space: nowrap;
 }

@@ -104,7 +104,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           <div>
             <dt>진행 상태</dt>
             <dd>
-              <StatusBadge status={detail.status} />
+              <StatusBadge status={detail.status} large />
             </dd>
           </div>
           <div>
@@ -134,7 +134,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         <h2 id="section-receipt-title" className="section-title">
           접수·조사
         </h2>
-        <dl className="info-list">
+        <dl className="info-list info-table">
           <div>
             <dt>가상 대상자</dt>
             <dd>{detail.profile.beneficiaryName}</dd>
@@ -163,7 +163,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
 
         <h3 className="sub-title">사전조사</h3>
         {detail.screening ? (
-          <dl className="info-list">
+          <dl className="info-list info-table">
             <div>
               <dt>조사일</dt>
               <dd>{detail.screening.screenedOn}</dd>
@@ -185,7 +185,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
 
         <h3 className="sub-title">판정 결과</h3>
         {detail.assessment ? (
-          <dl className="info-list">
+          <dl className="info-list info-table">
             <div>
               <dt>판정일</dt>
               <dd>{detail.assessment.assessedOn}</dd>
@@ -232,26 +232,6 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 : '판정 결과가 기록되면 읍면동에서 지원계획 초안을 작성합니다.'
             }
           />
-        )}
-        {detail.plan && (
-          <dl className="info-list">
-            <div>
-              <dt>회의 결과</dt>
-              <dd>
-                {detail.plan.confirmation
-                  ? `${detail.plan.confirmation.meetingOn} ${MEETING_OUTCOME_LABEL[detail.plan.confirmation.outcome]}`
-                  : '확정 전'}
-              </dd>
-            </div>
-            <div>
-              <dt>안내일</dt>
-              <dd>
-                {detail.plan.notice
-                  ? `${detail.plan.notice.announcedOn} · ${detail.profile.noticeRecipientName} · ${NOTICE_METHOD_LABEL[detail.noticeMethod]}`
-                  : '안내 전'}
-              </dd>
-            </div>
-          </dl>
         )}
         {can('CONFIRM_PLAN') && (
           <>
@@ -304,7 +284,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           처리 이력
         </h2>
         <div className="krds-table-wrap mob-scroll">
-          <table className="tbl col data">
+          <table className="tbl col data history-table">
             <caption>처리 이력. 최근 처리부터 처리 시각, 담당, 수행 동작, 상태 변화, 변경 요약을 표시합니다.</caption>
             <thead>
               <tr>
@@ -318,9 +298,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
             <tbody>
               {detail.events.map((event) => (
                 <tr key={event.id}>
-                  <td>{formatDateTime(event.recordedAt)}</td>
+                  <td className="nowrap">{formatDateTime(event.recordedAt)}</td>
                   <td>
-                    {event.actorDisplayName}
+                    <span className="nowrap">{event.actorDisplayName}</span>
                     <br />
                     <span className="text-subtle">{ROLE_LABEL[event.actorRole]}</span>
                   </td>
@@ -517,7 +497,8 @@ function PlanView({ detail }: { detail: CaseDetail }) {
   const plan = detail.plan!;
   return (
     <>
-      <dl className="info-list">
+      {/* 계획 요약: 수립일·목표와 확정·안내를 한 목록으로 묶고, 그 아래에 선택한 서비스를 둔다. */}
+      <dl className="info-list info-table">
         <div>
           <dt>수립일</dt>
           <dd>{plan.preparedOn}</dd>
@@ -526,6 +507,18 @@ function PlanView({ detail }: { detail: CaseDetail }) {
           <dt>지원 목표</dt>
           <dd>{plan.goal}</dd>
         </div>
+        <div>
+          <dt>회의 결과</dt>
+          <dd>{plan.confirmation ? `${plan.confirmation.meetingOn} ${MEETING_OUTCOME_LABEL[plan.confirmation.outcome]}` : '확정 전'}</dd>
+        </div>
+        <div>
+          <dt>안내일</dt>
+          <dd>
+            {plan.notice
+              ? `${plan.notice.announcedOn} · ${detail.profile.noticeRecipientName} · ${NOTICE_METHOD_LABEL[detail.noticeMethod]}`
+              : '안내 전'}
+          </dd>
+        </div>
       </dl>
       <h3 className="sub-title">선택한 서비스 ({plan.items.length}개)</h3>
       <ol className="plan-item-list">
@@ -533,7 +526,7 @@ function PlanView({ detail }: { detail: CaseDetail }) {
           <li key={item.id}>
             <p className="plan-item-title">{orMissing(item.catalog.programName)}</p>
             <p>{orMissing(item.catalog.providerName)}</p>
-            <p className="text-subtle">
+            <p className="plan-item-meta">
               {orMissing(item.catalog.sourceName)} · {orMissing(item.catalog.referenceDate)} 기준 · <code>{item.catalog.id}</code>
             </p>
           </li>
@@ -599,7 +592,7 @@ function MonitoringView({ detail }: { detail: CaseDetail }) {
   const items = detail.plan?.items ?? [];
   return (
     <>
-      <dl className="info-list">
+      <dl className="info-list info-table">
         <div>
           <dt>기록일·방법</dt>
           <dd>
@@ -612,16 +605,15 @@ function MonitoringView({ detail }: { detail: CaseDetail }) {
         </div>
         <div>
           <dt>후속 검토</dt>
-          <dd>
-            {monitoring.reviewNeeded ? '후속 검토 필요' : '후속 검토 불필요'}
-            {monitoring.reviewNeeded && monitoring.reviewReason && (
-              <>
-                <br />
-                <span>후속 검토 사유: {monitoring.reviewReason}</span>
-              </>
-            )}
-          </dd>
+          <dd>{monitoring.reviewNeeded ? '후속 검토 필요' : '후속 검토 불필요'}</dd>
         </div>
+        {/* ‘후속 검토 필요’일 때만 바로 아래 행에 사유를 둔다(D-02:59). */}
+        {monitoring.reviewNeeded && monitoring.reviewReason && (
+          <div>
+            <dt>후속 검토 사유</dt>
+            <dd>{monitoring.reviewReason}</dd>
+          </div>
+        )}
       </dl>
       <ul className="plan-item-list">
         {monitoring.observations.map((observation) => {

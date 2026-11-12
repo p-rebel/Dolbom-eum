@@ -9,6 +9,7 @@ import { CatalogSearch } from '../catalog/CatalogSearch';
 import { checkDate, minDate } from '../../dates';
 import { useUnsavedChanges } from '../../router';
 import type { SaveHandlers } from './CaseDetailPage';
+import { useFieldErrors } from './fieldErrors';
 import { interpretSaveError } from './saveErrors';
 
 const MAX_SERVICES = 5;
@@ -26,8 +27,7 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
   const [goal, setGoal] = useState(detail.plan?.goal ?? '');
   const [services, setServices] = useState<CatalogItem[]>(detail.plan?.items.map((item) => item.catalog) ?? []);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
-  const [message, setMessage] = useState<string | null>(null);
+  const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<Field>();
   const [saving, setSaving] = useState(false);
   const savedIds = detail.plan?.items.map((item) => item.catalog.id).join(',') ?? '';
   useUnsavedChanges(
@@ -45,7 +45,7 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
     setServices((current) =>
       current.length >= MAX_SERVICES || current.some((service) => service.id === item.id) ? current : [...current, item],
     );
-    setErrors((current) => ({ ...current, serviceIds: undefined }));
+    clearError('serviceIds');
   }
 
   function removeService(id: string) {
@@ -65,7 +65,7 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
     setErrors(next);
     const firstInvalid = (['preparedOn', 'goal', 'serviceIds'] as const).find((field) => next[field]);
     if (firstInvalid) {
-      setMessage('입력값을 확인해 주세요.');
+      setMessage('입력값을 확인해 주세요.', true);
       refs[firstInvalid].current?.focus();
       return;
     }
@@ -89,8 +89,10 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
       if (field === 'preparedOn' || field === 'goal' || field === 'serviceIds') {
         setErrors({ [field]: result.field!.message });
         refs[field].current?.focus();
+        setMessage(result.message, true);
+      } else {
+        setMessage(result.message);
       }
-      setMessage(result.message);
       if (result.reload) onReload(result.message);
     }
   }
@@ -106,7 +108,7 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
         hint={detail.assessment ? `판정 수신일(${detail.assessment.resultReceivedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(detail.assessment?.resultReceivedOn)}
         value={preparedOn}
-        onChange={(event) => setPreparedOn(event.target.value)}
+        onChange={(event) => { setPreparedOn(event.target.value); clearError('preparedOn'); }}
         error={errors.preparedOn}
         inputRef={refs.preparedOn}
       />
@@ -115,7 +117,7 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
         label="지원 목표"
         maxLength={GOAL_MAX}
         value={goal}
-        onChange={(event) => setGoal(event.target.value)}
+        onChange={(event) => { setGoal(event.target.value); clearError('goal'); }}
         error={errors.goal}
         textareaRef={refs.goal}
       />
