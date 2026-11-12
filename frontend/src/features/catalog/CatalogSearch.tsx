@@ -166,9 +166,29 @@ function CatalogResult({ item, pick, keyword }: { item: CatalogItem; pick?: Cata
           <span className="krds-badge bg-light-primary">{orMissing(item.categoryLarge)}</span>
         </div>
         <div className="card-body">
-          <div className="c-text">
+          {/*
+            KRDS 목록은 이 영역(c-text)을 링크로 쓰고 마우스를 올리면 제목에 밑줄을 긋는다.
+            여기서는 같은 영역을 눌러 ‘자세히 보기’를 펼치고 다시 누르면 접는다(사용자 요청 11/13).
+            키보드·화면 읽기는 제목 버튼으로 같은 동작을 한다. 글자를 드래그해 고르는 중이면 펼치지 않는다.
+          */}
+          <div
+            className="c-text c-text-toggle"
+            onClick={(event) => {
+              if ((event.target as HTMLElement).closest('button')) return;
+              if (window.getSelection()?.toString()) return;
+              setOpen((value) => !value);
+            }}
+          >
             <p className="c-tit">
-              <span className="span"><Highlight text={orMissing(item.programName)} keyword={keyword} /></span>
+              <button
+                type="button"
+                className="c-tit-toggle"
+                aria-expanded={open}
+                aria-controls={detailId}
+                onClick={() => setOpen((value) => !value)}
+              >
+                <span className="span"><Highlight text={orMissing(item.programName)} keyword={keyword} /></span>
+              </button>
             </p>
             <p className="c-txt"><Highlight text={orMissing(item.providerName)} keyword={keyword} /></p>
             <p className="c-date">

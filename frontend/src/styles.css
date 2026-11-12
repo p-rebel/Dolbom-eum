@@ -756,3 +756,23 @@ fieldset.form-group {
   padding: 0;
   list-style: none;
 }
+
+/* 공단 조회 결과: 제목·기관·출처 영역을 눌러 자세히 보기를 펼치고 접는다(KRDS 목록의 링크 영역과 같은 범위) */
+.c-text-toggle {
+  cursor: pointer;
+}
+
+/* 마우스로 누를 때는 초점 테두리를 숨기고, 키보드로 이동할 때만 보인다 */
+.c-tit-toggle:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.c-tit-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}

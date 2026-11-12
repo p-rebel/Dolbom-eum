@@ -51,6 +51,7 @@ export function FormMessage({ tone, children }: { tone: 'error' | 'success' | 'i
   );
 }
 
-export function StatusBadge({ status }: { status: CaseStatus }) {
-  return <span className={`krds-badge ${STATUS_BADGE[status]}`}>{STATUS_LABEL[status]}</span>;
+/** 진행 상태 배지. large는 KRDS 큰 배지(17px)로, 같은 크기의 값과 나란히 놓일 때 쓴다(신청 상세 요약). */
+export function StatusBadge({ status, large = false }: { status: CaseStatus; large?: boolean }) {
+  return <span className={`krds-badge ${STATUS_BADGE[status]}${large ? ' large' : ''}`}>{STATUS_LABEL[status]}</span>;
 }

@@ -104,7 +104,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           <div>
             <dt>진행 상태</dt>
             <dd>
-              <StatusBadge status={detail.status} />
+              <StatusBadge status={detail.status} large />
             </dd>
           </div>
           <div>
