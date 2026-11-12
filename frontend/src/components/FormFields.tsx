@@ -62,7 +62,8 @@ export function SelectField({ id, label, options, emptyOption, optional, hint, e
       <select
         ref={selectRef}
         id={id}
-        className={sizeClass('krds-form-select', fieldSize)}
+        // KRDS: 값을 고르면 `completed`로 글자색을 바꾼다(원래 ui-script.js가 붙이는 클래스, 이 앱은 스크립트 미사용).
+        className={rest.value ? `${sizeClass('krds-form-select', fieldSize)} completed` : sizeClass('krds-form-select', fieldSize)}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(id, hint, error)}
         {...rest}
