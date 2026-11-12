@@ -24,6 +24,7 @@ import { PageHead } from '../../layout/PageHead';
 import { Link } from '../../router';
 import { AssessmentForm, ScreeningForm } from './RecordForms';
 import { PlanDraftForm } from './PlanDraftForm';
+import { ConfirmPlanForm, DeliveryForm, LinkageForm, MonitoringForm, NoticeForm } from './WorkflowForms';
 
 const SECTIONS = [
   { id: 'section-receipt', title: '접수·조사' },
@@ -246,8 +247,17 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
             </div>
           </dl>
         )}
-        {(can('CONFIRM_PLAN') || can('RECORD_NOTICE')) && (
-          <PendingAction label={can('CONFIRM_PLAN') ? ACTION_LABEL.CONFIRM_PLAN : ACTION_LABEL.RECORD_NOTICE} task={can('CONFIRM_PLAN') ? '30' : '31'} />
+        {can('CONFIRM_PLAN') && (
+          <>
+            <h3 className="sub-title">{ACTION_LABEL.CONFIRM_PLAN}</h3>
+            <ConfirmPlanForm detail={detail} {...handlers} />
+          </>
+        )}
+        {can('RECORD_NOTICE') && (
+          <>
+            <h3 className="sub-title">{ACTION_LABEL.RECORD_NOTICE}</h3>
+            <NoticeForm detail={detail} {...handlers} />
+          </>
         )}
       </section>
 
@@ -260,7 +270,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         ) : (
           <EmptyBlock message="계획이 확정되면 서비스별 연계와 제공 현황을 기록합니다." />
         )}
-        {(can('RECORD_LINKAGE') || can('RECORD_DELIVERY')) && <PendingAction label="연계·제공 현황 기록" task="32·33" />}
+        {detail.plan?.confirmation && <ItemActions detail={detail} handlers={handlers} />}
       </section>
 
       <section id="section-monitoring" className="page-section" aria-labelledby="section-monitoring-title">
@@ -272,7 +282,12 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         ) : (
           <EmptyBlock message="모든 서비스의 연계·제공 현황이 기록되면 읍면동에서 최초 모니터링을 기록합니다." />
         )}
-        {can('RECORD_MONITORING') && <PendingAction label={ACTION_LABEL.RECORD_MONITORING} task="34" />}
+        {can('RECORD_MONITORING') && (
+          <>
+            <h3 className="sub-title">{ACTION_LABEL.RECORD_MONITORING}</h3>
+            <MonitoringForm detail={detail} {...handlers} />
+          </>
+        )}
       </section>
 
       <section id="section-history" className="page-section" aria-labelledby="section-history-title">
@@ -305,7 +320,18 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     {event.fromStatus ? `${STATUS_LABEL[event.fromStatus]} → ` : ''}
                     {STATUS_LABEL[event.toStatus]}
                   </td>
-                  <td>{event.summary}</td>
+                  <td>
+                    {event.summary}
+                    {/* 항목 동작(연계·제공 현황)은 어느 서비스의 기록인지 서비스명을 붙인다(D-02 처리 이력, DEV-03 5절). */}
+                    {event.itemId && (
+                      <>
+                        <br />
+                        <span className="text-subtle">
+                          {orMissing(detail.plan?.items.find((item) => item.id === event.itemId)?.catalog.programName)}
+                        </span>
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -365,15 +391,66 @@ function InPageNavigation({ title }: { title: string }) {
   );
 }
 
-/** 이후 작업에서 연결할 입력. 서버가 허용한 동작임을 보여주되 아직 입력은 받지 않는다. */
-function PendingAction({ label, task }: { label: string; task: string }) {
+/**
+ * 작업 32·33. 서버가 허용한 항목별 동작(연계 기록 → 제공 현황 기록)을 계획 순서로 보여 주고, 버튼을 누른 항목만 입력 폼을 펼친다.
+ * 저장하면 버전이 바뀌므로 펼친 폼을 닫는다.
+ */
+function ItemActions({ detail, handlers }: { detail: CaseDetail; handlers: SaveHandlers }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  useEffect(() => setOpenId(null), [detail.version]);
+  const items = detail.plan?.items ?? [];
+  const rows = items
+    .map((item, index) => ({ item, index, action: detail.allowedActions.find((allowed) => allowed.itemId === item.id)?.action }))
+    .filter((row) => row.action === 'RECORD_LINKAGE' || row.action === 'RECORD_DELIVERY');
+  if (rows.length === 0) return null;
+
   return (
-    <div className="pending-action">
-      <button type="button" className="krds-btn medium secondary" disabled>
-        {label}
-      </button>
-      <p className="text-subtle">이 입력은 작업 {task}에서 연결합니다.</p>
-    </div>
+    <>
+      <h3 className="sub-title">항목별 기록</h3>
+      <ol className="plan-item-list">
+        {rows.map(({ item, index, action }) => {
+          const open = openId === item.id;
+          const formId = `item-form-${item.id}`;
+          const label =
+            action === 'RECORD_LINKAGE' ? ACTION_LABEL.RECORD_LINKAGE : item.delivery ? '제공 현황 수정' : ACTION_LABEL.RECORD_DELIVERY;
+          return (
+            <li key={item.id}>
+              <div className="plan-item-row">
+                <div>
+                  <p className="plan-item-title">
+                    {index + 1}. {orMissing(item.catalog.programName)}
+                  </p>
+                  <p className="text-subtle">
+                    {orMissing(item.catalog.providerName)} ·{' '}
+                    {item.linkage ? LINKAGE_METHOD_LABEL[item.linkage.method] : '연계 전'} ·{' '}
+                    {item.delivery ? DELIVERY_STATUS_LABEL[item.delivery.status] : '제공 현황 기록 전'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="krds-btn medium secondary"
+                  aria-expanded={open}
+                  aria-controls={formId}
+                  onClick={() => setOpenId(open ? null : item.id)}
+                >
+                  {open ? '닫기' : label}
+                  <span className="sr-only"> {orMissing(item.catalog.programName)}</span>
+                </button>
+              </div>
+              {open && (
+                <div id={formId} className="item-form">
+                  {action === 'RECORD_LINKAGE' ? (
+                    <LinkageForm detail={detail} item={item} {...handlers} />
+                  ) : (
+                    <DeliveryForm detail={detail} item={item} {...handlers} />
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </>
   );
 }
 

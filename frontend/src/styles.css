@@ -473,11 +473,11 @@ fieldset.form-group {
   margin-top: 0;
 }
 
-.pending-action {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--krds-gap-4);
+/* 항목별 기록: 펼친 입력 폼은 항목 정보 아래에 구분선으로 나눈다 */
+.item-form {
+  margin-top: var(--krds-gap-5);
+  padding-top: var(--krds-padding-6);
+  border-top: 1px solid var(--krds-light-color-divider-gray-light);
 }
 
 /* ── 로딩·오류·빈 결과 ─────────────────────────────── */
