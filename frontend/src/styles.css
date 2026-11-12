@@ -551,39 +551,90 @@ fieldset.form-group {
 /* 위아래 1px 구분선 안에 입력 열(왼쪽)과 안내 열(오른쪽). 피그마 열 너비 323.5px, 안쪽 여백 32px. */
 .login-panel {
   display: grid;
-  grid-template-columns: minmax(0, 40rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: var(--krds-padding-8);
   border-top: 1px solid var(--krds-light-color-divider-gray-light);
   border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
-}
-
-.login-panel.has-aside {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .login-main {
   display: grid;
   align-content: start;
   gap: var(--krds-gap-5);
-}
-
-.login-panel.has-aside .login-main {
   padding-right: var(--krds-padding-8);
 }
 
+/* 안내 열의 소개 상자는 입력 열과 위아래 끝선을 맞춘다(같은 높이) */
 .login-aside {
+  display: grid;
+  align-content: stretch;
+  gap: var(--krds-gap-4);
   padding-left: var(--krds-padding-8);
   border-left: 1px solid var(--krds-light-color-divider-gray-light);
 }
 
+/* 서비스 소개 안내 상자: 회색 바탕, ⓘ 제목, 소개 한 문장, 기능 이름 점 목록 */
+.login-about-box {
+  display: grid;
+  align-content: center;
+  gap: var(--krds-gap-5);
+  padding: var(--krds-padding-8) var(--krds-padding-7);
+  background-color: var(--krds-light-color-surface-gray-subtler);
+  border-radius: var(--krds-radius-medium2);
+}
+
+.login-about-title {
+  display: flex;
+  align-items: center;
+  gap: var(--krds-gap-2);
+  font-size: var(--krds-pc-font-size-heading-xsmall);
+  font-weight: 700;
+}
+
+.login-about-icon {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  background: url('../node_modules/krds-uiux/resources/img/component/icon/ico_information.svg') center / contain no-repeat;
+}
+
+.login-about {
+  font-size: var(--krds-pc-font-size-body-medium);
+}
+
+.login-features {
+  display: grid;
+  gap: var(--krds-gap-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.login-features li {
+  position: relative;
+  padding-left: 1.6rem;
+  font-size: var(--krds-pc-font-size-body-medium);
+  font-weight: 700;
+}
+
+.login-features li::before {
+  content: '';
+  position: absolute;
+  top: calc(0.5lh - 0.2rem);
+  left: 0.4rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background-color: var(--krds-light-color-text-basic);
+}
+
 @media (max-width: 767px) {
-  .login-panel,
-  .login-panel.has-aside {
+  .login-panel {
     grid-template-columns: minmax(0, 1fr);
     padding: var(--krds-padding-8) 0;
   }
 
-  .login-panel.has-aside .login-main {
+  .login-main {
     padding-right: 0;
   }
 
@@ -597,16 +648,30 @@ fieldset.form-group {
 
 .login-form {
   display: grid;
-  gap: var(--krds-gap-6);
+  gap: var(--krds-gap-5);
+}
+
+/* 입력칸 사이 간격을 16px로 줄여 오른쪽 소개 상자와 높이를 맞춘다 */
+.login-form .fieldset {
+  gap: var(--krds-gap-5);
 }
 
 .login-submit {
   width: 100%;
 }
 
-.login-footer {
+/* 제목 · API 연결 상태: 같은 줄, 글자 아래선 맞춤. 좁은 화면에서는 줄바꿈 */
+.login-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--krds-gap-2) var(--krds-gap-3);
+}
+
+.login-title-dot,
+.login-title-row [role='status'] {
   color: var(--krds-light-color-text-subtle);
-  font-size: var(--krds-pc-font-size-body-small);
+  font-size: var(--krds-pc-font-size-body-medium);
 }
 
 .mock-note {

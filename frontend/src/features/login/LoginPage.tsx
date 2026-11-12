@@ -8,6 +8,13 @@ import { TextField } from '../../components/TextField';
 import { PageTitle } from '../../router';
 import { HealthStatus } from '../health/HealthStatus';
 
+/** 서비스 소개. D-01 첫 문단 요약. */
+const ABOUT_INTRO =
+  '지역사회 통합돌봄 신청 한 건을 읍면동과 시군구 담당자가 이어받아, 접수부터 최초 모니터링까지 기록하는 업무 화면입니다.';
+
+/** 주요 기능. D-01 REQ-02~07을 세 묶음으로 줄였다. */
+const ABOUT_FEATURES = ['신청 접수·조사·판정 기록', '공단 서비스로 지원계획 작성', '연계·제공·모니터링 기록'] as const;
+
 type Field = 'username' | 'password';
 type FieldErrors = Partial<Record<Field, string>>;
 
@@ -71,10 +78,17 @@ export function LoginPage({ notice }: { notice: string | null }) {
       <section className="login-box" aria-labelledby="login-title">
         <div className="login-head">
           <p className="login-service">돌봄e음 · 가상 사례 시연</p>
-          <PageTitle id="login-title">가상 계정 로그인</PageTitle>
+          {/* 제목 옆에 서버 연결 상태(DEV-01:85 실행 확인 절차의 ‘API 연결됨’). 제목 글자에는 넣지 않는다. */}
+          <div className="login-title-row">
+            <PageTitle id="login-title">가상 계정 로그인</PageTitle>
+            <span className="login-title-dot" aria-hidden="true">
+              ·
+            </span>
+            <HealthStatus />
+          </div>
         </div>
 
-        <div className={MOCK_API_ENABLED ? 'login-panel has-aside' : 'login-panel'}>
+        <div className="login-panel">
         <div className="login-main">
         {notice && (
           <div className="form-group" role="status">
@@ -119,10 +133,31 @@ export function LoginPage({ notice }: { notice: string | null }) {
         </form>
         </div>
 
+        {/*
+          오른쪽 안내 열(KRDS 피그마 로그인 Step 3): 서비스 소개. 2026-11-13 김재현 결정 — DEV-03 4절·5절.
+          문구는 D-01 첫 문단과 REQ-02~07을 줄인 고정 문구다. 계정·비밀번호는 안내하지 않는다.
+        */}
+        <aside className="login-aside" aria-labelledby="login-about-title">
+          {/* 서비스 소개는 KRDS 안내 상자(회색 바탕)로 둔다. 국민건강보험 로그인 화면의 안내 상자 참고 */}
+          <div className="login-about-box">
+            <h2 id="login-about-title" className="login-about-title">
+              <span className="login-about-icon" aria-hidden="true" />
+              돌봄e음은
+            </h2>
+            <p className="login-about">{ABOUT_INTRO}</p>
+            <ul className="login-features" aria-label="주요 기능">
+              {ABOUT_FEATURES.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+        </aside>
+        </div>
+
+        {/* 목업 모드 안내는 소개 상자와 분리한다(높이 맞춤·영역 이름 유지). ‘목업 모드’ 배지는 공통 상단에 있다. */}
         {MOCK_API_ENABLED && (
-          <aside className="login-aside" aria-label="목업 모드 안내">
-          {/* ‘목업 모드’ 배지는 공통 상단에 있으므로 여기서는 다시 붙이지 않는다. */}
-          <div className="mock-note">
+          <aside className="mock-note" aria-label="목업 모드 안내">
             <p>
               계정 <code>demo-town-a</code>(읍면동) 또는 <code>demo-district-a</code>(시군구), 목업 전용 비밀번호{' '}
               <code>{MOCK_PASSWORD}</code>. 실제 서버와 관계없습니다.
@@ -142,14 +177,8 @@ export function LoginPage({ notice }: { notice: string | null }) {
               목업 사례 초기화
             </button>
             {mockReset && <p role="status">목업 사례를 모두 지웠습니다.</p>}
-          </div>
           </aside>
         )}
-        </div>
-
-        <div className="login-footer">
-          <HealthStatus />
-        </div>
       </section>
     </main>
     {/* KRDS 로그인 패턴(피그마 서비스패턴_로그인)도 공통 푸터를 둔다. 체크리스트: 모든 화면 같은 위치. */}
