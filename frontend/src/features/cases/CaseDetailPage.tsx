@@ -286,7 +286,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         {detail.monitoring ? (
           <MonitoringView detail={detail} />
         ) : (
-          <EmptyBlock message="모든 서비스의 연계·제공 현황이 기록되면 읍면동에서 최초 모니터링을 기록합니다." />
+          <>
+            <EmptyBlock message="모든 서비스의 연계·제공 현황이 기록되면 읍면동에서 최초 모니터링을 기록합니다." />
+            {detail.plan?.confirmation && <MissingRecords detail={detail} />}
+          </>
         )}
         {can('RECORD_MONITORING') && (
           <>
@@ -479,6 +482,34 @@ function ItemActions({ detail, handlers }: { detail: CaseDetail; handlers: SaveH
         })}
       </ol>
     </>
+  );
+}
+
+/**
+ * 모니터링 전, 계획 항목 중 연계·제공 현황이 빠진 서비스와 빠진 값을 보여 준다.
+ * D-02:54 ‘누락된 항목은 서비스명과 빠진 값을 표시한다’ — 2026-11-13 김재현 해석(DEV-03 4절), 이동수 님 확인 요청 중.
+ */
+function MissingRecords({ detail }: { detail: CaseDetail }) {
+  const rows = (detail.plan?.items ?? [])
+    .map((item, index) => ({
+      item,
+      index,
+      missing: [!item.linkage && '연계', !item.delivery && '제공 현황'].filter((value): value is string => !!value),
+    }))
+    .filter((row) => row.missing.length > 0);
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="missing-records">
+      <h3 className="sub-title">아직 기록되지 않은 항목 ({rows.length}건)</h3>
+      <ul className="missing-list">
+        {rows.map(({ item, index, missing }) => (
+          <li key={item.id}>
+            {index + 1}. {orMissing(item.catalog.programName)} — <strong>{missing.join(', ')}</strong> 기록 전
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
