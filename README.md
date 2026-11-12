@@ -15,12 +15,15 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
 $env:PYTHONPATH = "backend"; .\.venv\Scripts\python.exe -m app.db init
 $env:DOLBOMEUM_DEMO_PASSWORD = "<팀 카톡방에서 받은 가상 계정 비밀번호>"; .\.venv\Scripts\python.exe -m app.db seed
+.\.venv\Scripts\python.exe -m app.db load-nhis
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 ```
 
 `app.db init`은 SQLite 스키마를 만들고 기존 데이터는 유지합니다. 기본 경로는 저장소의 `var/dolbomeum.sqlite3`(git 제외)이고, `DOLBOMEUM_DB_PATH` 환경값으로 바꿀 수 있습니다. `init --reset`은 지정 경로의 DB를 지우고 새로 만들고, `backup <파일>`은 실행 중에도 일관된 사본을 만듭니다. 테스트는 `backend/requirements-dev.txt`를 설치한 뒤 `backend` 폴더에서 `python -m pytest`로 실행합니다.
 
 `app.db seed`는 C-01·C-06 예제의 가상 계정 4개(`demo-town-a`, `demo-town-a2`, `demo-district-a`, `demo-town-b`)와 프로필 `DEMO-ELDER-01`을 만듭니다. 네 계정은 `DOLBOMEUM_DEMO_PASSWORD`(8자 이상)를 같은 비밀번호로 사용하며, 비밀번호는 저장소에 두지 않습니다.
+
+`app.db load-nhis`는 공단 v1.4 `data/processed/nhis_services.csv`를 `nhis_catalog`에 적재합니다. 필수 헤더, 행 수 90,081, ID 고유성을 먼저 확인하고 하나라도 다르면 아무것도 저장하지 않습니다. 완료 시 DB 행 수와 조회 대상(N) 89,738행·숨김(Y) 343행을 출력합니다. 다시 실행하면 같은 행을 갱신합니다.
 
 API 서버 환경값은 아래와 같습니다. 상태를 바꾸는 요청(`POST`·`PUT`·`DELETE`)은 `Origin`이 허용 출처와 같아야 합니다. 로컬은 기본값으로 동작하므로 브라우저에서 `localhost`가 아닌 `http://127.0.0.1:5173`으로 접속합니다.
 
