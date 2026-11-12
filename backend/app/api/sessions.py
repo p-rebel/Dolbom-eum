@@ -96,7 +96,8 @@ def list_demo_profiles(
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> DemoProfileList:
     rows = conn.execute(
-        "SELECT * FROM demo_profiles WHERE town_code = ? ORDER BY code", (account.town_code,)
+        "SELECT * FROM demo_profiles WHERE district_code = ? AND town_code = ? ORDER BY code",
+        (account.district_code, account.town_code),
     ).fetchall()
     return DemoProfileList(items=[profile_from_row(row) for row in rows])
 

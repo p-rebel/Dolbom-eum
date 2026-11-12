@@ -5,22 +5,39 @@ from __future__ import annotations
 import json
 import sqlite3
 from typing import Annotated, Literal
+from urllib.parse import quote
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Request
-from pydantic import AfterValidator, Field, StrictBool, StrictStr
+from pydantic import AfterValidator, Field, StrictBool, StrictStr, WithJsonSchema
 
 from ..auth import Account, CamelModel, current_account
 from ..cases import CaseDetail, Observation, validate_business_date
 from ..db import get_connection
+from ..errors import ErrorResponse
 from ..workflow import (
     VersionedRequest, WorkflowRequest, case_item, invalid_field, invalid_transition, record_change,
 )
 from .catalog import find_catalog_item
 
-router = APIRouter(prefix="/cases")
+_ERROR_DESCRIPTIONS = {
+    401: "로그인이 필요합니다.",
+    403: "요청 출처 또는 동작 권한을 확인해 주세요.",
+    404: "관할 내 신청 건 또는 계획 항목을 찾을 수 없습니다.",
+    409: "현재 버전 또는 업무 단계와 충돌했습니다.",
+    415: "JSON 형식으로 요청해야 합니다.",
+    422: "입력값을 확인해 주세요.",
+    500: "처리 중 오류가 발생했습니다.",
+}
+router = APIRouter(
+    prefix="/cases",
+    responses={status: {"model": ErrorResponse, "description": description}
+               for status, description in _ERROR_DESCRIPTIONS.items()},
+)
 
-BusinessDate = Annotated[StrictStr, AfterValidator(validate_business_date)]
+BusinessDate = Annotated[
+    StrictStr, AfterValidator(validate_business_date), WithJsonSchema({"type": "string", "format": "date"})
+]
 ContactMethod = Literal["PHONE", "VISIT"]
 DeliveryStatus = Literal["UNKNOWN", "IN_USE", "NOT_STARTED", "DECLINED"]
 
@@ -93,7 +110,7 @@ WorkflowInput = Annotated[WorkflowRequest, Depends(_workflow_request)]
 
 def _put(path: str, body_type: type[VersionedRequest]):
     # 본문을 직접 검증하는 경로도 OpenAPI에 요청 모델을 제공한다.
-    pointer = ("/api/v1/cases" + path).replace("/", "~1").replace("{", "{{").replace("}", "}}")
+    pointer = quote(("/api/v1/cases" + path).replace("~", "~0").replace("/", "~1"), safe="")
     schema_path = f"#/paths/{pointer}/put/requestBody/content/application~1json/schema"
     schema = body_type.model_json_schema(ref_template=f"{schema_path}/$defs/{{model}}")
     return router.put(path, response_model=CaseDetail, openapi_extra={

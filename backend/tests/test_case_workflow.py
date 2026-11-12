@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack, closing
 from pathlib import Path
 from threading import Barrier
+from urllib.parse import unquote
 
 import pytest
 from fastapi.testclient import TestClient
@@ -152,3 +153,133 @@ def test_workflow_checks_jurisdiction_and_role_before_body(clients):
     headers = {"Content-Type": "application/json"}
     for actor, status in [("outside", 404), ("otherTown", 404), ("district", 403), ("town", 422)]:
         assert clients[actor].put(path, content=b"{", headers=headers).status_code == status
+
+    invalid = clients["town"].put(path, json={
+        "version": 1, "screened_on": "2026-11-32", "method": "PHONE", "outcome": "NHIS_ASSESSMENT_REQUIRED",
+    })
+    assert invalid.status_code == 422
+    assert invalid.json()["error"]["field"] == "screenedOn"
+    with TestClient(app, headers=ORIGIN) as signed_out:
+        assert signed_out.put(path, json={}).status_code == 401
+    assert clients["town"].put(path, json={}, headers={"Origin": "http://127.0.0.1:5174"}).status_code == 403
+    assert clients["town"].put(path, content=b"{}", headers={"Content-Type": "text/plain"}).status_code == 415
+
+
+def test_town_case_and_profile_scope_includes_district(clients):
+    with closing(connect()) as conn:
+        conn.execute("UPDATE demo_accounts SET town_code = 'DEMO-A-1' WHERE id = 'demo-town-b'")
+        conn.execute(
+            """INSERT INTO demo_profiles VALUES ('DEMO-ELDER-B', '가상 대상자 B', '신청인 B', '안내대상 B',
+                   'DEMO-B', 'DEMO-A-1', '충청북도', '진천군')"""
+        )
+
+    captures = {}
+    run_step(clients, EXAMPLES["commonSteps"][0], captures)
+    outside = clients["outside"]
+    outside_receipt = outside.post(
+        "/api/v1/cases", headers={"Idempotency-Key": "district-b-receive"},
+        json={"profileCode": "DEMO-ELDER-B", "receivedOn": "2026-11-01", "noticeMethod": "SMS", "evidenceChecked": True},
+    )
+    assert outside_receipt.status_code == 201, outside_receipt.text
+
+    town = clients["town"]
+    assert [case["id"] for case in town.get("/api/v1/cases").json()["items"]] == [captures["caseId"]]
+    assert [profile["code"] for profile in town.get("/api/v1/demo-profiles").json()["items"]] == ["DEMO-ELDER-01"]
+    wrong_district = town.post(
+        "/api/v1/cases", headers={"Idempotency-Key": "wrong-district"},
+        json={"profileCode": "DEMO-ELDER-B", "receivedOn": "2026-11-01", "noticeMethod": "SMS", "evidenceChecked": True},
+    )
+    assert wrong_district.status_code == 422
+    assert wrong_district.json()["error"]["field"] == "profileCode"
+
+    case_path = f"/api/v1/cases/{outside_receipt.json()['id']}"
+    assert town.get(case_path).status_code == 404
+    assert town.put(f"{case_path}/screening", json={}).status_code == 404
+
+
+def test_workflow_rolls_back_if_history_cannot_be_written(clients):
+    captures = {}
+    run_step(clients, EXAMPLES["commonSteps"][0], captures)
+    with closing(connect()) as conn:
+        conn.execute(
+            """CREATE TRIGGER fail_screening_event BEFORE INSERT ON case_events
+               WHEN NEW.action = 'RECORD_SCREENING'
+               BEGIN SELECT RAISE(ABORT, 'test event insert failure'); END"""
+        )
+
+    town = clients["town"]
+    case_path = f"/api/v1/cases/{captures['caseId']}"
+    before = town.get(case_path).json()
+    body = {"version": 1, "screenedOn": "2026-11-02", "method": "PHONE", "outcome": "NHIS_ASSESSMENT_REQUIRED"}
+    with TestClient(app, headers=ORIGIN, raise_server_exceptions=False) as failing_client:
+        assert failing_client.post(
+            "/api/v1/session", json={"username": EXAMPLES["accounts"]["town"]["username"], "password": PASSWORD}
+        ).status_code == 200
+        failed = failing_client.put(f"{case_path}/screening", json=body)
+    assert failed.status_code == 500
+    assert failed.json()["error"]["code"] == "INTERNAL_ERROR"
+    assert town.get(case_path).json() == before
+
+    with closing(connect()) as conn:
+        conn.execute("DROP TRIGGER fail_screening_event")
+    retry = town.put(f"{case_path}/screening", json=body)
+    assert retry.status_code == 200, retry.text
+    assert retry.json()["version"] == len(retry.json()["events"]) == 2
+
+
+def test_delivery_updates_preserve_history_and_are_scoped_to_the_case(clients):
+    captures = {}
+    for step in EXAMPLES["commonSteps"]:
+        run_step(clients, step, captures)
+    for step in EXAMPLES["scenarios"]["C-06"][:3]:
+        run_step(clients, step, captures)
+
+    other = {}
+    receive = EXAMPLES["commonSteps"][0]
+    run_step(clients, {**receive, "headers": {"Idempotency-Key": "another-case"}}, other)
+    item_path = f"plan/items/{captures['itemB']}/delivery"
+    district = clients["district"]
+    response = district.put(f"/api/v1/cases/{other['caseId']}/{item_path}", json={"version": 1})
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "NOT_FOUND"
+
+    response = district.put(f"/api/v1/cases/{captures['caseId']}/{item_path}", json={
+        "version": 12, "observedOn": "2026-11-09", "status": "DECLINED", "reason": " 가상 이용 거부 ",
+    })
+    assert response.status_code == 200, response.text
+    saved = response.json()
+    delivery = {"observedOn": "2026-11-09", "status": "DECLINED", "reason": "가상 이용 거부"}
+    assert saved["version"] == len(saved["events"]) == 13
+    assert saved["plan"]["items"][1]["delivery"] == delivery
+    assert saved["events"][0]["itemId"] == captures["itemB"]
+
+    with closing(connect()) as conn:
+        rows = conn.execute(
+            "SELECT details FROM case_events WHERE case_id = ? AND plan_item_id = ? AND action = 'RECORD_DELIVERY' "
+            "ORDER BY version",
+            (captures["caseId"], captures["itemB"]),
+        ).fetchall()
+    assert [json.loads(row["details"]) for row in rows] == [
+        {"before": None, "after": captures["itemBDelivery"]},
+        {"before": captures["itemBDelivery"], "after": delivery},
+    ]
+
+
+def test_workflow_openapi_documents_error_shape_and_dates():
+    document = app.openapi()
+    routes = [methods["put"] for methods in document["paths"].values() if "put" in methods]
+    assert len(routes) == 8
+    for route in routes:
+        for code in ("401", "403", "404", "409", "415", "422", "500"):
+            schema = route["responses"][code]["content"]["application/json"]["schema"]
+            error = document["components"]["schemas"][schema["$ref"].rsplit("/", 1)[-1]]
+            assert error["required"] == ["error"]
+
+    route = document["paths"]["/api/v1/cases/{case_id}/monitoring"]["put"]
+    request = route["requestBody"]["content"]["application/json"]["schema"]
+    assert request["properties"]["monitoredOn"]["format"] == "date"
+    ref = request["properties"]["observations"]["items"]["$ref"]
+    observation = document
+    for part in unquote(ref.removeprefix("#/")).split("/"):
+        observation = observation[part.replace("~1", "/").replace("~0", "~")]
+    assert observation["required"] == ["itemId", "status"]

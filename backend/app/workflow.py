@@ -10,6 +10,7 @@ from typing import Annotated, Literal, TypeVar
 from uuid import uuid4
 
 from pydantic import Field, StrictInt, ValidationError
+from pydantic.alias_generators import to_camel
 
 from .auth import Account, CamelModel, Role
 from .cases import (
@@ -76,7 +77,8 @@ def _parse(body_type: type[Body], data: bytes) -> Body:
         return body_type.model_validate_json(data)
     except ValidationError as exc:
         loc = exc.errors(include_input=False, include_context=False, include_url=False)[0]["loc"]
-        raise invalid_field(".".join(map(str, loc)) or None) from exc
+        field = ".".join(to_camel(part) if isinstance(part, str) else str(part) for part in loc)
+        raise invalid_field(field or None) from exc
 
 
 def case_item(case: CaseDetail, item_id: str) -> PlanItem:

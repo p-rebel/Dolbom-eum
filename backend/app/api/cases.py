@@ -14,7 +14,7 @@ from pydantic import StrictBool, StrictStr, field_validator
 
 from ..auth import Account, CamelModel, current_account, require_role
 from ..cases import (
-    CaseDetail, CaseStatus, CaseSummary, accessible_case, case_summary, case_timestamp,
+    CaseDetail, CaseStatus, CaseSummary, accessible_case, can_access, case_summary, case_timestamp,
     load_case_detail, validate_business_date,
 )
 from ..db import get_connection, write_transaction
@@ -68,8 +68,8 @@ def receive_case(
 
     with write_transaction(conn):
         profile_row = conn.execute(
-            "SELECT * FROM demo_profiles WHERE code = ? AND town_code = ?",
-            (body.profile_code, account.town_code),
+            "SELECT * FROM demo_profiles WHERE code = ? AND district_code = ? AND town_code = ?",
+            (body.profile_code, account.district_code, account.town_code),
         ).fetchone()
         if profile_row is None:
             raise ApiError(422, "VALIDATION_ERROR", "관할 내 가상 프로필을 선택해 주세요.", "profileCode")
@@ -78,6 +78,8 @@ def receive_case(
             "SELECT * FROM cases WHERE created_by = ? AND idempotency_key = ?", (account.id, key)
         ).fetchone()
         if existing is not None:
+            if not can_access(account, existing):
+                raise ApiError(404, "NOT_FOUND", "신청 건을 찾을 수 없습니다.")
             if existing["request_hash"] != digest:
                 raise ApiError(409, "IDEMPOTENCY_CONFLICT", "같은 요청 키로 다른 접수 내용이 이미 저장되었습니다.")
             response.status_code = 200
@@ -125,8 +127,11 @@ def list_cases(
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> CasePage:
     # 읍면동은 소속 읍면동, 시군구는 소속 시군구 건만 (D-05 공통 전환 조건)
-    where = "town_code = ?" if account.role == "TOWN" else "district_code = ?"
-    params: list = [account.town_code if account.role == "TOWN" else account.district_code]
+    where = "district_code = ?"
+    params: list[str | None] = [account.district_code]
+    if account.role == "TOWN":
+        where += " AND town_code = ?"
+        params.append(account.town_code)
     if status is not None:
         where += " AND status = ?"
         params.append(status)

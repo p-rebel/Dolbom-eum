@@ -7,6 +7,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger(__name__)
@@ -31,11 +32,19 @@ class ApiError(Exception):
         self.field = field
 
 
+class ErrorDetail(BaseModel):
+    code: str
+    message: str
+    field: str | None
+
+
+class ErrorResponse(BaseModel):
+    error: ErrorDetail
+
+
 def error_response(status_code: int, code: str, message: str, field: str | None = None) -> JSONResponse:
-    return JSONResponse(
-        status_code=status_code,
-        content={"error": {"code": code, "message": message, "field": field}},
-    )
+    body = ErrorResponse(error=ErrorDetail(code=code, message=message, field=field))
+    return JSONResponse(status_code=status_code, content=body.model_dump())
 
 
 def unauthenticated() -> ApiError:
