@@ -1,4 +1,4 @@
-"""D-04 신청 접수: POST /cases (작업 4)."""
+"""D-04 신청 접수 POST /cases (작업 4), 목록·상세 GET /cases·/cases/{caseId} (작업 5)."""
 
 from __future__ import annotations
 
@@ -10,11 +10,11 @@ import uuid
 from datetime import UTC, date, datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import StrictBool, StrictStr, field_validator
 
-from ..auth import Account, CamelModel, require_role
-from ..cases import CaseDetail, load_case_detail
+from ..auth import Account, CamelModel, current_account, require_role
+from ..cases import CaseDetail, CaseStatus, CaseSummary, can_access, case_summary, load_case_detail
 from ..db import get_connection, write_transaction
 from ..errors import ApiError
 from .sessions import profile_from_row
@@ -114,3 +114,45 @@ def receive_case(
         )
         row = conn.execute("SELECT * FROM cases WHERE id = ?", (case_id,)).fetchone()
         return load_case_detail(conn, row, account)
+
+
+class CasePage(CamelModel):
+    items: list[CaseSummary]
+    page: int
+    page_size: int
+    total: int
+
+
+@router.get("/cases", response_model=CasePage)
+def list_cases(
+    status: CaseStatus | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=50, alias="pageSize"),
+    account: Account = Depends(current_account),
+    conn: sqlite3.Connection = Depends(get_connection),
+) -> CasePage:
+    # 읍면동은 소속 읍면동, 시군구는 소속 시군구 건만 (D-05 공통 전환 조건)
+    where = "town_code = ?" if account.role == "TOWN" else "district_code = ?"
+    params: list = [account.town_code if account.role == "TOWN" else account.district_code]
+    if status is not None:
+        where += " AND status = ?"
+        params.append(status)
+    total = conn.execute(f"SELECT count(*) FROM cases WHERE {where}", params).fetchone()[0]
+    rows = conn.execute(
+        f"SELECT * FROM cases WHERE {where} ORDER BY received_on DESC, id ASC LIMIT ? OFFSET ?",
+        [*params, page_size, (page - 1) * page_size],
+    ).fetchall()
+    return CasePage(items=[case_summary(r) for r in rows], page=page, page_size=page_size, total=total)
+
+
+@router.get("/cases/{case_id}", response_model=CaseDetail)
+def read_case(
+    case_id: str,
+    account: Account = Depends(current_account),
+    conn: sqlite3.Connection = Depends(get_connection),
+) -> CaseDetail:
+    row = conn.execute("SELECT * FROM cases WHERE id = ?", (case_id,)).fetchone()
+    # 관할 밖 사례는 존재 여부를 드러내지 않도록 없는 사례와 같은 404 (D-04 오류)
+    if row is None or not can_access(account, row):
+        raise ApiError(404, "NOT_FOUND", "신청 건을 찾을 수 없습니다.")
+    return load_case_detail(conn, row, account)
