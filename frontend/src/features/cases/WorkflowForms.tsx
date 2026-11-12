@@ -26,6 +26,7 @@ type Errors = Record<string, string | undefined>;
 const REASON_MAX = 200;
 const DESTINATION_MAX = 80;
 const REASON_REQUIRED: DeliveryStatus[] = ['NOT_STARTED', 'DECLINED'];
+const DELIVERY_STATUSES = ['IN_USE', 'UNKNOWN', 'NOT_STARTED', 'DECLINED'] as const;
 
 /**
  * 저장 폼 공통 처리: 화면 검사 → 첫 오류 칸으로 초점 → 저장 → 422는 해당 칸, 409·연결 실패는 최신 상세 재조회(D-02).
@@ -36,9 +37,14 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const refs = useRef<Record<string, HTMLElement | null>>({});
-  const bind = (field: string) => (element: HTMLElement | null) => {
-    refs.current[field] = element;
-  };
+  // 칸마다 같은 콜백 ref를 재사용한다(렌더마다 새로 만들면 매번 떼었다 붙인다).
+  const binders = useRef<Record<string, (element: HTMLElement | null) => void>>({});
+  const bind = (field: string) =>
+    (binders.current[field] ??= (element: HTMLElement | null) => {
+      refs.current[field] = element;
+    });
+  /** 값이 바뀐 칸의 오류를 지운다. */
+  const clear = (field: string) => setErrors((current) => (current[field] ? { ...current, [field]: undefined } : current));
 
   async function submit(options: {
     errors: Errors;
@@ -76,7 +82,7 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
     }
   }
 
-  return { errors, message, saving, bind, submit };
+  return { errors, message, saving, bind, clear, submit };
 }
 
 /** 작업 30. 시군구 회의 결과와 계획 확정(CONFIRM_PLAN). 확정할 서비스 목록은 바로 위 계획 내용으로 재확인한다(D-02). */
@@ -316,7 +322,7 @@ export function DeliveryForm({ detail, item, ...handlers }: ItemProps) {
 
   return (
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label={`제공 현황: ${orMissing(item.catalog.programName)}`}>
-      <RequiredNotice />
+      {/* 선택 칸이 있어 ‘모든 항목은 필수’ 안내를 두지 않는다. 선택 칸에는 (선택)을 붙인다. */}
       {form.message && <FormMessage tone="error">{form.message}</FormMessage>}
       <TextField
         id={`observed-on-${item.id}`}
@@ -333,7 +339,7 @@ export function DeliveryForm({ detail, item, ...handlers }: ItemProps) {
         name={`delivery-status-${item.id}`}
         legend="제공 상태"
         value={status}
-        options={(['IN_USE', 'UNKNOWN', 'NOT_STARTED', 'DECLINED'] as const).map((value) => ({ value, label: DELIVERY_STATUS_LABEL[value] }))}
+        options={DELIVERY_STATUSES.map((value) => ({ value, label: DELIVERY_STATUS_LABEL[value] }))}
         onChange={setStatus}
         error={form.errors.status}
         firstInputRef={form.bind('status')}
@@ -380,8 +386,10 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
   );
 
   const observation = (itemId: string) => observations[itemId] ?? { status: '', reason: '' };
-  const setObservation = (itemId: string, next: Partial<ObservationInput>) =>
-    setObservations((current) => ({ ...current, [itemId]: { ...observation(itemId), ...current[itemId], ...next } }));
+  const setObservation = (itemId: string, next: Partial<ObservationInput>) => {
+    setObservations((current) => ({ ...current, [itemId]: { ...(current[itemId] ?? { status: '', reason: '' }), ...next } }));
+    form.clear(`obs:${itemId}`);
+  };
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -429,7 +437,7 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
 
   return (
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="최초 모니터링 기록">
-      <RequiredNotice />
+      {/* 선택 칸이 있어 ‘모든 항목은 필수’ 안내를 두지 않는다. 선택 칸에는 (선택)을 붙인다. */}
       {form.message && <FormMessage tone="error">{form.message}</FormMessage>}
       <TextField
         id="monitored-on"
@@ -462,7 +470,7 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
       />
 
       <div className="form-group">
-        <h3 className="sub-title">서비스별 확인</h3>
+        <h4 className="sub-title">서비스별 확인</h4>
         <p className="text-subtle">새로 확인한 항목만 고릅니다. 고르지 않으면 기존 제공 현황을 그대로 씁니다.</p>
         <ol className="plan-item-list">
           {items.map((item) => {
@@ -483,7 +491,7 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
                   optional
                   emptyOption="기존 현황과 같음"
                   value={value.status}
-                  options={(['IN_USE', 'UNKNOWN', 'NOT_STARTED', 'DECLINED'] as const).map((status) => ({ value: status, label: DELIVERY_STATUS_LABEL[status] }))}
+                  options={DELIVERY_STATUSES.map((status) => ({ value: status, label: DELIVERY_STATUS_LABEL[status] }))}
                   onChange={(event) => setObservation(item.id, { status: event.target.value as DeliveryStatus | '' })}
                   error={value.status === '' || !needReason ? form.errors[`obs:${item.id}`] : undefined}
                   selectRef={value.status === '' || !needReason ? form.bind(`obs:${item.id}`) : undefined}

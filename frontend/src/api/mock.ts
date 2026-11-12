@@ -90,7 +90,7 @@ function allowedActions(account: Account, detail: CaseDetail): AllowedAction[] {
   const town = account.role === 'TOWN';
   const next: Partial<Record<CaseStatus, AllowedAction['action']>> = town
     ? { RECEIVED: 'RECORD_SCREENING', ASSESSED: 'SAVE_DRAFT', PLAN_DRAFTED: 'SAVE_DRAFT' }
-    : { SCREENED: 'RECORD_ASSESSMENT', PLAN_DRAFTED: 'CONFIRM_PLAN' };
+    : { SCREENED: 'RECORD_ASSESSMENT' }; // 확정(30번) 이후는 목업이 흉내 내지 않는다. 실제 API로 확인한다.
   const action = next[detail.status];
   return action ? [{ action, itemId: null }] : [];
 }

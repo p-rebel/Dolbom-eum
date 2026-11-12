@@ -392,24 +392,45 @@ function InPageNavigation({ title }: { title: string }) {
 }
 
 /**
- * 작업 32·33. 서버가 허용한 항목별 동작(연계 기록 → 제공 현황 기록)을 계획 순서로 보여 주고, 버튼을 누른 항목만 입력 폼을 펼친다.
- * 저장하면 버전이 바뀌므로 펼친 폼을 닫는다.
+ * 작업 32·33. 서버가 허용한 항목별 동작(연계 기록 → 제공 현황 기록)을 계획 순서로 보여 주고, 버튼을 누른 항목의 폼을 펼친다.
+ * 닫거나 다른 항목을 열어도 저장 전 입력은 숨긴 채 유지하고(F-35), 409 재조회 뒤에도 입력을 남긴다(D-02:68).
+ * 저장에 성공한 항목의 폼만 닫고 지운다.
  */
 function ItemActions({ detail, handlers }: { detail: CaseDetail; handlers: SaveHandlers }) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  useEffect(() => setOpenId(null), [detail.version]);
+  const [visibleId, setVisibleId] = useState<string | null>(null);
+  const [mountedIds, setMountedIds] = useState<string[]>([]);
   const items = detail.plan?.items ?? [];
   const rows = items
     .map((item, index) => ({ item, index, action: detail.allowedActions.find((allowed) => allowed.itemId === item.id)?.action }))
     .filter((row) => row.action === 'RECORD_LINKAGE' || row.action === 'RECORD_DELIVERY');
   if (rows.length === 0) return null;
 
+  function toggle(itemId: string) {
+    if (visibleId === itemId) {
+      setVisibleId(null);
+      return;
+    }
+    setVisibleId(itemId);
+    setMountedIds((ids) => (ids.includes(itemId) ? ids : [...ids, itemId]));
+  }
+
+  function itemHandlers(itemId: string): SaveHandlers {
+    return {
+      onSaved: (next, message) => {
+        setVisibleId((id) => (id === itemId ? null : id));
+        setMountedIds((ids) => ids.filter((id) => id !== itemId));
+        handlers.onSaved(next, message);
+      },
+      onReload: handlers.onReload,
+    };
+  }
+
   return (
     <>
       <h3 className="sub-title">항목별 기록</h3>
       <ol className="plan-item-list">
         {rows.map(({ item, index, action }) => {
-          const open = openId === item.id;
+          const open = visibleId === item.id;
           const formId = `item-form-${item.id}`;
           const label =
             action === 'RECORD_LINKAGE' ? ACTION_LABEL.RECORD_LINKAGE : item.delivery ? '제공 현황 수정' : ACTION_LABEL.RECORD_DELIVERY;
@@ -431,18 +452,19 @@ function ItemActions({ detail, handlers }: { detail: CaseDetail; handlers: SaveH
                   className="krds-btn medium secondary"
                   aria-expanded={open}
                   aria-controls={formId}
-                  onClick={() => setOpenId(open ? null : item.id)}
+                  onClick={() => toggle(item.id)}
                 >
-                  {open ? '닫기' : label}
+                  {/* 닫아 둔 폼에 저장 전 입력이 남아 있음을 알린다. */}
+                  {open ? '닫기' : mountedIds.includes(item.id) ? `${label} (작성 중)` : label}
                   <span className="sr-only"> {orMissing(item.catalog.programName)}</span>
                 </button>
               </div>
-              {open && (
-                <div id={formId} className="item-form">
+              {mountedIds.includes(item.id) && (
+                <div id={formId} className="item-form" hidden={!open}>
                   {action === 'RECORD_LINKAGE' ? (
-                    <LinkageForm detail={detail} item={item} {...handlers} />
+                    <LinkageForm detail={detail} item={item} {...itemHandlers(item.id)} />
                   ) : (
-                    <DeliveryForm detail={detail} item={item} {...handlers} />
+                    <DeliveryForm detail={detail} item={item} {...itemHandlers(item.id)} />
                   )}
                 </div>
               )}
