@@ -138,9 +138,11 @@ def list_cases(
         where += " AND status = ?"
         params.append(status)
     total = conn.execute(f"SELECT count(*) FROM cases WHERE {where}", params).fetchone()[0]
-    rows = conn.execute(
+    offset = (page - 1) * page_size
+    # 마지막 페이지 이후는 빈 배열. 큰 page가 SQLite 정수 범위를 넘지 않도록 조회하지 않는다
+    rows = [] if offset >= total else conn.execute(
         f"SELECT * FROM cases WHERE {where} ORDER BY received_on DESC, id ASC LIMIT ? OFFSET ?",
-        [*params, page_size, (page - 1) * page_size],
+        [*params, page_size, offset],
     ).fetchall()
     return CasePage(items=[case_summary(r) for r in rows], page=page, page_size=page_size, total=total)
 

@@ -110,6 +110,9 @@ def test_pagination_and_past_last_page(client, three_cases):
     past = client.get("/api/v1/cases", params={"page": 5, "pageSize": 2})
     assert past.status_code == 200
     assert past.json() == {"items": [], "page": 5, "pageSize": 2, "total": 3}
+    # SQLite 정수 범위를 넘는 page도 500이 아니라 빈 배열
+    huge = client.get("/api/v1/cases", params={"page": 10**19, "pageSize": 2})
+    assert huge.status_code == 200 and huge.json()["items"] == []
 
 
 def test_status_filter(client, three_cases, db_file):
