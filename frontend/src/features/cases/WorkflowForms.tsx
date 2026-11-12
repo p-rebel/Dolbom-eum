@@ -18,6 +18,7 @@ import { TextField } from '../../components/TextField';
 import { checkDate, minDate } from '../../dates';
 import { useUnsavedChanges } from '../../router';
 import type { SaveHandlers } from './CaseDetailPage';
+import { useFieldErrors } from './fieldErrors';
 import { interpretSaveError } from './saveErrors';
 
 type Props = { detail: CaseDetail } & SaveHandlers;
@@ -33,8 +34,8 @@ const DELIVERY_STATUSES = ['IN_USE', 'UNKNOWN', 'NOT_STARTED', 'DECLINED'] as co
  * 서버 오류의 field 경로를 화면 칸 이름으로 바꾸려면 mapField를 넘긴다.
  */
 function useSaveForm({ onSaved, onReload }: SaveHandlers) {
-  const [errors, setErrors] = useState<Errors>({});
-  const [message, setMessage] = useState<string | null>(null);
+  // 칸 오류·폼 위 안내는 다른 입력 폼과 같은 규칙(fieldErrors.ts)을 쓴다.
+  const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<string>();
   const [saving, setSaving] = useState(false);
   const refs = useRef<Record<string, HTMLElement | null>>({});
   // 칸마다 같은 콜백 ref를 재사용한다(렌더마다 새로 만들면 매번 떼었다 붙인다).
@@ -43,8 +44,6 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
     (binders.current[field] ??= (element: HTMLElement | null) => {
       refs.current[field] = element;
     });
-  /** 값이 바뀐 칸의 오류를 지운다. */
-  const clear = (field: string) => setErrors((current) => (current[field] ? { ...current, [field]: undefined } : current));
 
   async function submit(options: {
     errors: Errors;
@@ -57,7 +56,7 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
     setErrors(options.errors);
     const first = options.order.find((field) => options.errors[field]);
     if (first) {
-      setMessage('입력값을 확인해 주세요.');
+      setMessage('입력값을 확인해 주세요.', true);
       refs.current[first]?.focus();
       return;
     }
@@ -70,26 +69,24 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
     } catch (error) {
       setSaving(false);
       const result = interpretSaveError(error);
-      if (result.field) {
-        const field = options.mapField?.(result.field.name) ?? result.field.root;
-        if (options.order.includes(field)) {
-          setErrors({ [field]: result.field.message });
-          refs.current[field]?.focus();
-        }
+      const field = result.field ? (options.mapField?.(result.field.name) ?? result.field.root) : undefined;
+      const placed = !!field && options.order.includes(field);
+      if (placed) {
+        setErrors({ [field]: result.field!.message });
+        refs.current[field]?.focus();
       }
       // 다시 불러오는 경우 상단 알림에 같은 문구가 나오므로 폼 안에는 두지 않는다.
+      // 칸에 연결하지 못한 서버 오류는 칸 오류와 무관하게 계속 보인다.
       if (result.reload) {
         setMessage(null);
         onReload(result.message);
       } else {
-        setMessage(result.message);
+        setMessage(result.message, placed);
       }
     }
   }
 
-  // 오류 칸을 모두 고치면 ‘입력값을 확인해 주세요.’ 안내도 숨긴다.
-  const visibleMessage = message === '입력값을 확인해 주세요.' && !Object.values(errors).some(Boolean) ? null : message;
-  return { errors, message: visibleMessage, saving, bind, clear, submit };
+  return { errors, message, saving, bind, clear: clearError, submit };
 }
 
 /** 작업 30. 시군구 회의 결과와 계획 확정(CONFIRM_PLAN). 확정할 서비스 목록은 바로 위 계획 내용으로 재확인한다(D-02). */
@@ -252,7 +249,7 @@ export function LinkageForm({ detail, item, ...handlers }: ItemProps) {
         legend="연계 방식"
         value={method}
         options={methods.map((value) => ({ value, label: LINKAGE_METHOD_LABEL[value] }))}
-        onChange={(value) => { setMethod(value); form.clear('method'); }}
+        onChange={(value) => { setMethod(value); form.clear('method', 'destinationLabel'); }}
         error={form.errors.method}
         firstInputRef={form.bind('method')}
       />
@@ -347,7 +344,7 @@ export function DeliveryForm({ detail, item, ...handlers }: ItemProps) {
         legend="제공 상태"
         value={status}
         options={DELIVERY_STATUSES.map((value) => ({ value, label: DELIVERY_STATUS_LABEL[value] }))}
-        onChange={(value) => { setStatus(value); form.clear('status'); }}
+        onChange={(value) => { setStatus(value); form.clear('status', 'reason'); }}
         error={form.errors.status}
         firstInputRef={form.bind('status')}
       />
@@ -530,7 +527,7 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
           { value: 'no' as const, label: '후속 검토 불필요' },
           { value: 'yes' as const, label: '후속 검토 필요' },
         ]}
-        onChange={(value) => { setReview(value); form.clear('reviewNeeded'); }}
+        onChange={(value) => { setReview(value); form.clear('reviewNeeded', 'reviewReason'); }}
         error={form.errors.reviewNeeded}
         firstInputRef={form.bind('reviewNeeded')}
       />

@@ -12,6 +12,7 @@ import { setFlash } from '../../flash';
 import { useApiData } from '../../hooks/useApiData';
 import { PageHead } from '../../layout/PageHead';
 import { Link, navigate, useUnsavedChanges } from '../../router';
+import { useFieldErrors } from './fieldErrors';
 
 const CRUMBS = [{ label: '신청 목록', to: '/cases' }];
 
@@ -45,12 +46,7 @@ function NewCaseForm() {
   const [receivedOn, setReceivedOn] = useState('');
   const [noticeMethod, setNoticeMethod] = useState<NoticeMethod | ''>('');
   const [evidenceChecked, setEvidenceChecked] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
-  const [message, setMessage] = useState<string | null>(null);
-
-  /** 값을 고치면 그 칸의 오류 표시를 지운다(다시 검사는 저장할 때). */
-  const clearError = (field: string) =>
-    setErrors((current) => (current[field as keyof typeof current] ? { ...current, [field]: undefined } : current));
+  const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<Field>();
   const [submitting, setSubmitting] = useState(false);
   /** 결과를 알 수 없는 요청. 같은 키와 본문으로 재시도한다(D-02). */
   const [uncertain, setUncertain] = useState<{ key: string; body: ReceiveInput } | null>(null);
@@ -90,7 +86,7 @@ function NewCaseForm() {
       if (error.status === 422 && error.field && error.field in refs) {
         const field = error.field as Field;
         setErrors({ [field]: error.message });
-        setMessage(`입력값을 확인해 주세요. ${error.message}`);
+        setMessage(`입력값을 확인해 주세요. ${error.message}`, true);
         focus(field);
       } else if (error.code === 'IDEMPOTENCY_CONFLICT') {
         setMessage('같은 요청으로 다른 접수 내용이 이미 저장되었습니다. 신청 목록에서 기존 접수 여부를 확인해 주세요.');
@@ -119,7 +115,7 @@ function NewCaseForm() {
     setErrors(next);
     const firstInvalid = (['profileCode', 'receivedOn', 'noticeMethod', 'evidenceChecked'] as const).find((field) => next[field]);
     if (firstInvalid) {
-      setMessage('입력값을 확인해 주세요.');
+      setMessage('입력값을 확인해 주세요.', true);
       focus(firstInvalid);
       return;
     }
@@ -141,7 +137,7 @@ function NewCaseForm() {
         <RequiredNotice />
         {profiles.loading && <LoadingBlock label="가상 프로필을 불러오는 중입니다." />}
         {profiles.error && <ErrorBlock message={profiles.error.message} onRetry={profiles.reload} />}
-        {message && !(message === '입력값을 확인해 주세요.' && !Object.values(errors).some(Boolean)) && <FormMessage tone="error">{message}</FormMessage>}
+        {message && <FormMessage tone="error">{message}</FormMessage>}
         {conflict && (
           <p>
             <Link to="/cases" className="krds-btn medium secondary">

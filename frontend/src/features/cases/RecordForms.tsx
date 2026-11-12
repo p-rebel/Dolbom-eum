@@ -8,6 +8,7 @@ import { TextField } from '../../components/TextField';
 import { checkDate, minDate } from '../../dates';
 import { useUnsavedChanges } from '../../router';
 import type { SaveHandlers } from './CaseDetailPage';
+import { useFieldErrors } from './fieldErrors';
 import { interpretSaveError } from './saveErrors';
 
 type Props = { detail: CaseDetail } & SaveHandlers;
@@ -16,12 +17,7 @@ type Props = { detail: CaseDetail } & SaveHandlers;
 export function ScreeningForm({ detail, onSaved, onReload }: Props) {
   const [screenedOn, setScreenedOn] = useState('');
   const [method, setMethod] = useState<ContactMethod | ''>('');
-  const [errors, setErrors] = useState<{ screenedOn?: string; method?: string }>({});
-  const [message, setMessage] = useState<string | null>(null);
-
-  /** 값을 고치면 그 칸의 오류 표시를 지운다(다시 검사는 저장할 때). */
-  const clearError = (field: string) =>
-    setErrors((current) => (current[field as keyof typeof current] ? { ...current, [field]: undefined } : current));
+  const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<'screenedOn' | 'method'>();
   const [saving, setSaving] = useState(false);
   const dateRef = useRef<HTMLInputElement>(null);
   const methodRef = useRef<HTMLInputElement>(null);
@@ -38,7 +34,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
     if (!method) next.method = '조사 방법을 선택해 주세요.';
     setErrors(next);
     if (next.screenedOn || next.method) {
-      setMessage('입력값을 확인해 주세요.');
+      setMessage('입력값을 확인해 주세요.', true);
       (next.screenedOn ? dateRef : methodRef).current?.focus();
       return;
     }
@@ -58,8 +54,10 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
       if (result.field?.root === 'screenedOn' || result.field?.root === 'method') {
         setErrors({ [result.field.root]: result.field.message });
         (result.field.root === 'screenedOn' ? dateRef : methodRef).current?.focus();
+        setMessage(result.message, true);
+      } else {
+        setMessage(result.message);
       }
-      setMessage(result.message);
       if (result.reload) onReload(result.message);
     }
   }
@@ -67,7 +65,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
   return (
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="사전조사 기록">
       <RequiredNotice />
-      {message && !(message === '입력값을 확인해 주세요.' && !Object.values(errors).some(Boolean)) && <FormMessage tone="error">{message}</FormMessage>}
+      {message && <FormMessage tone="error">{message}</FormMessage>}
       <TextField
         id="screened-on"
         label="조사일"
@@ -107,12 +105,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
 export function AssessmentForm({ detail, onSaved, onReload }: Props) {
   const [assessedOn, setAssessedOn] = useState('');
   const [resultReceivedOn, setResultReceivedOn] = useState('');
-  const [errors, setErrors] = useState<{ assessedOn?: string; resultReceivedOn?: string }>({});
-  const [message, setMessage] = useState<string | null>(null);
-
-  /** 값을 고치면 그 칸의 오류 표시를 지운다(다시 검사는 저장할 때). */
-  const clearError = (field: string) =>
-    setErrors((current) => (current[field as keyof typeof current] ? { ...current, [field]: undefined } : current));
+  const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<'assessedOn' | 'resultReceivedOn'>();
   const [saving, setSaving] = useState(false);
   const assessedRef = useRef<HTMLInputElement>(null);
   const receivedRef = useRef<HTMLInputElement>(null);
@@ -132,7 +125,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
     });
     setErrors(next);
     if (next.assessedOn || next.resultReceivedOn) {
-      setMessage('입력값을 확인해 주세요.');
+      setMessage('입력값을 확인해 주세요.', true);
       (next.assessedOn ? assessedRef : receivedRef).current?.focus();
       return;
     }
@@ -152,8 +145,10 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
       if (result.field?.root === 'assessedOn' || result.field?.root === 'resultReceivedOn') {
         setErrors({ [result.field.root]: result.field.message });
         (result.field.root === 'assessedOn' ? assessedRef : receivedRef).current?.focus();
+        setMessage(result.message, true);
+      } else {
+        setMessage(result.message);
       }
-      setMessage(result.message);
       if (result.reload) onReload(result.message);
     }
   }
@@ -161,7 +156,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
   return (
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="판정 결과 기록">
       <RequiredNotice />
-      {message && !(message === '입력값을 확인해 주세요.' && !Object.values(errors).some(Boolean)) && <FormMessage tone="error">{message}</FormMessage>}
+      {message && <FormMessage tone="error">{message}</FormMessage>}
       <TextField
         id="assessed-on"
         label="가상 판정일"
