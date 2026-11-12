@@ -6,7 +6,7 @@
 | 작업표 번호 | [13~23, 24(공동)](WORK_SCHEDULE.md) · 후속 화면 30~34는 DEV-07 |
 | 담당자 / 결과 인수 | 김재현 / 이동수(통합), 김예랑(화면 값·업무 순서), 이보미(프로그램·기관·출처 표시) |
 | 기한 | 11/12 |
-| 상태 | 진행 중 — 13~16번 완료(목업, PR #9 머지), 17번 완료(실제 API 로그인). 업무 API 10~12·25~29번이 PR #13으로 main에 반영되어 18~23·30~34번 모두 착수 가능 |
+| 상태 | 진행 중 — 13~17번 완료, 18~23·30~34번 실제 API 연결과 30~34번 입력 화면 완료(한 PR). 24번 통합 확인·40번 배포 확인 남음 |
 | 마지막 문서 확인 커밋 | main `3a53078` (2026-11-13) |
 
 ## 1. 화면 구현 기준 — KRDS
@@ -192,32 +192,38 @@ KRDS 피그마 ‘📚 Pattern’의 PC 프레임과 5개 화면을 비교했다
 | F-10 | 로컬 접속은 `127.0.0.1:5173`(`localhost`는 다른 출처) | [D-04:16](../design/D-04_api.md) · [H-02 백엔드:54](../handoffs/H-02_backend_review.md) | README, Vite 설정 | ✅ `localhost` 요청 `403` 확인 |
 | F-11 | 비밀번호 표시, 아이디 형식 단서, 자동완성 | KRDS 로그인 패턴 | `TextField.tsx`, `LoginPage.tsx` | ✅ |
 | F-12 | 상태는 색상과 텍스트를 함께 | [D-02:15](../design/D-02_screens.md) | `components/Feedback.tsx` `StatusBadge` | ✅ |
-| F-13 | 접수 오류 3건: 요청 키 `422`, 관할 밖 프로필 `422 profileCode`, 시군구의 `GET /demo-profiles` `403` | [H-02 백엔드:26](../handoffs/H-02_backend_review.md) | `NewCasePage.tsx`(시군구는 접수 화면 차단, 필드 오류 표시) | ✅ 목업. 실제 API는 18번 |
+| F-13 | 접수 오류 3건: 요청 키 `422`, 관할 밖 프로필 `422 profileCode`, 시군구의 `GET /demo-profiles` `403` | [H-02 백엔드:26](../handoffs/H-02_backend_review.md) | `NewCasePage.tsx`(시군구는 접수 화면 차단, 필드 오류 표시) | ✅ 실제 API(19·18번): 시군구 목록에 새 접수 없음, `/cases/new` 접수 차단 안내. 프로필 목록·미리보기 실제 응답 |
 | F-14 | `/cases/:id` 새로고침 시 화면 유지 | [H-02 백엔드:64](../handoffs/H-02_backend_review.md) | 개발 서버 ✅ / 배포 서버는 양이수 구현 | ⬜ 40번 |
 | F-15 | UI-02 목록: 접수번호·대상자·접수일·상태, 상태 필터, 쪽 이동, 읍면동만 새 접수, 행 선택 시 상세 | [D-02:10](../design/D-02_screens.md) · [D-04:22](../design/D-04_api.md) | `features/cases/CaseListPage.tsx` | ✅ 목업 |
 | F-16 | 목록 0건이면 조건 초기화 동작 | [D-02:66](../design/D-02_screens.md) · KRDS 필터링 | `CaseListPage.tsx` | ✅ |
 | F-17 | UI-03 접수: 프로필 선택 후 대상자·대리 신청인·안내대상 미리보기, 접수일·안내방식·증빙 확인, 저장 후 상세 이동 | [D-02:11](../design/D-02_screens.md) · [D-04:53](../design/D-04_api.md) | `NewCasePage.tsx` | ✅ 목업 |
-| F-18 | 접수 결과가 불명확하면 같은 요청 키·본문으로 재시도. 그동안 입력을 잠가 새 키로 중복 접수되지 않게 한다 | [D-02:71](../design/D-02_screens.md) · [D-04:81](../design/D-04_api.md) | `NewCasePage.tsx` `uncertain`, `form-lock` | ✅ 코드. 연결 실패 재현은 18번 |
-| F-19 | 요청 키 충돌 `409`는 신청 목록에서 기존 접수 확인으로 안내(이동 버튼) | [D-02:68](../design/D-02_screens.md) | `NewCasePage.tsx` `conflict` | ✅ 코드. 재현은 18번 |
+| F-18 | 접수 결과가 불명확하면 같은 요청 키·본문으로 재시도. 그동안 입력을 잠가 새 키로 중복 접수되지 않게 한다 | [D-02:71](../design/D-02_screens.md) · [D-04:81](../design/D-04_api.md) | `NewCasePage.tsx` `uncertain`, `form-lock` | ✅ 코드. 연결 실패 재현은 47번 검증에서 |
+| F-19 | 요청 키 충돌 `409`는 신청 목록에서 기존 접수 확인으로 안내(이동 버튼) | [D-02:68](../design/D-02_screens.md) | `NewCasePage.tsx` `conflict` | ✅ 코드. 재현은 47번 검증에서 |
 | F-20 | UI-04 상단: 접수번호·대상자·관할·상태·다음 작업, 다음 담당 역할 대기 문구 | [D-02:12·59](../design/D-02_screens.md) · [expected-results](../design/expected-results.md) | `CaseDetailPage.tsx`, `api/labels.ts` `nextStepLabel` | ✅ 목업 v1~v4 문구 일치 |
 | F-21 | 상세 영역 순서: 접수·조사, 계획, 연계·제공, 모니터링, 처리 이력 | [D-02:12·47~55](../design/D-02_screens.md) | `CaseDetailPage.tsx` (세로 배치 + 페이지 내 이동) | ✅ 탭 대신 세로 배치는 5절 확인 요청 |
 | F-22 | 입력 버튼은 `allowedActions`로만 구성 | [D-02:3](../design/D-02_screens.md) · [D-04:65](../design/D-04_api.md) | `CaseDetailPage.tsx` `can()` | ✅ 시군구 v2 판정, 읍면동 v3 초안, 시군구 v4 확정 |
 | F-23 | 사전조사(읍면동)와 판정(시군구) 저장 동작 구분, 판정일·수신일 분리 | [D-02:51](../design/D-02_screens.md) · [D-05:10·11](../design/D-05_workflow.md) | `RecordForms.tsx` | ✅ v2·v3 |
-| F-24 | 저장 `422` 필드 표시(서버 문구 보존, `serviceIds.1` 같은 배열 경로는 첫 부분으로 연결)·입력 유지, `409` 최신 상세 재조회, `403`·`404` 안내, 응답 유실 시 재조회 | [D-02:67~71](../design/D-02_screens.md) · [D-04:99](../design/D-04_api.md) | `features/cases/saveErrors.ts` | ✅ 코드. 서버 오류 응답으로 재현은 20·21·23번 |
+| F-24 | 저장 `422` 필드 표시(서버 문구 보존, `serviceIds.1` 같은 배열 경로는 첫 부분으로 연결)·입력 유지, `409` 최신 상세 재조회, `403`·`404` 안내, 응답 유실 시 재조회 | [D-02:67~71](../design/D-02_screens.md) · [D-04:99](../design/D-04_api.md) | `features/cases/saveErrors.ts` | ✅ 실제 API(20·21·23·30~34번): 화면 검사가 먼저 막고, 서버 422 필드는 `observations.N` 순번을 항목 칸으로 바꿔 연결 |
 | F-25 | 처리 이력: 최근 처리부터 시각(한국 시간)·담당 역할·동작·상태 변화·요약 | [D-02:55](../design/D-02_screens.md) · [D-03:47](../design/D-03_data_model.md) | `CaseDetailPage.tsx` | ✅ |
-| F-26 | UI-05 조회: 시도·시군구·대분류·검색어, 출처·기준일, 펼쳐서 분류·주소·연락처 | [D-02:13·57](../design/D-02_screens.md) · [D-04:24~28](../design/D-04_api.md) | `features/catalog/CatalogSearch.tsx` | ✅ 화면. 음성군 ‘다제약물’ 1건·보건의료 32건·충북 시군구 11개는 22번에서 실제 API로 확인 |
+| F-26 | UI-05 조회: 시도·시군구·대분류·검색어, 출처·기준일, 펼쳐서 분류·주소·연락처 | [D-02:13·57](../design/D-02_screens.md) · [D-04:24~28](../design/D-04_api.md) | `features/catalog/CatalogSearch.tsx` | ✅ 실제 API(22번): 사례 지역 기본 필터(충청북도/음성군), 검색 결과 20건, 출처·기준일. 값을 고른 선택 상자에 KRDS `completed` 글자색 |
 | F-27 | 결측값은 ‘자료 없음’ | [D-02:57](../design/D-02_screens.md) | `api/labels.ts` `orMissing` | ✅ 목업 주소·연락처 결측 |
 | F-28 | 검색 0건이면 지역·검색어를 바꿀 수 있는 동작 | [D-02:66](../design/D-02_screens.md) | `CatalogSearch.tsx` | ✅ |
 | F-29 | 계획 안에서 열면 사례 시도·시군구를 기본 필터로, 선택은 초안에만 추가, 저장 전까지 입력 유지 | [D-02:57](../design/D-02_screens.md) | `PlanDraftForm.tsx` | ✅ 사례 지역 기본값 |
 | F-30 | 시군구·독립 조회 화면에는 계획 추가 버튼 없음 | [D-02:57](../design/D-02_screens.md) | `CatalogPage.tsx` (`pick` 없음) | ✅ 선택 버튼 0개 |
 | F-31 | 초안: 수립일·목표(1~200자)·서비스 1~5개, 선택 순서대로 저장 | [D-02:52](../design/D-02_screens.md) · [D-04:56·76](../design/D-04_api.md) | `PlanDraftForm.tsx` (선택 순서대로, 빼기로 교체) | ✅ 목업 v4, 새로고침 후 순서 유지 |
-| F-32 | 관할 밖 사례: 목록 0건, 상세 접근 불가 | [D-06 AC-01](../design/D-06_work_items.md) · [expected-results](../design/expected-results.md) | `CaseListPage.tsx`, `CaseDetailPage.tsx` (`404` 안내) | ✅ 코드. 관할 판단은 서버, 19번에서 확인 |
-| F-33 | 확정·안내·연계·제공·모니터링 입력 | [D-02:52~54](../design/D-02_screens.md) | `CaseDetailPage.tsx` 비활성 버튼 자리 | ⬜ 30~34번(DEV-07) |
+| F-32 | 관할 밖 사례: 목록 0건, 상세 접근 불가 | [D-06 AC-01](../design/D-06_work_items.md) · [expected-results](../design/expected-results.md) | `CaseListPage.tsx`, `CaseDetailPage.tsx` (`404` 안내) | ✅ 실제 API(19번): `demo-town-a2`·`demo-town-b` 목록 0건, 상세 404 → ‘찾을 수 없거나 조회 권한이 없습니다’ |
+| F-33 | 확정·안내·연계·제공·모니터링 입력 | [D-02:52~54](../design/D-02_screens.md) | `CaseDetailPage.tsx` 비활성 버튼 자리 | ✅ 30~34번: `WorkflowForms.tsx`(확정·안내·항목별 연계·제공·모니터링). 실제 API로 버전 5→13, 이력 13건, 새로고침 후 유지 |
 | F-34 | 날짜 순서(접수일 ≤ 조사일 ≤ 판정일 ≤ 수신일 ≤ 수립일, 같은 날 허용)와 연도 4자리를 화면에서도 검사 | [D-05:38](../design/D-05_workflow.md) · KRDS 입력폼(클라이언트 측 검증) | `dates.ts`, 각 입력 폼의 `min`·`max` | ✅ 10/31 차단·11/01 저장·연도 4자리 |
 | F-35 | 저장하지 않은 입력이 있으면 이동·뒤로 가기·로그아웃·새로고침 전에 확인 | KRDS 확인 패턴(사용자 요청 추가) | `router.tsx` `useUnsavedChanges`, `components/LeavePrompt.tsx`, `Modal.tsx` | ✅ 8개 시나리오 |
 | F-36 | 저장된 초안과 수정 중인 입력을 함께 표시(409 뒤 비교) | [D-02:68](../design/D-02_screens.md) | `CaseDetailPage.tsx` 저장된 초안 | ✅ |
 | F-37 | 세션 쿠키를 화면 코드가 다루지 않는다(HttpOnly, SameSite=Strict, 경로 `/api/v1`) | [D-04:16](../design/D-04_api.md) · `backend/app/api/sessions.py` | `api/client.ts` (`credentials: 'same-origin'`) | ✅ 실제 API(17번): 쿠키 속성 확인, `document.cookie`에 없음 |
 | F-38 | 로그인 화면 오른쪽 서비스 소개(안내 상자: 소개 한 문장 + 주요 기능 3개) | 4절 11/13 결정 · 문구 [D-01](../design/D-01_scope.md) 첫 문단·REQ-02~07 · KRDS 피그마 로그인 Step 3 오른쪽 열 | `LoginPage.tsx` `ABOUT_INTRO`·`ABOUT_FEATURES`, `styles.css` `login-about-box` | ✅ 800·1024·1280px 두 열(입력 열·소개 상자 모두 295px, 위끝 같음. 본문 최대 폭 792px), 375px 한 열(가로 넘침 없음), 목업 모드에서도 같음(목업 안내는 두 열 아래 별도 영역) |
+| F-39 | 확정: 회의일(≥ 수립일)·승인, 확정할 서비스 목록을 위 계획으로 재확인 | [D-02:52](../design/D-02_screens.md) · [D-04:58](../design/D-04_api.md) · [D-05:37](../design/D-05_workflow.md) | `WorkflowForms.tsx` `ConfirmPlanForm` | ✅ 수립일 이전 차단, 버전 5, ‘2026-11-07 승인’ |
+| F-40 | 안내: 안내일(≥ 회의일), 접수 때 정한 안내대상·방식 표시 | [D-02:52](../design/D-02_screens.md) · [expected-results 6](../design/expected-results.md) | `NoticeForm` | ✅ 버전 6, ‘안내일 · 가상 대리 신청인 01 · 문자’ |
+| F-41 | 항목별 연계: 연계일(≥ 안내일), 방식 3종, 부서·공단 의뢰 수신처 필수(80자), 제공기관 의뢰는 기관명 있는 행만, 대상자 안내는 제공기관을 후보로 표시 | [D-02:53](../design/D-02_screens.md) · [D-04:76](../design/D-04_api.md) · [D-05:45](../design/D-05_workflow.md) | `LinkageForm`, `CaseDetailPage.tsx` `ItemActions`(항목마다 버튼으로 펼침) | ✅ 수신처 누락 차단, 버전 7~9, ‘연계·제공 기록 중’ |
+| F-42 | 항목별 제공 현황: 확인일(≥ 연계일), 상태 4종, 미개시·이용 거부 사유 필수(200자), 모니터링 전 갱신 | [D-02:53](../design/D-02_screens.md) · [D-04:77](../design/D-04_api.md) | `DeliveryForm`(저장값으로 채워 ‘제공 현황 수정’) | ✅ 미개시 사유 누락 차단, 버전 10~12, ‘확인 중 · 확인일 · 사유’ |
+| F-43 | 최초 모니터링: 기록일(≥ 마지막 제공 확인일)·방법·상태 변화, 기존 제공 현황을 보며 새로 확인한 항목만 상태·사유, ‘후속 검토 필요’면 바로 아래 사유 필수 | [D-02:54·59](../design/D-02_screens.md) · [D-04:78·79](../design/D-04_api.md) · [expected-results 13](../design/expected-results.md) | `MonitoringForm` | ✅ 관찰·후속 검토 사유 누락 차단, 버전 13, ‘기존 제공 현황 · 확인 중’/‘모니터링 확인 · 미개시’ 구분, 입력 폼 사라짐 |
+| F-44 | 처리 이력에서 연계·제공 현황의 시점을 서비스별로 확인 | [D-02:55](../design/D-02_screens.md) | `CaseDetailPage.tsx` 이력 변경 요약에 `itemId`의 서비스명 | ✅ 연계·제공 6행에 서비스명 |
 
 ## 3. 개발 환경 실행 확인 (13번 시작 조건)
 
@@ -245,6 +251,10 @@ KRDS 피그마 ‘📚 Pattern’의 PC 프레임과 5개 화면을 비교했다
 | 11/13 | 17번부터 로컬 `frontend/.env`를 `VITE_USE_MOCK_API=false`로 두고 실제 API로 확인한다. 팀 기본값인 `.env.example`은 20·21·23번 API가 없어 24번 통합 때 `false`로 바꾼다(5절 메모). 로컬 DB는 `app.db seed`를 `DOLBOMEUM_DEMO_PASSWORD=demo-password`로 만들어 목업과 같은 비밀번호를 쓴다. 시연 서버 비밀번호는 별도 | 김재현 |
 | 11/13 | 로그인 화면 오른쪽 안내 열(KRDS 피그마 로그인 Step 3)에 서비스 소개를 둔다. 회색 안내 상자 안에 ⓘ ‘돌봄e음은’, 소개 한 문장(D-01 첫 문단 요약), 주요 기능 3개(신청 접수·조사·판정 기록 / 공단 서비스로 지원계획 작성 / 연계·제공·모니터링 기록 — REQ-02~07 요약). 공공기관 로그인 화면(공공데이터포털·국민건강보험·정부24)을 참고해 시안 3종(안내 상자·번호 목록·기능 카드)을 비교하고 안내 상자를 골랐다. 시연 계정·비밀번호 안내는 넣지 않는다. 문구는 문서 요약이지만 화면 요소 추가는 팀 문서에 없어 5절에서 이동수 님께 알린다 | 김재현 |
 | 11/13 | 로그인 화면의 ‘API 연결됨’ 표시는 [DEV-01:85](DEV-01.md) 실행 확인 절차에 있어 유지하고, 위치를 화면 아래에서 제목 옆(‘가상 계정 로그인 · API 연결됨’)으로 옮긴다. 제목 글자에는 넣지 않고 같은 줄에 작게 둔다 | 김재현 |
+| 11/13 | 18~23·30~34번은 연속 작업이라 한 브랜치(`feature/fe-18-34-api-connect`)에서 이어서 하고 PR 하나로 올린다. 커밋은 작업 번호별, 카톡 완료 보고는 번호별 | 김재현 |
+| 11/13 | 30~34번 입력 폼은 `WorkflowForms.tsx`에 모으고, 저장 처리(화면 검사·첫 오류 칸 초점·422 칸 연결·409 재조회)를 `useSaveForm` 하나로 묶었다(5절 후속 메모의 공통 훅). 기존 사전조사·판정·초안 폼은 이번에 바꾸지 않는다 | 김재현 |
+| 11/13 | 연계·제공은 항목마다 ‘연계 기록’·‘제공 현황 기록(수정)’ 버튼을 두고 누른 항목만 폼을 펼친다. 세 항목 폼을 한꺼번에 펼치면 화면이 길어지고 어느 항목을 입력하는지 헷갈린다 | 김재현 |
+| 11/13 | `.env.example`의 `VITE_USE_MOCK_API`를 `false`로 바꾼다. 모든 화면이 실제 API에 연결되었고 목업은 30~34번을 흉내 내지 않는다 | 김재현 |
 | 11/13 | 관리자 계정·관리자 페이지는 이번 시연 범위에서 만들지 않는다. 설계 문서(D-01~D-06)에 관리자 역할이 없고, 계정은 `app.db seed`로 만든다. 인수 시 운영 측 후속 과제로 넘긴다 | 김재현 |
 | 11/12 | 1절 원칙에 따라 문서 근거가 없는 요소를 뺐다: 진행 단계 표시기, 서비스 순서 변경 버튼, 처리 이력 버전 열, 접수 미리보기·공단 상세의 지역, 접수일 기본값, 접수 취소 버튼, 로그인 안내 문장. 공단 조회 쪽당 건수는 D-04 기본값 20건, 검색 닫기 버튼은 D-02:37 ‘계획으로 돌아가기’. | 김재현 |
 
@@ -263,7 +273,7 @@ KRDS 피그마 ‘📚 Pattern’의 PC 프레임과 5개 화면을 비교했다
 | 관할 표시: D-04 `Account`·`Region`에 읍면동 이름이 없어 `DEMO-A-1` 같은 코드가 화면에 나온다 | 이동수·양이수 | D-02:15 관할 표시 | 코드로 표시 |
 | 시군구의 다음 작업: 세 항목 제공 현황이 모두 기록돼도 `RECORD_DELIVERY`가 계속 허용되어(D-04:68, D-05:39) ‘제공 현황 기록’으로 남는다. 시군구에게 보일 문구 | 이동수 | 33번 | 첫 허용 동작 이름 표시 |
 | D-02:54 “누락된 항목은 서비스명과 빠진 값을 표시”가 모니터링 입력 검증인지 완료 화면 표시인지 | 이동수·김예랑 | 34번 | — |
-| 처리 이력 `summary` 내용(항목별 동작에 서비스명 포함 여부), ‘연계 전’·‘기록 전’ 표시 문구 | 이동수 | 32·33번 | 항목 동작은 서비스명을 화면에서 붙이는 방안 |
+| 처리 이력 `summary` 내용(항목별 동작에 서비스명 포함 여부), ‘연계 전’·‘기록 전’ 표시 문구 | 이동수 | 32·33번 | 11/13 화면에서 `itemId`로 서비스명을 붙여 구현(F-44). 서버 `summary` 문구는 그대로 |
 
 #### 설계 문서에 없는 화면 문구
 
@@ -280,7 +290,7 @@ KRDS 피그마 ‘📚 Pattern’의 PC 프레임과 5개 화면을 비교했다
 
 - 30~34번: 사전조사·판정·초안 폼의 저장 처리(중복 클릭 방지, `interpretSaveError`, 오류 칸 초점, `onReload`)가 세 곳에 반복된다. 폼이 늘기 전에 공통 훅으로 묶는다(PR 전 AI 검토 지적, 2026-11-12).
 - 34번: 모니터링 오류 `observations.0.reason`은 항목 순번 경로라 항목별 입력란에 연결하는 변환이 필요하다(현재는 폼 위 안내).
-- 24번·40번: `.env.example`의 `VITE_USE_MOCK_API=true`를 실제 API 연결 시 `false`로 바꾼다. 통합·배포 빌드는 `false`로 한다.
+- ~~24번·40번: `.env.example`의 `VITE_USE_MOCK_API=true`를 실제 API 연결 시 `false`로 바꾼다.~~ 11/13 18~34번 연결 PR에서 `false`로 바꿨다. 목업(`mock.ts`)은 30~34번 API를 흉내 내지 않으므로 확정 이후 단계는 실제 API로만 확인한다.
 - 로그인 반복 시도 제한: 현재 로그인 API(`POST /session`)에 시도 횟수 제한·잠금이 없다. 비공개 시연이고 비밀번호는 seed 때 정하므로 이번 범위에서 제외하고, 인수 후 운영 과제로 넘긴다(11/13 김재현).
 - 세션: 유효시간 8시간(발급 기준)은 D-04:16 제안값이며 서버 환경값이다. 만료 사전 안내·연장은 이번 범위에서 제외(위 표).
 
