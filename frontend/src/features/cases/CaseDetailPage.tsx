@@ -605,16 +605,15 @@ function MonitoringView({ detail }: { detail: CaseDetail }) {
         </div>
         <div>
           <dt>후속 검토</dt>
-          <dd>
-            {monitoring.reviewNeeded ? '후속 검토 필요' : '후속 검토 불필요'}
-            {monitoring.reviewNeeded && monitoring.reviewReason && (
-              <>
-                <br />
-                <span>후속 검토 사유: {monitoring.reviewReason}</span>
-              </>
-            )}
-          </dd>
+          <dd>{monitoring.reviewNeeded ? '후속 검토 필요' : '후속 검토 불필요'}</dd>
         </div>
+        {/* ‘후속 검토 필요’일 때만 바로 아래 행에 사유를 둔다(D-02:59). */}
+        {monitoring.reviewNeeded && monitoring.reviewReason && (
+          <div>
+            <dt>후속 검토 사유</dt>
+            <dd>{monitoring.reviewReason}</dd>
+          </div>
+        )}
       </dl>
       <ul className="plan-item-list">
         {monitoring.observations.map((observation) => {
