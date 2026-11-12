@@ -6,11 +6,16 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
+from datetime import UTC, date, datetime
 from typing import Any, Literal
 
 from .api.sessions import DemoProfile, Region
 from .auth import Account, CamelModel
+from .errors import ApiError
+
+_BUSINESS_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 CaseStatus = Literal[
     "RECEIVED", "SCREENED", "ASSESSED", "PLAN_DRAFTED",
@@ -124,8 +129,26 @@ class CaseDetail(CaseSummary):
 def can_access(account: Account, case_row: sqlite3.Row) -> bool:
     """읍면동은 소속 읍면동 건, 시군구는 소속 시군구 건 (D-05 공통 전환 조건)."""
     if account.role == "TOWN":
-        return case_row["town_code"] == account.town_code
+        return case_row["district_code"] == account.district_code and case_row["town_code"] == account.town_code
     return case_row["district_code"] == account.district_code
+
+
+def accessible_case(conn: sqlite3.Connection, case_id: str, account: Account) -> sqlite3.Row:
+    row = conn.execute("SELECT * FROM cases WHERE id = ?", (case_id,)).fetchone()
+    if row is None or not can_access(account, row):
+        raise ApiError(404, "NOT_FOUND", "신청 건을 찾을 수 없습니다.")
+    return row
+
+
+def validate_business_date(value: str) -> str:
+    if not _BUSINESS_DATE.fullmatch(value):
+        raise ValueError("YYYY-MM-DD 형식이어야 합니다.")
+    date.fromisoformat(value)
+    return value
+
+
+def case_timestamp() -> str:
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def case_summary(row: sqlite3.Row) -> CaseSummary:
@@ -185,14 +208,18 @@ def allowed_actions(account: Account, status: str, plan: Plan | None) -> list[Al
         return [] if town else [AllowedAction(action="RECORD_ASSESSMENT")]
     if status == "ASSESSED":
         return [AllowedAction(action="SAVE_DRAFT")] if town else []
-    if status == "PLAN_DRAFTED":
-        return [AllowedAction(action="SAVE_DRAFT" if town else "CONFIRM_PLAN")]
+    if status == "PLAN_DRAFTED" and plan is not None and plan.confirmation is None:
+        if town:
+            return [AllowedAction(action="SAVE_DRAFT")]
+        return [AllowedAction(action="CONFIRM_PLAN")] if plan.items else []
     if status in ("PLAN_CONFIRMED", "SERVICE_TRACKING") and plan is not None:
         if town:
-            done = status == "SERVICE_TRACKING" and all(i.delivery is not None for i in plan.items)
+            done = status == "SERVICE_TRACKING" and plan.notice is not None and bool(plan.items) and all(
+                item.linkage is not None and item.delivery is not None for item in plan.items
+            )
             return [AllowedAction(action="RECORD_MONITORING")] if done else []
         if plan.notice is None:
-            return [AllowedAction(action="RECORD_NOTICE")]
+            return [AllowedAction(action="RECORD_NOTICE")] if status == "PLAN_CONFIRMED" else []
         # 항목별로 연계 전이면 연계, 연계 후면 제공 현황(최초 모니터링 전까지 갱신 가능)
         return [
             AllowedAction(action="RECORD_DELIVERY" if i.linkage else "RECORD_LINKAGE", item_id=i.id)
