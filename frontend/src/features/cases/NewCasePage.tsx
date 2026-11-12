@@ -47,6 +47,10 @@ function NewCaseForm() {
   const [evidenceChecked, setEvidenceChecked] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [message, setMessage] = useState<string | null>(null);
+
+  /** 값을 고치면 그 칸의 오류 표시를 지운다(다시 검사는 저장할 때). */
+  const clearError = (field: string) =>
+    setErrors((current) => (current[field as keyof typeof current] ? { ...current, [field]: undefined } : current));
   const [submitting, setSubmitting] = useState(false);
   /** 결과를 알 수 없는 요청. 같은 키와 본문으로 재시도한다(D-02). */
   const [uncertain, setUncertain] = useState<{ key: string; body: ReceiveInput } | null>(null);
@@ -137,7 +141,7 @@ function NewCaseForm() {
         <RequiredNotice />
         {profiles.loading && <LoadingBlock label="가상 프로필을 불러오는 중입니다." />}
         {profiles.error && <ErrorBlock message={profiles.error.message} onRetry={profiles.reload} />}
-        {message && <FormMessage tone="error">{message}</FormMessage>}
+        {message && !(message === '입력값을 확인해 주세요.' && !Object.values(errors).some(Boolean)) && <FormMessage tone="error">{message}</FormMessage>}
         {conflict && (
           <p>
             <Link to="/cases" className="krds-btn medium secondary">
@@ -155,7 +159,7 @@ function NewCaseForm() {
               emptyOption="선택"
               value={profileCode}
               options={profiles.data.items.map((item) => ({ value: item.code, label: `${item.code} · ${item.beneficiaryName}` }))}
-              onChange={(event) => setProfileCode(event.target.value)}
+              onChange={(event) => { setProfileCode(event.target.value); clearError('profileCode'); }}
               error={errors.profileCode}
               selectRef={refs.profileCode}
             />
@@ -183,7 +187,7 @@ function NewCaseForm() {
               hint="연도-월-일 순서로 입력(예: 2026-11-01)"
               type="date"
               value={receivedOn}
-              onChange={(event) => setReceivedOn(event.target.value)}
+              onChange={(event) => { setReceivedOn(event.target.value); clearError('receivedOn'); }}
               error={errors.receivedOn}
               inputRef={refs.receivedOn}
             />
@@ -192,7 +196,7 @@ function NewCaseForm() {
               legend="안내방식"
               value={noticeMethod}
               options={(['SMS', 'MAIL'] as const).map((value) => ({ value, label: NOTICE_METHOD_LABEL[value] }))}
-              onChange={setNoticeMethod}
+              onChange={(value) => { setNoticeMethod(value); clearError('noticeMethod'); }}
               error={errors.noticeMethod}
               firstInputRef={refs.noticeMethod}
             />
@@ -200,7 +204,7 @@ function NewCaseForm() {
               id="evidence-checked"
               label="증빙 서류를 확인했습니다"
               checked={evidenceChecked}
-              onChange={setEvidenceChecked}
+              onChange={(value) => { setEvidenceChecked(value); clearError('evidenceChecked'); }}
               error={errors.evidenceChecked}
               inputRef={refs.evidenceChecked}
             />

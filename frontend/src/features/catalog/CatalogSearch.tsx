@@ -97,7 +97,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             fieldSize="medium"
             hint="프로그램명 또는 기관명"
             value={draft.q}
-            onChange={(event) => setDraft({ ...draft, q: event.target.value })}
+            onChange={(event) => { setDraft({ ...draft, q: event.target.value }); setQError(undefined); }}
             onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
               if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
                 event.preventDefault();

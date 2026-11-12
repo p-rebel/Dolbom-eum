@@ -110,7 +110,7 @@ export function LoginPage({ notice }: { notice: string | null }) {
               name="username"
               autoComplete="username"
               value={username}
-              onChange={(event) => setUsername(event.target.value)}
+              onChange={(event) => { setUsername(event.target.value); setFieldErrors((current) => ({ ...current, username: undefined })); }}
               error={fieldErrors.username}
               inputRef={usernameRef}
             />
@@ -121,7 +121,7 @@ export function LoginPage({ notice }: { notice: string | null }) {
               name="password"
               autoComplete="current-password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => { setPassword(event.target.value); setFieldErrors((current) => ({ ...current, password: undefined })); }}
               error={fieldErrors.password}
               inputRef={passwordRef}
             />

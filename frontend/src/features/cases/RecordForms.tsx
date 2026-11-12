@@ -18,6 +18,10 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
   const [method, setMethod] = useState<ContactMethod | ''>('');
   const [errors, setErrors] = useState<{ screenedOn?: string; method?: string }>({});
   const [message, setMessage] = useState<string | null>(null);
+
+  /** 값을 고치면 그 칸의 오류 표시를 지운다(다시 검사는 저장할 때). */
+  const clearError = (field: string) =>
+    setErrors((current) => (current[field as keyof typeof current] ? { ...current, [field]: undefined } : current));
   const [saving, setSaving] = useState(false);
   const dateRef = useRef<HTMLInputElement>(null);
   const methodRef = useRef<HTMLInputElement>(null);
@@ -63,7 +67,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
   return (
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="사전조사 기록">
       <RequiredNotice />
-      {message && <FormMessage tone="error">{message}</FormMessage>}
+      {message && !(message === '입력값을 확인해 주세요.' && !Object.values(errors).some(Boolean)) && <FormMessage tone="error">{message}</FormMessage>}
       <TextField
         id="screened-on"
         label="조사일"
@@ -71,7 +75,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
         hint={`접수일(${detail.receivedOn})과 같거나 이후 날짜`}
         min={minDate(detail.receivedOn)}
         value={screenedOn}
-        onChange={(event) => setScreenedOn(event.target.value)}
+        onChange={(event) => { setScreenedOn(event.target.value); clearError('screenedOn'); }}
         error={errors.screenedOn}
         inputRef={dateRef}
       />
@@ -80,7 +84,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
         legend="조사 방법"
         value={method}
         options={(['VISIT', 'PHONE'] as const).map((value) => ({ value, label: CONTACT_METHOD_LABEL[value] }))}
-        onChange={setMethod}
+        onChange={(value) => { setMethod(value); clearError('method'); }}
         error={errors.method}
         firstInputRef={methodRef}
       />
@@ -105,6 +109,10 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
   const [resultReceivedOn, setResultReceivedOn] = useState('');
   const [errors, setErrors] = useState<{ assessedOn?: string; resultReceivedOn?: string }>({});
   const [message, setMessage] = useState<string | null>(null);
+
+  /** 값을 고치면 그 칸의 오류 표시를 지운다(다시 검사는 저장할 때). */
+  const clearError = (field: string) =>
+    setErrors((current) => (current[field as keyof typeof current] ? { ...current, [field]: undefined } : current));
   const [saving, setSaving] = useState(false);
   const assessedRef = useRef<HTMLInputElement>(null);
   const receivedRef = useRef<HTMLInputElement>(null);
@@ -153,7 +161,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
   return (
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="판정 결과 기록">
       <RequiredNotice />
-      {message && <FormMessage tone="error">{message}</FormMessage>}
+      {message && !(message === '입력값을 확인해 주세요.' && !Object.values(errors).some(Boolean)) && <FormMessage tone="error">{message}</FormMessage>}
       <TextField
         id="assessed-on"
         label="가상 판정일"
@@ -161,7 +169,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
         hint={detail.screening ? `조사일(${detail.screening.screenedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(detail.screening?.screenedOn)}
         value={assessedOn}
-        onChange={(event) => setAssessedOn(event.target.value)}
+        onChange={(event) => { setAssessedOn(event.target.value); clearError('assessedOn'); }}
         error={errors.assessedOn}
         inputRef={assessedRef}
       />
@@ -172,7 +180,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
         hint="판정일과 같거나 이후 날짜"
         min={minDate(detail.screening?.screenedOn, assessedOn)}
         value={resultReceivedOn}
-        onChange={(event) => setResultReceivedOn(event.target.value)}
+        onChange={(event) => { setResultReceivedOn(event.target.value); clearError('resultReceivedOn'); }}
         error={errors.resultReceivedOn}
         inputRef={receivedRef}
       />

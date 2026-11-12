@@ -87,7 +87,9 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
     }
   }
 
-  return { errors, message, saving, bind, clear, submit };
+  // 오류 칸을 모두 고치면 ‘입력값을 확인해 주세요.’ 안내도 숨긴다.
+  const visibleMessage = message === '입력값을 확인해 주세요.' && !Object.values(errors).some(Boolean) ? null : message;
+  return { errors, message: visibleMessage, saving, bind, clear, submit };
 }
 
 /** 작업 30. 시군구 회의 결과와 계획 확정(CONFIRM_PLAN). 확정할 서비스 목록은 바로 위 계획 내용으로 재확인한다(D-02). */
@@ -119,7 +121,7 @@ export function ConfirmPlanForm({ detail, ...handlers }: Props) {
         hint={preparedOn ? `수립일(${preparedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(preparedOn)}
         value={meetingOn}
-        onChange={(event) => setMeetingOn(event.target.value)}
+        onChange={(event) => { setMeetingOn(event.target.value); form.clear('meetingOn'); }}
         error={form.errors.meetingOn}
         inputRef={form.bind('meetingOn')}
       />
@@ -176,7 +178,7 @@ export function NoticeForm({ detail, ...handlers }: Props) {
         hint={meetingOn ? `회의일(${meetingOn})과 같거나 이후 날짜` : undefined}
         min={minDate(meetingOn)}
         value={announcedOn}
-        onChange={(event) => setAnnouncedOn(event.target.value)}
+        onChange={(event) => { setAnnouncedOn(event.target.value); form.clear('announcedOn'); }}
         error={form.errors.announcedOn}
         inputRef={form.bind('announcedOn')}
       />
@@ -241,7 +243,7 @@ export function LinkageForm({ detail, item, ...handlers }: ItemProps) {
         hint={announcedOn ? `안내일(${announcedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(announcedOn)}
         value={linkedOn}
-        onChange={(event) => setLinkedOn(event.target.value)}
+        onChange={(event) => { setLinkedOn(event.target.value); form.clear('linkedOn'); }}
         error={form.errors.linkedOn}
         inputRef={form.bind('linkedOn')}
       />
@@ -250,7 +252,7 @@ export function LinkageForm({ detail, item, ...handlers }: ItemProps) {
         legend="연계 방식"
         value={method}
         options={methods.map((value) => ({ value, label: LINKAGE_METHOD_LABEL[value] }))}
-        onChange={setMethod}
+        onChange={(value) => { setMethod(value); form.clear('method'); }}
         error={form.errors.method}
         firstInputRef={form.bind('method')}
       />
@@ -261,7 +263,7 @@ export function LinkageForm({ detail, item, ...handlers }: ItemProps) {
           hint={`담당 부서 또는 공단을 가상 수신처로 입력(${DESTINATION_MAX}자 이내)`}
           maxLength={DESTINATION_MAX}
           value={destination}
-          onChange={(event) => setDestination(event.target.value)}
+          onChange={(event) => { setDestination(event.target.value); form.clear('destinationLabel'); }}
           error={form.errors.destinationLabel}
           inputRef={form.bind('destinationLabel')}
         />
@@ -336,7 +338,7 @@ export function DeliveryForm({ detail, item, ...handlers }: ItemProps) {
         hint={linkedOn ? `연계일(${linkedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(linkedOn)}
         value={observedOn}
-        onChange={(event) => setObservedOn(event.target.value)}
+        onChange={(event) => { setObservedOn(event.target.value); form.clear('observedOn'); }}
         error={form.errors.observedOn}
         inputRef={form.bind('observedOn')}
       />
@@ -345,7 +347,7 @@ export function DeliveryForm({ detail, item, ...handlers }: ItemProps) {
         legend="제공 상태"
         value={status}
         options={DELIVERY_STATUSES.map((value) => ({ value, label: DELIVERY_STATUS_LABEL[value] }))}
-        onChange={setStatus}
+        onChange={(value) => { setStatus(value); form.clear('status'); }}
         error={form.errors.status}
         firstInputRef={form.bind('status')}
       />
@@ -356,7 +358,7 @@ export function DeliveryForm({ detail, item, ...handlers }: ItemProps) {
         hint={reasonRequired ? '미개시·이용 거부는 사유가 필요합니다.' : undefined}
         maxLength={REASON_MAX}
         value={reason}
-        onChange={(event) => setReason(event.target.value)}
+        onChange={(event) => { setReason(event.target.value); form.clear('reason'); }}
         error={form.errors.reason}
         textareaRef={form.bind('reason')}
       />
@@ -452,7 +454,7 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
         hint={lastObserved ? `마지막 제공 확인일(${lastObserved})과 같거나 이후 날짜` : undefined}
         min={minDate(lastObserved)}
         value={monitoredOn}
-        onChange={(event) => setMonitoredOn(event.target.value)}
+        onChange={(event) => { setMonitoredOn(event.target.value); form.clear('monitoredOn'); }}
         error={form.errors.monitoredOn}
         inputRef={form.bind('monitoredOn')}
       />
@@ -461,7 +463,7 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
         legend="확인 방법"
         value={method}
         options={(['VISIT', 'PHONE'] as const).map((value) => ({ value, label: CONTACT_METHOD_LABEL[value] }))}
-        onChange={setMethod}
+        onChange={(value) => { setMethod(value); form.clear('method'); }}
         error={form.errors.method}
         firstInputRef={form.bind('method')}
       />
@@ -470,7 +472,7 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
         legend="상태 변화"
         value={condition}
         options={(['UNCHANGED', 'IMPROVED', 'WORSENED'] as const).map((value) => ({ value, label: CONDITION_LABEL[value] }))}
-        onChange={setCondition}
+        onChange={(value) => { setCondition(value); form.clear('condition'); }}
         error={form.errors.condition}
         firstInputRef={form.bind('condition')}
       />
@@ -528,7 +530,7 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
           { value: 'no' as const, label: '후속 검토 불필요' },
           { value: 'yes' as const, label: '후속 검토 필요' },
         ]}
-        onChange={setReview}
+        onChange={(value) => { setReview(value); form.clear('reviewNeeded'); }}
         error={form.errors.reviewNeeded}
         firstInputRef={form.bind('reviewNeeded')}
       />
@@ -538,7 +540,7 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
           label="후속 검토 사유"
           maxLength={REASON_MAX}
           value={reviewReason}
-          onChange={(event) => setReviewReason(event.target.value)}
+          onChange={(event) => { setReviewReason(event.target.value); form.clear('reviewReason'); }}
           error={form.errors.reviewReason}
           textareaRef={form.bind('reviewReason')}
         />

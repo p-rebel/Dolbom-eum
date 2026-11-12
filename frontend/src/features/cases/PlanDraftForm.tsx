@@ -28,6 +28,10 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [message, setMessage] = useState<string | null>(null);
+
+  /** 값을 고치면 그 칸의 오류 표시를 지운다(다시 검사는 저장할 때). */
+  const clearError = (field: string) =>
+    setErrors((current) => (current[field as keyof typeof current] ? { ...current, [field]: undefined } : current));
   const [saving, setSaving] = useState(false);
   const savedIds = detail.plan?.items.map((item) => item.catalog.id).join(',') ?? '';
   useUnsavedChanges(
@@ -98,7 +102,7 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
   return (
     <form className="form-stack" onSubmit={handleSubmit} noValidate aria-label="지원계획 초안">
       <RequiredNotice />
-      {message && <FormMessage tone="error">{message}</FormMessage>}
+      {message && !(message === '입력값을 확인해 주세요.' && !Object.values(errors).some(Boolean)) && <FormMessage tone="error">{message}</FormMessage>}
       <TextField
         id="prepared-on"
         label="수립일"
@@ -106,7 +110,7 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
         hint={detail.assessment ? `판정 수신일(${detail.assessment.resultReceivedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(detail.assessment?.resultReceivedOn)}
         value={preparedOn}
-        onChange={(event) => setPreparedOn(event.target.value)}
+        onChange={(event) => { setPreparedOn(event.target.value); clearError('preparedOn'); }}
         error={errors.preparedOn}
         inputRef={refs.preparedOn}
       />
@@ -115,7 +119,7 @@ export function PlanDraftForm({ detail, onSaved, onReload }: Props) {
         label="지원 목표"
         maxLength={GOAL_MAX}
         value={goal}
-        onChange={(event) => setGoal(event.target.value)}
+        onChange={(event) => { setGoal(event.target.value); clearError('goal'); }}
         error={errors.goal}
         textareaRef={refs.goal}
       />
