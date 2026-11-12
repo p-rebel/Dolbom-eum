@@ -88,7 +88,7 @@ export function LoginPage({ notice }: { notice: string | null }) {
           </div>
         </div>
 
-        <div className="login-panel has-aside">
+        <div className="login-panel">
         <div className="login-main">
         {notice && (
           <div className="form-group" role="status">
@@ -140,7 +140,7 @@ export function LoginPage({ notice }: { notice: string | null }) {
         <aside className="login-aside" aria-labelledby="login-about-title">
           {/* 서비스 소개는 KRDS 안내 상자(회색 바탕)로 둔다. 국민건강보험 로그인 화면의 안내 상자 참고 */}
           <div className="login-about-box">
-            <h2 id="login-about-title" className="login-guide-title">
+            <h2 id="login-about-title" className="login-about-title">
               <span className="login-about-icon" aria-hidden="true" />
               돌봄e음은
             </h2>
@@ -152,11 +152,15 @@ export function LoginPage({ notice }: { notice: string | null }) {
             </ul>
           </div>
 
-          {MOCK_API_ENABLED && (
-          /* ‘목업 모드’ 배지는 공통 상단에 있으므로 여기서는 다시 붙이지 않는다. */
-          <div className="mock-note">
+        </aside>
+        </div>
+
+        {/* 목업 모드 안내는 소개 상자와 분리한다(높이 맞춤·영역 이름 유지). ‘목업 모드’ 배지는 공통 상단에 있다. */}
+        {MOCK_API_ENABLED && (
+          <aside className="mock-note" aria-label="목업 모드 안내">
             <p>
-              목업 전용 비밀번호 <code>{MOCK_PASSWORD}</code>. 실제 서버와 관계없습니다.
+              계정 <code>demo-town-a</code>(읍면동) 또는 <code>demo-district-a</code>(시군구), 목업 전용 비밀번호{' '}
+              <code>{MOCK_PASSWORD}</code>. 실제 서버와 관계없습니다.
             </p>
             <p>화면 확인용 가짜 데이터이며, 사례는 이 브라우저에만 저장됩니다.</p>
             <button
@@ -173,10 +177,8 @@ export function LoginPage({ notice }: { notice: string | null }) {
               목업 사례 초기화
             </button>
             {mockReset && <p role="status">목업 사례를 모두 지웠습니다.</p>}
-          </div>
-          )}
-        </aside>
-        </div>
+          </aside>
+        )}
       </section>
     </main>
     {/* KRDS 로그인 패턴(피그마 서비스패턴_로그인)도 공통 푸터를 둔다. 체크리스트: 모든 화면 같은 위치. */}

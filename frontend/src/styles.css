@@ -551,23 +551,16 @@ fieldset.form-group {
 /* 위아래 1px 구분선 안에 입력 열(왼쪽)과 안내 열(오른쪽). 피그마 열 너비 323.5px, 안쪽 여백 32px. */
 .login-panel {
   display: grid;
-  grid-template-columns: minmax(0, 40rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: var(--krds-padding-8);
   border-top: 1px solid var(--krds-light-color-divider-gray-light);
   border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
-}
-
-.login-panel.has-aside {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .login-main {
   display: grid;
   align-content: start;
   gap: var(--krds-gap-5);
-}
-
-.login-panel.has-aside .login-main {
   padding-right: var(--krds-padding-8);
 }
 
@@ -590,7 +583,7 @@ fieldset.form-group {
   border-radius: var(--krds-radius-medium2);
 }
 
-.login-guide-title {
+.login-about-title {
   display: flex;
   align-items: center;
   gap: var(--krds-gap-2);
@@ -627,7 +620,7 @@ fieldset.form-group {
 .login-features li::before {
   content: '';
   position: absolute;
-  top: 1.1rem;
+  top: calc(0.5lh - 0.2rem);
   left: 0.4rem;
   width: 0.4rem;
   height: 0.4rem;
@@ -635,17 +628,13 @@ fieldset.form-group {
   background-color: var(--krds-light-color-text-basic);
 }
 
-
-
-
 @media (max-width: 767px) {
-  .login-panel,
-  .login-panel.has-aside {
+  .login-panel {
     grid-template-columns: minmax(0, 1fr);
     padding: var(--krds-padding-8) 0;
   }
 
-  .login-panel.has-aside .login-main {
+  .login-main {
     padding-right: 0;
   }
 
@@ -719,4 +708,3 @@ fieldset.form-group {
   font-size: var(--krds-pc-font-size-heading-xsmall);
   font-weight: 700;
 }
-
