@@ -1,0 +1,4842 @@
+{
+  "scenario": "C-01",
+  "commit": "a1be1b88e12952a27bba6be7574470947c59323c",
+  "origin": "http://127.0.0.1:5173",
+  "db": "C-01-W-38-7c59bcf7.sqlite3",
+  "startedAt": "2026-11-13T04:08:30.468Z",
+  "steps": [
+    {
+      "role": "로그인 전",
+      "step": "실 API 연결",
+      "response": {
+        "method": "GET",
+        "route": "/health",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/health",
+        "body": {
+          "status": "ok"
+        }
+      },
+      "screenshot": "01-real-api.png"
+    },
+    {
+      "role": "TOWN",
+      "step": "로그인과 관할 신청 목록",
+      "response": {
+        "method": "POST",
+        "route": "/session",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/session",
+        "body": {
+          "id": "demo-town-a",
+          "displayName": "가상 읍면동 담당자 A-1",
+          "role": "TOWN",
+          "districtCode": "DEMO-A",
+          "townCode": "DEMO-A-1"
+        }
+      },
+      "listResponse": {
+        "method": "GET",
+        "route": "/cases",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases?page=1&pageSize=20",
+        "body": {
+          "items": [],
+          "page": 1,
+          "pageSize": 20,
+          "total": 0
+        }
+      }
+    },
+    {
+      "role": "TOWN",
+      "step": "가상 대리 신청 접수 v1",
+      "response": {
+        "method": "POST",
+        "route": "/cases",
+        "status": 201,
+        "url": "http://127.0.0.1:5173/api/v1/cases",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "RECEIVED",
+          "version": 1,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": null,
+          "assessment": null,
+          "plan": null,
+          "monitoring": null,
+          "events": [
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_SCREENING",
+              "itemId": null
+            }
+          ]
+        },
+        "input": {
+          "profileCode": "DEMO-ELDER-01",
+          "receivedOn": "2026-11-01",
+          "noticeMethod": "SMS",
+          "evidenceChecked": true
+        }
+      },
+      "screen": "진행 상태\n접수\n다음 작업\n사전조사 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n1"
+    },
+    {
+      "role": "TOWN",
+      "step": "사전조사 v2와 시군구 인계 안내",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/screening",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/screening",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "SCREENED",
+          "version": 2,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": null,
+          "plan": null,
+          "monitoring": null,
+          "events": [
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": []
+        },
+        "input": {
+          "version": 1,
+          "screenedOn": "2026-11-02",
+          "method": "PHONE",
+          "outcome": "NHIS_ASSESSMENT_REQUIRED"
+        }
+      },
+      "screen": "진행 상태\n사전조사 완료\n다음 작업\n시군구 판정 결과 기록 대기\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n2"
+    },
+    {
+      "role": "DISTRICT",
+      "step": "로그인과 관할 신청 목록",
+      "response": {
+        "method": "POST",
+        "route": "/session",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/session",
+        "body": {
+          "id": "demo-district-a",
+          "displayName": "가상 시군구 담당자 A",
+          "role": "DISTRICT",
+          "districtCode": "DEMO-A",
+          "townCode": null
+        }
+      },
+      "listResponse": {
+        "method": "GET",
+        "route": "/cases",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases?page=1&pageSize=20",
+        "body": {
+          "items": [
+            {
+              "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+              "receiptNumber": "DEMO-0001",
+              "beneficiaryName": "가상 대상자 01",
+              "receivedOn": "2026-11-01",
+              "status": "SCREENED",
+              "version": 2,
+              "region": {
+                "districtCode": "DEMO-A",
+                "townCode": "DEMO-A-1",
+                "sido": "충청북도",
+                "sigungu": "음성군"
+              }
+            }
+          ],
+          "page": 1,
+          "pageSize": 20,
+          "total": 1
+        }
+      }
+    },
+    {
+      "role": "DISTRICT",
+      "step": "같은 사례 v2 조회",
+      "response": {
+        "method": "GET",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "SCREENED",
+          "version": 2,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": null,
+          "plan": null,
+          "monitoring": null,
+          "events": [
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_ASSESSMENT",
+              "itemId": null
+            }
+          ]
+        }
+      },
+      "screen": "진행 상태\n사전조사 완료\n다음 작업\n판정 결과 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n2"
+    },
+    {
+      "role": "DISTRICT",
+      "step": "판정 결과와 수신일 v3",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/assessment",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/assessment",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "ASSESSED",
+          "version": 3,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": null,
+          "monitoring": null,
+          "events": [
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": []
+        },
+        "input": {
+          "version": 2,
+          "assessedOn": "2026-11-03",
+          "resultReceivedOn": "2026-11-03",
+          "outcome": "SUPPORT_PLAN_REQUIRED"
+        }
+      },
+      "screen": "진행 상태\n판정 기록 완료\n다음 작업\n읍면동 지원계획 초안 저장 대기\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n3"
+    },
+    {
+      "role": "TOWN",
+      "step": "로그인과 관할 신청 목록",
+      "response": {
+        "method": "POST",
+        "route": "/session",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/session",
+        "body": {
+          "id": "demo-town-a",
+          "displayName": "가상 읍면동 담당자 A-1",
+          "role": "TOWN",
+          "districtCode": "DEMO-A",
+          "townCode": "DEMO-A-1"
+        }
+      },
+      "listResponse": {
+        "method": "GET",
+        "route": "/cases",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases?page=1&pageSize=20",
+        "body": {
+          "items": [
+            {
+              "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+              "receiptNumber": "DEMO-0001",
+              "beneficiaryName": "가상 대상자 01",
+              "receivedOn": "2026-11-01",
+              "status": "ASSESSED",
+              "version": 3,
+              "region": {
+                "districtCode": "DEMO-A",
+                "townCode": "DEMO-A-1",
+                "sido": "충청북도",
+                "sigungu": "음성군"
+              }
+            }
+          ],
+          "page": 1,
+          "pageSize": 20,
+          "total": 1
+        }
+      }
+    },
+    {
+      "role": "TOWN",
+      "step": "같은 사례 v3 조회",
+      "response": {
+        "method": "GET",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "ASSESSED",
+          "version": 3,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": null,
+          "monitoring": null,
+          "events": [
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "SAVE_DRAFT",
+              "itemId": null
+            }
+          ]
+        }
+      },
+      "screen": "진행 상태\n판정 기록 완료\n다음 작업\n지원계획 초안 저장\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n3"
+    },
+    {
+      "role": "TOWN",
+      "step": "공단 검색과 선택 nhis_20260630_r00001",
+      "response": {
+        "method": "GET",
+        "route": "/catalog/nhis-services",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&q=%EB%8B%A4%EC%A0%9C%EC%95%BD%EB%AC%BC&page=1&pageSize=20",
+        "body": {
+          "items": [
+            {
+              "id": "nhis_20260630_r00001",
+              "datasetVersion": "v1.4",
+              "programName": "다제약물 관리사업",
+              "providerName": "국민건강보험공단",
+              "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+              "providerPhone": "1577-1000",
+              "categoryLarge": "건강관리예방",
+              "categoryMiddle": "방문복약관리",
+              "sido": "충청북도",
+              "sigungu": "음성군",
+              "sigunguGu": null,
+              "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+              "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+              "referenceDate": "2026-06-30"
+            }
+          ],
+          "page": 1,
+          "pageSize": 20,
+          "total": 1
+        }
+      },
+      "screenshot": "02-town-catalog-A.png"
+    },
+    {
+      "role": "TOWN",
+      "step": "공단 검색과 선택 nhis_20260630_r52411",
+      "response": {
+        "method": "GET",
+        "route": "/catalog/nhis-services",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&q=%EC%B0%BE%EC%95%84%EA%B0%80%EB%8A%94+%EB%B3%B4%EA%B1%B4%EC%86%8C&page=1&pageSize=20",
+        "body": {
+          "items": [
+            {
+              "id": "nhis_20260630_r52411",
+              "datasetVersion": "v1.4",
+              "programName": "찾아가는 보건소",
+              "providerName": "보건소",
+              "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+              "providerPhone": "043-871-2163",
+              "categoryLarge": "보건의료",
+              "categoryMiddle": "방문진료",
+              "sido": "충청북도",
+              "sigungu": "음성군",
+              "sigunguGu": null,
+              "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+              "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+              "referenceDate": "2026-06-30"
+            }
+          ],
+          "page": 1,
+          "pageSize": 20,
+          "total": 1
+        }
+      }
+    },
+    {
+      "role": "TOWN",
+      "step": "공단 검색과 선택 nhis_20260630_r52405",
+      "response": {
+        "method": "GET",
+        "route": "/catalog/nhis-services",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&q=%EB%AC%B4%EA%B7%B9%ED%95%9C%EC%9D%98%EC%9B%90&page=1&pageSize=20",
+        "body": {
+          "items": [
+            {
+              "id": "nhis_20260630_r52405",
+              "datasetVersion": "v1.4",
+              "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+              "providerName": "무극한의원",
+              "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+              "providerPhone": "043-883-7975",
+              "categoryLarge": "보건의료",
+              "categoryMiddle": "방문진료",
+              "sido": "충청북도",
+              "sigungu": "음성군",
+              "sigunguGu": null,
+              "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+              "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+              "referenceDate": "2026-06-30"
+            }
+          ],
+          "page": 1,
+          "pageSize": 20,
+          "total": 1
+        }
+      }
+    },
+    {
+      "role": "TOWN",
+      "step": "지원계획 초안 저장 v4",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "PLAN_DRAFTED",
+          "version": 4,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              }
+            ],
+            "confirmation": null,
+            "notice": null
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "SAVE_DRAFT",
+              "itemId": null
+            }
+          ]
+        },
+        "input": {
+          "version": 3,
+          "preparedOn": "2026-11-04",
+          "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+          "serviceIds": [
+            "nhis_20260630_r00001",
+            "nhis_20260630_r52411",
+            "nhis_20260630_r52405"
+          ]
+        }
+      },
+      "screen": "진행 상태\n초안\n다음 작업\n초안 저장\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n4"
+    },
+    {
+      "role": "TOWN",
+      "step": "브라우저 새로고침에서 동일 사례와 초안 v4",
+      "response": {
+        "method": "GET",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "PLAN_DRAFTED",
+          "version": 4,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              }
+            ],
+            "confirmation": null,
+            "notice": null
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "SAVE_DRAFT",
+              "itemId": null
+            }
+          ]
+        }
+      },
+      "screen": "진행 상태\n초안\n다음 작업\n초안 저장\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n4",
+      "visibleDraft": "저장된 초안 (버전 4)\n수립일\n2026-11-04\n지원 목표\n가상 사례의 약 복용과 일상생활 지원을 확인한다.\n회의 결과\n확정 전\n안내일\n안내 전\n선택한 서비스 (3개)\n\n다제약물 관리사업\n\n국민건강보험공단\n\n국민건강보험공단_통합돌봄 서비스 자원 · 2026-06-30 기준 · nhis_20260630_r00001\n\n찾아가는 보건소\n\n보건소\n\n국민건강보험공단_통합돌봄 서비스 자원 · 2026-06-30 기준 · nhis_20260630_r52411\n\n일차의료 방문진료 수가 시범사업(한의과)\n\n무극한의원\n\n국민건강보험공단_통합돌봄 서비스 자원 · 2026-06-30 기준 · nhis_20260630_r52405",
+      "screenshot": "03-town-v4-reload.png"
+    },
+    {
+      "role": "DISTRICT",
+      "step": "로그인과 관할 신청 목록",
+      "response": {
+        "method": "POST",
+        "route": "/session",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/session",
+        "body": {
+          "id": "demo-district-a",
+          "displayName": "가상 시군구 담당자 A",
+          "role": "DISTRICT",
+          "districtCode": "DEMO-A",
+          "townCode": null
+        }
+      },
+      "listResponse": {
+        "method": "GET",
+        "route": "/cases",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases?page=1&pageSize=20",
+        "body": {
+          "items": [
+            {
+              "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+              "receiptNumber": "DEMO-0001",
+              "beneficiaryName": "가상 대상자 01",
+              "receivedOn": "2026-11-01",
+              "status": "PLAN_DRAFTED",
+              "version": 4,
+              "region": {
+                "districtCode": "DEMO-A",
+                "townCode": "DEMO-A-1",
+                "sido": "충청북도",
+                "sigungu": "음성군"
+              }
+            }
+          ],
+          "page": 1,
+          "pageSize": 20,
+          "total": 1
+        }
+      }
+    },
+    {
+      "role": "DISTRICT",
+      "step": "같은 v4 상세에서 계획 확정 입력 활성 확인",
+      "response": {
+        "method": "GET",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "PLAN_DRAFTED",
+          "version": 4,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              }
+            ],
+            "confirmation": null,
+            "notice": null
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "CONFIRM_PLAN",
+              "itemId": null
+            }
+          ]
+        }
+      },
+      "screen": "진행 상태\n초안\n다음 작업\n계획 확정\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n4",
+      "screenshot": "04-district-v4-handoff.png"
+    },
+    {
+      "role": "DISTRICT",
+      "step": "CONFIRM_PLAN v5",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/confirmation",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/confirmation",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "PLAN_CONFIRMED",
+          "version": 5,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": null
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_NOTICE",
+              "itemId": null
+            }
+          ]
+        },
+        "input": {
+          "version": 4,
+          "meetingOn": "2026-11-05",
+          "outcome": "APPROVED"
+        }
+      },
+      "screen": "진행 상태\n확정\n다음 작업\n계획 안내 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n5",
+      "views": {
+        "plan": "계획\n수립일\n2026-11-04\n지원 목표\n가상 사례의 약 복용과 일상생활 지원을 확인한다.\n회의 결과\n2026-11-05 승인\n안내일\n안내 전\n선택한 서비스 (3개)\n\n다제약물 관리사업\n\n국민건강보험공단\n\n국민건강보험공단_통합돌봄 서비스 자원 · 2026-06-30 기준 · nhis_20260630_r00001\n\n찾아가는 보건소\n\n보건소\n\n국민건강보험공단_통합돌봄 서비스 자원 · 2026-06-30 기준 · nhis_20260630_r52411\n\n일차의료 방문진료 수가 시범사업(한의과)\n\n무극한의원\n\n국민건강보험공단_통합돌봄 서비스 자원 · 2026-06-30 기준 · nhis_20260630_r52405\n\n계획 안내 기록\n\n모든 항목은 필수 입력입니다.\n\n안내대상\n가상 대리 신청인 01\n안내방식\n문자\n안내일\n\n회의일(2026-11-05)과 같거나 이후 날짜\n\n안내 기록 저장"
+      }
+    },
+    {
+      "role": "DISTRICT",
+      "step": "RECORD_NOTICE v6",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/notice",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/notice",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "PLAN_CONFIRMED",
+          "version": 6,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_LINKAGE",
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26"
+            },
+            {
+              "action": "RECORD_LINKAGE",
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899"
+            },
+            {
+              "action": "RECORD_LINKAGE",
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80"
+            }
+          ]
+        },
+        "input": {
+          "version": 5,
+          "announcedOn": "2026-11-05"
+        }
+      },
+      "screen": "진행 상태\n확정\n다음 작업\n연계 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n6",
+      "views": {
+        "plan": "계획\n수립일\n2026-11-04\n지원 목표\n가상 사례의 약 복용과 일상생활 지원을 확인한다.\n회의 결과\n2026-11-05 승인\n안내일\n2026-11-05 · 가상 대리 신청인 01 · 문자\n선택한 서비스 (3개)\n\n다제약물 관리사업\n\n국민건강보험공단\n\n국민건강보험공단_통합돌봄 서비스 자원 · 2026-06-30 기준 · nhis_20260630_r00001\n\n찾아가는 보건소\n\n보건소\n\n국민건강보험공단_통합돌봄 서비스 자원 · 2026-06-30 기준 · nhis_20260630_r52411\n\n일차의료 방문진료 수가 시범사업(한의과)\n\n무극한의원\n\n국민건강보험공단_통합돌봄 서비스 자원 · 2026-06-30 기준 · nhis_20260630_r52405",
+        "monitoring": "모니터링\n\n모든 서비스의 연계·제공 현황이 기록되면 읍면동에서 최초 모니터링을 기록합니다.\n\n아직 기록되지 않은 항목 (3건)\n1. 다제약물 관리사업 — 연계, 제공 현황 기록 전\n2. 찾아가는 보건소 — 연계, 제공 현황 기록 전\n3. 일차의료 방문진료 수가 시범사업(한의과) — 연계, 제공 현황 기록 전"
+      }
+    },
+    {
+      "role": "DISTRICT",
+      "step": "RECORD_LINKAGE v7",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/f44745f2-ed57-4bd6-8618-ab4ecf517f26/linkage",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/f44745f2-ed57-4bd6-8618-ab4ecf517f26/linkage",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "SERVICE_TRACKING",
+          "version": 7,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "DEPARTMENT_REFERRAL",
+                  "destinationLabel": "가상 담당부서"
+                },
+                "delivery": null
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "67cf2686-6d08-43cd-9175-85dd22d4f5a7",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 7,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26"
+            },
+            {
+              "action": "RECORD_LINKAGE",
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899"
+            },
+            {
+              "action": "RECORD_LINKAGE",
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80"
+            }
+          ]
+        },
+        "input": {
+          "version": 6,
+          "linkedOn": "2026-11-06",
+          "method": "DEPARTMENT_REFERRAL",
+          "destinationLabel": "가상 담당부서"
+        }
+      },
+      "screen": "진행 상태\n연계·제공 기록 중\n다음 작업\n제공 현황 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n7",
+      "views": {
+        "tracking": "연계·제공\n서비스별 연계와 제공 현황\n프로그램\t출처\t연계\t제공 현황\n다제약물 관리사업\n국민건강보험공단\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 부서·공단 의뢰 · 가상 담당부서\t기록 전\n찾아가는 보건소\n보건소\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t연계 전\t기록 전\n일차의료 방문진료 수가 시범사업(한의과)\n무극한의원\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t연계 전\t기록 전\n항목별 기록\n\n1. 다제약물 관리사업\n\n국민건강보험공단 · 부서·공단 의뢰 · 제공 현황 기록 전\n\n제공 현황 기록\n다제약물 관리사업\n\n2. 찾아가는 보건소\n\n보건소 · 연계 전 · 제공 현황 기록 전\n\n연계 기록\n찾아가는 보건소\n\n3. 일차의료 방문진료 수가 시범사업(한의과)\n\n무극한의원 · 연계 전 · 제공 현황 기록 전\n\n연계 기록\n일차의료 방문진료 수가 시범사업(한의과)"
+      }
+    },
+    {
+      "role": "DISTRICT",
+      "step": "RECORD_LINKAGE v8",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/0687c993-a7b2-492e-b725-90c1b33c3899/linkage",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/0687c993-a7b2-492e-b725-90c1b33c3899/linkage",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "SERVICE_TRACKING",
+          "version": 8,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "DEPARTMENT_REFERRAL",
+                  "destinationLabel": "가상 담당부서"
+                },
+                "delivery": null
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PROVIDER_REFERRAL",
+                  "destinationLabel": "보건소"
+                },
+                "delivery": null
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": null,
+                "delivery": null
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "2aaaac6f-3f3e-47c2-bda0-bce3484ea3a5",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:44Z",
+              "version": 8,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "67cf2686-6d08-43cd-9175-85dd22d4f5a7",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 7,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26"
+            },
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899"
+            },
+            {
+              "action": "RECORD_LINKAGE",
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80"
+            }
+          ]
+        },
+        "input": {
+          "version": 7,
+          "linkedOn": "2026-11-06",
+          "method": "PROVIDER_REFERRAL",
+          "destinationLabel": null
+        }
+      },
+      "screen": "진행 상태\n연계·제공 기록 중\n다음 작업\n제공 현황 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n8",
+      "views": {
+        "tracking": "연계·제공\n서비스별 연계와 제공 현황\n프로그램\t출처\t연계\t제공 현황\n다제약물 관리사업\n국민건강보험공단\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 부서·공단 의뢰 · 가상 담당부서\t기록 전\n찾아가는 보건소\n보건소\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 제공기관 의뢰 · 보건소\t기록 전\n일차의료 방문진료 수가 시범사업(한의과)\n무극한의원\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t연계 전\t기록 전\n항목별 기록\n\n1. 다제약물 관리사업\n\n국민건강보험공단 · 부서·공단 의뢰 · 제공 현황 기록 전\n\n제공 현황 기록\n다제약물 관리사업\n\n2. 찾아가는 보건소\n\n보건소 · 제공기관 의뢰 · 제공 현황 기록 전\n\n제공 현황 기록\n찾아가는 보건소\n\n3. 일차의료 방문진료 수가 시범사업(한의과)\n\n무극한의원 · 연계 전 · 제공 현황 기록 전\n\n연계 기록\n일차의료 방문진료 수가 시범사업(한의과)"
+      }
+    },
+    {
+      "role": "DISTRICT",
+      "step": "RECORD_LINKAGE v9",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/34f9c8b3-6c8b-480b-89e0-816bd7c52f80/linkage",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/34f9c8b3-6c8b-480b-89e0-816bd7c52f80/linkage",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "SERVICE_TRACKING",
+          "version": 9,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "DEPARTMENT_REFERRAL",
+                  "destinationLabel": "가상 담당부서"
+                },
+                "delivery": null
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PROVIDER_REFERRAL",
+                  "destinationLabel": "보건소"
+                },
+                "delivery": null
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PERSON_GUIDANCE",
+                  "destinationLabel": null
+                },
+                "delivery": null
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "f6d8ec78-dec5-48e2-91c0-1e0722cc4339",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 9,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "2aaaac6f-3f3e-47c2-bda0-bce3484ea3a5",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:44Z",
+              "version": 8,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "67cf2686-6d08-43cd-9175-85dd22d4f5a7",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 7,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26"
+            },
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899"
+            },
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80"
+            }
+          ]
+        },
+        "input": {
+          "version": 8,
+          "linkedOn": "2026-11-06",
+          "method": "PERSON_GUIDANCE",
+          "destinationLabel": null
+        }
+      },
+      "screen": "진행 상태\n연계·제공 기록 중\n다음 작업\n제공 현황 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n9",
+      "views": {
+        "tracking": "연계·제공\n서비스별 연계와 제공 현황\n프로그램\t출처\t연계\t제공 현황\n다제약물 관리사업\n국민건강보험공단\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 부서·공단 의뢰 · 가상 담당부서\t기록 전\n찾아가는 보건소\n보건소\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 제공기관 의뢰 · 보건소\t기록 전\n일차의료 방문진료 수가 시범사업(한의과)\n무극한의원\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 대상자 안내\n후보 제공기관 · 무극한의원\t기록 전\n항목별 기록\n\n1. 다제약물 관리사업\n\n국민건강보험공단 · 부서·공단 의뢰 · 제공 현황 기록 전\n\n제공 현황 기록\n다제약물 관리사업\n\n2. 찾아가는 보건소\n\n보건소 · 제공기관 의뢰 · 제공 현황 기록 전\n\n제공 현황 기록\n찾아가는 보건소\n\n3. 일차의료 방문진료 수가 시범사업(한의과)\n\n무극한의원 · 대상자 안내 · 제공 현황 기록 전\n\n제공 현황 기록\n일차의료 방문진료 수가 시범사업(한의과)"
+      }
+    },
+    {
+      "role": "DISTRICT",
+      "step": "RECORD_DELIVERY v10",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/f44745f2-ed57-4bd6-8618-ab4ecf517f26/delivery",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/f44745f2-ed57-4bd6-8618-ab4ecf517f26/delivery",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "SERVICE_TRACKING",
+          "version": 10,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "DEPARTMENT_REFERRAL",
+                  "destinationLabel": "가상 담당부서"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PROVIDER_REFERRAL",
+                  "destinationLabel": "보건소"
+                },
+                "delivery": null
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PERSON_GUIDANCE",
+                  "destinationLabel": null
+                },
+                "delivery": null
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "9fa6d269-5187-4481-836e-a6e581b1ff54",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 10,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "f6d8ec78-dec5-48e2-91c0-1e0722cc4339",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 9,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "2aaaac6f-3f3e-47c2-bda0-bce3484ea3a5",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:44Z",
+              "version": 8,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "67cf2686-6d08-43cd-9175-85dd22d4f5a7",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 7,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26"
+            },
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899"
+            },
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80"
+            }
+          ]
+        },
+        "input": {
+          "version": 9,
+          "observedOn": "2026-11-08",
+          "status": "IN_USE",
+          "reason": null
+        }
+      },
+      "screen": "진행 상태\n연계·제공 기록 중\n다음 작업\n제공 현황 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n10",
+      "views": {
+        "tracking": "연계·제공\n서비스별 연계와 제공 현황\n프로그램\t출처\t연계\t제공 현황\n다제약물 관리사업\n국민건강보험공단\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 부서·공단 의뢰 · 가상 담당부서\t이용 중 · 2026-11-08\n찾아가는 보건소\n보건소\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 제공기관 의뢰 · 보건소\t기록 전\n일차의료 방문진료 수가 시범사업(한의과)\n무극한의원\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 대상자 안내\n후보 제공기관 · 무극한의원\t기록 전\n항목별 기록\n\n1. 다제약물 관리사업\n\n국민건강보험공단 · 부서·공단 의뢰 · 이용 중\n\n제공 현황 수정\n다제약물 관리사업\n\n2. 찾아가는 보건소\n\n보건소 · 제공기관 의뢰 · 제공 현황 기록 전\n\n제공 현황 기록\n찾아가는 보건소\n\n3. 일차의료 방문진료 수가 시범사업(한의과)\n\n무극한의원 · 대상자 안내 · 제공 현황 기록 전\n\n제공 현황 기록\n일차의료 방문진료 수가 시범사업(한의과)"
+      }
+    },
+    {
+      "role": "DISTRICT",
+      "step": "RECORD_DELIVERY v11",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/34f9c8b3-6c8b-480b-89e0-816bd7c52f80/delivery",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/34f9c8b3-6c8b-480b-89e0-816bd7c52f80/delivery",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "SERVICE_TRACKING",
+          "version": 11,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "DEPARTMENT_REFERRAL",
+                  "destinationLabel": "가상 담당부서"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PROVIDER_REFERRAL",
+                  "destinationLabel": "보건소"
+                },
+                "delivery": null
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PERSON_GUIDANCE",
+                  "destinationLabel": null
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "UNKNOWN",
+                  "reason": "가상 대상자가 기관을 검토 중"
+                }
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "bc6beba4-ec33-4afe-a924-c9b72d5c6820",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 11,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "9fa6d269-5187-4481-836e-a6e581b1ff54",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 10,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "f6d8ec78-dec5-48e2-91c0-1e0722cc4339",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 9,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "2aaaac6f-3f3e-47c2-bda0-bce3484ea3a5",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:44Z",
+              "version": 8,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "67cf2686-6d08-43cd-9175-85dd22d4f5a7",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 7,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26"
+            },
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899"
+            },
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80"
+            }
+          ]
+        },
+        "input": {
+          "version": 10,
+          "observedOn": "2026-11-08",
+          "status": "UNKNOWN",
+          "reason": "가상 대상자가 기관을 검토 중"
+        }
+      },
+      "screen": "진행 상태\n연계·제공 기록 중\n다음 작업\n제공 현황 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n11",
+      "views": {
+        "tracking": "연계·제공\n서비스별 연계와 제공 현황\n프로그램\t출처\t연계\t제공 현황\n다제약물 관리사업\n국민건강보험공단\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 부서·공단 의뢰 · 가상 담당부서\t이용 중 · 2026-11-08\n찾아가는 보건소\n보건소\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 제공기관 의뢰 · 보건소\t기록 전\n일차의료 방문진료 수가 시범사업(한의과)\n무극한의원\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 대상자 안내\n후보 제공기관 · 무극한의원\t확인 중 · 2026-11-08 · 가상 대상자가 기관을 검토 중\n항목별 기록\n\n1. 다제약물 관리사업\n\n국민건강보험공단 · 부서·공단 의뢰 · 이용 중\n\n제공 현황 수정\n다제약물 관리사업\n\n2. 찾아가는 보건소\n\n보건소 · 제공기관 의뢰 · 제공 현황 기록 전\n\n제공 현황 기록\n찾아가는 보건소\n\n3. 일차의료 방문진료 수가 시범사업(한의과)\n\n무극한의원 · 대상자 안내 · 확인 중\n\n제공 현황 수정\n일차의료 방문진료 수가 시범사업(한의과)"
+      }
+    },
+    {
+      "role": "DISTRICT",
+      "step": "RECORD_DELIVERY v12",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/0687c993-a7b2-492e-b725-90c1b33c3899/delivery",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/0687c993-a7b2-492e-b725-90c1b33c3899/delivery",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "SERVICE_TRACKING",
+          "version": 12,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "DEPARTMENT_REFERRAL",
+                  "destinationLabel": "가상 담당부서"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PROVIDER_REFERRAL",
+                  "destinationLabel": "보건소"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PERSON_GUIDANCE",
+                  "destinationLabel": null
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "UNKNOWN",
+                  "reason": "가상 대상자가 기관을 검토 중"
+                }
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "b61c101a-227c-4a00-8bfb-c8e946952ea2",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:46Z",
+              "version": 12,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "bc6beba4-ec33-4afe-a924-c9b72d5c6820",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 11,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "9fa6d269-5187-4481-836e-a6e581b1ff54",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 10,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "f6d8ec78-dec5-48e2-91c0-1e0722cc4339",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 9,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "2aaaac6f-3f3e-47c2-bda0-bce3484ea3a5",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:44Z",
+              "version": 8,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "67cf2686-6d08-43cd-9175-85dd22d4f5a7",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 7,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26"
+            },
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899"
+            },
+            {
+              "action": "RECORD_DELIVERY",
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80"
+            }
+          ]
+        },
+        "input": {
+          "version": 11,
+          "observedOn": "2026-11-08",
+          "status": "IN_USE",
+          "reason": null
+        }
+      },
+      "screen": "진행 상태\n연계·제공 기록 중\n다음 작업\n제공 현황 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n12",
+      "views": {
+        "tracking": "연계·제공\n서비스별 연계와 제공 현황\n프로그램\t출처\t연계\t제공 현황\n다제약물 관리사업\n국민건강보험공단\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 부서·공단 의뢰 · 가상 담당부서\t이용 중 · 2026-11-08\n찾아가는 보건소\n보건소\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 제공기관 의뢰 · 보건소\t이용 중 · 2026-11-08\n일차의료 방문진료 수가 시범사업(한의과)\n무극한의원\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 대상자 안내\n후보 제공기관 · 무극한의원\t확인 중 · 2026-11-08 · 가상 대상자가 기관을 검토 중\n항목별 기록\n\n1. 다제약물 관리사업\n\n국민건강보험공단 · 부서·공단 의뢰 · 이용 중\n\n제공 현황 수정\n다제약물 관리사업\n\n2. 찾아가는 보건소\n\n보건소 · 제공기관 의뢰 · 이용 중\n\n제공 현황 수정\n찾아가는 보건소\n\n3. 일차의료 방문진료 수가 시범사업(한의과)\n\n무극한의원 · 대상자 안내 · 확인 중\n\n제공 현황 수정\n일차의료 방문진료 수가 시범사업(한의과)"
+      }
+    },
+    {
+      "role": "TOWN",
+      "step": "로그인과 관할 신청 목록",
+      "response": {
+        "method": "POST",
+        "route": "/session",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/session",
+        "body": {
+          "id": "demo-town-a",
+          "displayName": "가상 읍면동 담당자 A-1",
+          "role": "TOWN",
+          "districtCode": "DEMO-A",
+          "townCode": "DEMO-A-1"
+        }
+      },
+      "listResponse": {
+        "method": "GET",
+        "route": "/cases",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases?page=1&pageSize=20",
+        "body": {
+          "items": [
+            {
+              "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+              "receiptNumber": "DEMO-0001",
+              "beneficiaryName": "가상 대상자 01",
+              "receivedOn": "2026-11-01",
+              "status": "SERVICE_TRACKING",
+              "version": 12,
+              "region": {
+                "districtCode": "DEMO-A",
+                "townCode": "DEMO-A-1",
+                "sido": "충청북도",
+                "sigungu": "음성군"
+              }
+            }
+          ],
+          "page": 1,
+          "pageSize": 20,
+          "total": 1
+        }
+      }
+    },
+    {
+      "role": "TOWN",
+      "step": "같은 사례 v12 조회 후 모니터링 입력",
+      "response": {
+        "method": "GET",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "SERVICE_TRACKING",
+          "version": 12,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "DEPARTMENT_REFERRAL",
+                  "destinationLabel": "가상 담당부서"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PROVIDER_REFERRAL",
+                  "destinationLabel": "보건소"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PERSON_GUIDANCE",
+                  "destinationLabel": null
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "UNKNOWN",
+                  "reason": "가상 대상자가 기관을 검토 중"
+                }
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": null,
+          "events": [
+            {
+              "id": "b61c101a-227c-4a00-8bfb-c8e946952ea2",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:46Z",
+              "version": 12,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "bc6beba4-ec33-4afe-a924-c9b72d5c6820",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 11,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "9fa6d269-5187-4481-836e-a6e581b1ff54",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 10,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "f6d8ec78-dec5-48e2-91c0-1e0722cc4339",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 9,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "2aaaac6f-3f3e-47c2-bda0-bce3484ea3a5",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:44Z",
+              "version": 8,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "67cf2686-6d08-43cd-9175-85dd22d4f5a7",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 7,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": [
+            {
+              "action": "RECORD_MONITORING",
+              "itemId": null
+            }
+          ]
+        }
+      },
+      "screen": "진행 상태\n연계·제공 기록 중\n다음 작업\n최초 모니터링 기록\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n12"
+    },
+    {
+      "role": "TOWN",
+      "step": "RECORD_MONITORING v13",
+      "response": {
+        "method": "PUT",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/monitoring",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/monitoring",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "FIRST_MONITORING_RECORDED",
+          "version": 13,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "DEPARTMENT_REFERRAL",
+                  "destinationLabel": "가상 담당부서"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PROVIDER_REFERRAL",
+                  "destinationLabel": "보건소"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PERSON_GUIDANCE",
+                  "destinationLabel": null
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "UNKNOWN",
+                  "reason": "가상 대상자가 기관을 검토 중"
+                }
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": {
+            "monitoredOn": "2026-11-09",
+            "method": "VISIT",
+            "condition": "UNCHANGED",
+            "reviewNeeded": false,
+            "reviewReason": null,
+            "observations": [
+              {
+                "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "status": "IN_USE",
+                "reason": null
+              },
+              {
+                "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "status": "IN_USE",
+                "reason": null
+              },
+              {
+                "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "status": "UNKNOWN",
+                "reason": "가상 대상자가 기관을 검토 중"
+              }
+            ]
+          },
+          "events": [
+            {
+              "id": "6d6d0ca9-e0a8-4b7a-b47e-d736c0b2fc6d",
+              "action": "RECORD_MONITORING",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "FIRST_MONITORING_RECORDED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:47Z",
+              "version": 13,
+              "itemId": null,
+              "summary": "최초 모니터링 기록"
+            },
+            {
+              "id": "b61c101a-227c-4a00-8bfb-c8e946952ea2",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:46Z",
+              "version": 12,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "bc6beba4-ec33-4afe-a924-c9b72d5c6820",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 11,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "9fa6d269-5187-4481-836e-a6e581b1ff54",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 10,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "f6d8ec78-dec5-48e2-91c0-1e0722cc4339",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 9,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "2aaaac6f-3f3e-47c2-bda0-bce3484ea3a5",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:44Z",
+              "version": 8,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "67cf2686-6d08-43cd-9175-85dd22d4f5a7",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 7,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": []
+        },
+        "input": {
+          "version": 12,
+          "monitoredOn": "2026-11-09",
+          "method": "VISIT",
+          "condition": "UNCHANGED",
+          "reviewNeeded": false,
+          "reviewReason": null,
+          "observations": []
+        }
+      },
+      "screen": "진행 상태\n최초 모니터링 기록 완료\n다음 작업\n최초 모니터링 기록 완료\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n13",
+      "views": {
+        "monitoring": "모니터링\n기록일·방법\n2026-11-09 · 방문\n상태 변화\n상태 변화 없음\n후속 검토\n후속 검토 불필요\n\n다제약물 관리사업\n\n기존 제공 현황 · 이용 중\n\n모니터링 확인 · 이용 중\n\n찾아가는 보건소\n\n기존 제공 현황 · 이용 중\n\n모니터링 확인 · 이용 중\n\n일차의료 방문진료 수가 시범사업(한의과)\n\n기존 제공 현황 · 확인 중\n\n모니터링 확인 · 확인 중 · 가상 대상자가 기관을 검토 중"
+      }
+    },
+    {
+      "role": "TOWN",
+      "step": "상세 새로고침에서 동일 사례 v13·이력 13건",
+      "response": {
+        "method": "GET",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "FIRST_MONITORING_RECORDED",
+          "version": 13,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "DEPARTMENT_REFERRAL",
+                  "destinationLabel": "가상 담당부서"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PROVIDER_REFERRAL",
+                  "destinationLabel": "보건소"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PERSON_GUIDANCE",
+                  "destinationLabel": null
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "UNKNOWN",
+                  "reason": "가상 대상자가 기관을 검토 중"
+                }
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": {
+            "monitoredOn": "2026-11-09",
+            "method": "VISIT",
+            "condition": "UNCHANGED",
+            "reviewNeeded": false,
+            "reviewReason": null,
+            "observations": [
+              {
+                "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "status": "IN_USE",
+                "reason": null
+              },
+              {
+                "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "status": "IN_USE",
+                "reason": null
+              },
+              {
+                "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "status": "UNKNOWN",
+                "reason": "가상 대상자가 기관을 검토 중"
+              }
+            ]
+          },
+          "events": [
+            {
+              "id": "6d6d0ca9-e0a8-4b7a-b47e-d736c0b2fc6d",
+              "action": "RECORD_MONITORING",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "FIRST_MONITORING_RECORDED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:47Z",
+              "version": 13,
+              "itemId": null,
+              "summary": "최초 모니터링 기록"
+            },
+            {
+              "id": "b61c101a-227c-4a00-8bfb-c8e946952ea2",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:46Z",
+              "version": 12,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "bc6beba4-ec33-4afe-a924-c9b72d5c6820",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 11,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "9fa6d269-5187-4481-836e-a6e581b1ff54",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 10,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "f6d8ec78-dec5-48e2-91c0-1e0722cc4339",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 9,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "2aaaac6f-3f3e-47c2-bda0-bce3484ea3a5",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:44Z",
+              "version": 8,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "67cf2686-6d08-43cd-9175-85dd22d4f5a7",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 7,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": []
+        }
+      },
+      "screen": "진행 상태\n최초 모니터링 기록 완료\n다음 작업\n최초 모니터링 기록 완료\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n13",
+      "history": [
+        "2026. 11. 13. 오후 01:08\t가상 읍면동 담당자 A-1\n읍면동 담당자\t최초 모니터링 기록\t연계·제공 기록 중 → 최초 모니터링 기록 완료\t최초 모니터링 기록",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t제공 현황 기록\t연계·제공 기록 중 → 연계·제공 기록 중\t제공 현황 기록\n찾아가는 보건소",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t제공 현황 기록\t연계·제공 기록 중 → 연계·제공 기록 중\t제공 현황 기록\n일차의료 방문진료 수가 시범사업(한의과)",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t제공 현황 기록\t연계·제공 기록 중 → 연계·제공 기록 중\t제공 현황 기록\n다제약물 관리사업",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t연계 기록\t연계·제공 기록 중 → 연계·제공 기록 중\t서비스 연계 기록\n일차의료 방문진료 수가 시범사업(한의과)",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t연계 기록\t연계·제공 기록 중 → 연계·제공 기록 중\t서비스 연계 기록\n찾아가는 보건소",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t연계 기록\t확정 → 연계·제공 기록 중\t서비스 연계 기록\n다제약물 관리사업",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t계획 안내 기록\t확정 → 확정\t계획 안내 기록",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t계획 확정\t초안 → 확정\t계획 확정",
+        "2026. 11. 13. 오후 01:08\t가상 읍면동 담당자 A-1\n읍면동 담당자\t지원계획 초안 저장\t판정 기록 완료 → 초안\t계획 초안 저장",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t판정 결과 기록\t사전조사 완료 → 판정 기록 완료\t판정 결과 기록",
+        "2026. 11. 13. 오후 01:08\t가상 읍면동 담당자 A-1\n읍면동 담당자\t사전조사 기록\t접수 → 사전조사 완료\t사전조사 기록",
+        "2026. 11. 13. 오후 01:08\t가상 읍면동 담당자 A-1\n읍면동 담당자\t신청 접수\t접수\t신청 접수"
+      ],
+      "monitoring": "모니터링\n기록일·방법\n2026-11-09 · 방문\n상태 변화\n상태 변화 없음\n후속 검토\n후속 검토 불필요\n\n다제약물 관리사업\n\n기존 제공 현황 · 이용 중\n\n모니터링 확인 · 이용 중\n\n찾아가는 보건소\n\n기존 제공 현황 · 이용 중\n\n모니터링 확인 · 이용 중\n\n일차의료 방문진료 수가 시범사업(한의과)\n\n기존 제공 현황 · 확인 중\n\n모니터링 확인 · 확인 중 · 가상 대상자가 기관을 검토 중",
+      "tracking": "서비스별 연계와 제공 현황\n프로그램\t출처\t연계\t제공 현황\n다제약물 관리사업\n국민건강보험공단\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 부서·공단 의뢰 · 가상 담당부서\t이용 중 · 2026-11-08\n찾아가는 보건소\n보건소\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 제공기관 의뢰 · 보건소\t이용 중 · 2026-11-08\n일차의료 방문진료 수가 시범사업(한의과)\n무극한의원\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 대상자 안내\n후보 제공기관 · 무극한의원\t확인 중 · 2026-11-08 · 가상 대상자가 기관을 검토 중",
+      "screenshots": [
+        "v13-town-summary.png",
+        "v13-town-history.png",
+        "v13-town-monitoring.png"
+      ]
+    },
+    {
+      "role": "DISTRICT",
+      "step": "로그인과 관할 신청 목록",
+      "response": {
+        "method": "POST",
+        "route": "/session",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/session",
+        "body": {
+          "id": "demo-district-a",
+          "displayName": "가상 시군구 담당자 A",
+          "role": "DISTRICT",
+          "districtCode": "DEMO-A",
+          "townCode": null
+        }
+      },
+      "listResponse": {
+        "method": "GET",
+        "route": "/cases",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases?page=1&pageSize=20",
+        "body": {
+          "items": [
+            {
+              "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+              "receiptNumber": "DEMO-0001",
+              "beneficiaryName": "가상 대상자 01",
+              "receivedOn": "2026-11-01",
+              "status": "FIRST_MONITORING_RECORDED",
+              "version": 13,
+              "region": {
+                "districtCode": "DEMO-A",
+                "townCode": "DEMO-A-1",
+                "sido": "충청북도",
+                "sigungu": "음성군"
+              }
+            }
+          ],
+          "page": 1,
+          "pageSize": 20,
+          "total": 1
+        }
+      }
+    },
+    {
+      "role": "DISTRICT",
+      "step": "상세 새로고침에서 동일 사례 v13·이력 13건",
+      "response": {
+        "method": "GET",
+        "route": "/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "status": 200,
+        "url": "http://127.0.0.1:5173/api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+        "body": {
+          "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+          "receiptNumber": "DEMO-0001",
+          "beneficiaryName": "가상 대상자 01",
+          "receivedOn": "2026-11-01",
+          "status": "FIRST_MONITORING_RECORDED",
+          "version": 13,
+          "region": {
+            "districtCode": "DEMO-A",
+            "townCode": "DEMO-A-1",
+            "sido": "충청북도",
+            "sigungu": "음성군"
+          },
+          "profile": {
+            "code": "DEMO-ELDER-01",
+            "beneficiaryName": "가상 대상자 01",
+            "applicantName": "가상 대리 신청인 01",
+            "noticeRecipientName": "가상 대리 신청인 01",
+            "region": {
+              "districtCode": "DEMO-A",
+              "townCode": "DEMO-A-1",
+              "sido": "충청북도",
+              "sigungu": "음성군"
+            }
+          },
+          "noticeMethod": "SMS",
+          "evidenceChecked": true,
+          "screening": {
+            "screenedOn": "2026-11-02",
+            "method": "PHONE",
+            "outcome": "NHIS_ASSESSMENT_REQUIRED"
+          },
+          "assessment": {
+            "assessedOn": "2026-11-03",
+            "resultReceivedOn": "2026-11-03",
+            "outcome": "SUPPORT_PLAN_REQUIRED"
+          },
+          "plan": {
+            "preparedOn": "2026-11-04",
+            "goal": "가상 사례의 약 복용과 일상생활 지원을 확인한다.",
+            "items": [
+              {
+                "id": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "catalog": {
+                  "id": "nhis_20260630_r00001",
+                  "datasetVersion": "v1.4",
+                  "programName": "다제약물 관리사업",
+                  "providerName": "국민건강보험공단",
+                  "providerAddress": "충청북도 음성군 음성읍 음성로 114",
+                  "providerPhone": "1577-1000",
+                  "categoryLarge": "건강관리예방",
+                  "categoryMiddle": "방문복약관리",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "DEPARTMENT_REFERRAL",
+                  "destinationLabel": "가상 담당부서"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "catalog": {
+                  "id": "nhis_20260630_r52411",
+                  "datasetVersion": "v1.4",
+                  "programName": "찾아가는 보건소",
+                  "providerName": "보건소",
+                  "providerAddress": "충청북도 음성군 음성읍 중앙로 49 음성군보건소",
+                  "providerPhone": "043-871-2163",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PROVIDER_REFERRAL",
+                  "destinationLabel": "보건소"
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "IN_USE",
+                  "reason": null
+                }
+              },
+              {
+                "id": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "catalog": {
+                  "id": "nhis_20260630_r52405",
+                  "datasetVersion": "v1.4",
+                  "programName": "일차의료 방문진료 수가 시범사업(한의과)",
+                  "providerName": "무극한의원",
+                  "providerAddress": "충청북도 음성군 금왕읍 각구실길 5, (금왕읍)",
+                  "providerPhone": "043-883-7975",
+                  "categoryLarge": "보건의료",
+                  "categoryMiddle": "방문진료",
+                  "sido": "충청북도",
+                  "sigungu": "음성군",
+                  "sigunguGu": null,
+                  "sourceName": "국민건강보험공단_통합돌봄 서비스 자원",
+                  "sourceUrl": "https://www.data.go.kr/data/15173720/fileData.do",
+                  "referenceDate": "2026-06-30"
+                },
+                "linkage": {
+                  "linkedOn": "2026-11-06",
+                  "method": "PERSON_GUIDANCE",
+                  "destinationLabel": null
+                },
+                "delivery": {
+                  "observedOn": "2026-11-08",
+                  "status": "UNKNOWN",
+                  "reason": "가상 대상자가 기관을 검토 중"
+                }
+              }
+            ],
+            "confirmation": {
+              "meetingOn": "2026-11-05",
+              "outcome": "APPROVED"
+            },
+            "notice": {
+              "announcedOn": "2026-11-05"
+            }
+          },
+          "monitoring": {
+            "monitoredOn": "2026-11-09",
+            "method": "VISIT",
+            "condition": "UNCHANGED",
+            "reviewNeeded": false,
+            "reviewReason": null,
+            "observations": [
+              {
+                "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+                "status": "IN_USE",
+                "reason": null
+              },
+              {
+                "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+                "status": "IN_USE",
+                "reason": null
+              },
+              {
+                "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+                "status": "UNKNOWN",
+                "reason": "가상 대상자가 기관을 검토 중"
+              }
+            ]
+          },
+          "events": [
+            {
+              "id": "6d6d0ca9-e0a8-4b7a-b47e-d736c0b2fc6d",
+              "action": "RECORD_MONITORING",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "FIRST_MONITORING_RECORDED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:47Z",
+              "version": 13,
+              "itemId": null,
+              "summary": "최초 모니터링 기록"
+            },
+            {
+              "id": "b61c101a-227c-4a00-8bfb-c8e946952ea2",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:46Z",
+              "version": 12,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "bc6beba4-ec33-4afe-a924-c9b72d5c6820",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 11,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "9fa6d269-5187-4481-836e-a6e581b1ff54",
+              "action": "RECORD_DELIVERY",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 10,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "제공 현황 기록"
+            },
+            {
+              "id": "f6d8ec78-dec5-48e2-91c0-1e0722cc4339",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:45Z",
+              "version": 9,
+              "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "2aaaac6f-3f3e-47c2-bda0-bce3484ea3a5",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "SERVICE_TRACKING",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:44Z",
+              "version": 8,
+              "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "67cf2686-6d08-43cd-9175-85dd22d4f5a7",
+              "action": "RECORD_LINKAGE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "SERVICE_TRACKING",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 7,
+              "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+              "summary": "서비스 연계 기록"
+            },
+            {
+              "id": "f0dac6af-77bd-4c03-81e5-91a21c48180d",
+              "action": "RECORD_NOTICE",
+              "fromStatus": "PLAN_CONFIRMED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 6,
+              "itemId": null,
+              "summary": "계획 안내 기록"
+            },
+            {
+              "id": "321f30b3-aa36-4e09-85fc-5b710961f710",
+              "action": "CONFIRM_PLAN",
+              "fromStatus": "PLAN_DRAFTED",
+              "toStatus": "PLAN_CONFIRMED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:43Z",
+              "version": 5,
+              "itemId": null,
+              "summary": "계획 확정"
+            },
+            {
+              "id": "a2de7d5e-e814-4293-a515-85924a14e5e4",
+              "action": "SAVE_DRAFT",
+              "fromStatus": "ASSESSED",
+              "toStatus": "PLAN_DRAFTED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:42Z",
+              "version": 4,
+              "itemId": null,
+              "summary": "계획 초안 저장"
+            },
+            {
+              "id": "8c3c8356-faa2-4fd0-af03-b979de13e887",
+              "action": "RECORD_ASSESSMENT",
+              "fromStatus": "SCREENED",
+              "toStatus": "ASSESSED",
+              "actorDisplayName": "가상 시군구 담당자 A",
+              "actorRole": "DISTRICT",
+              "recordedAt": "2026-11-13T04:08:39Z",
+              "version": 3,
+              "itemId": null,
+              "summary": "판정 결과 기록"
+            },
+            {
+              "id": "d207c147-0b98-4605-bdc4-e8635abcc155",
+              "action": "RECORD_SCREENING",
+              "fromStatus": "RECEIVED",
+              "toStatus": "SCREENED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 2,
+              "itemId": null,
+              "summary": "사전조사 기록"
+            },
+            {
+              "id": "90c8128f-03ea-4c57-9ea0-45e06989a264",
+              "action": "RECEIVE",
+              "fromStatus": null,
+              "toStatus": "RECEIVED",
+              "actorDisplayName": "가상 읍면동 담당자 A-1",
+              "actorRole": "TOWN",
+              "recordedAt": "2026-11-13T04:08:38Z",
+              "version": 1,
+              "itemId": null,
+              "summary": "신청 접수"
+            }
+          ],
+          "allowedActions": []
+        }
+      },
+      "screen": "진행 상태\n최초 모니터링 기록 완료\n다음 작업\n최초 모니터링 기록 완료\n관할\n충청북도 음성군 · DEMO-A-1\n버전\n13",
+      "history": [
+        "2026. 11. 13. 오후 01:08\t가상 읍면동 담당자 A-1\n읍면동 담당자\t최초 모니터링 기록\t연계·제공 기록 중 → 최초 모니터링 기록 완료\t최초 모니터링 기록",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t제공 현황 기록\t연계·제공 기록 중 → 연계·제공 기록 중\t제공 현황 기록\n찾아가는 보건소",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t제공 현황 기록\t연계·제공 기록 중 → 연계·제공 기록 중\t제공 현황 기록\n일차의료 방문진료 수가 시범사업(한의과)",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t제공 현황 기록\t연계·제공 기록 중 → 연계·제공 기록 중\t제공 현황 기록\n다제약물 관리사업",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t연계 기록\t연계·제공 기록 중 → 연계·제공 기록 중\t서비스 연계 기록\n일차의료 방문진료 수가 시범사업(한의과)",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t연계 기록\t연계·제공 기록 중 → 연계·제공 기록 중\t서비스 연계 기록\n찾아가는 보건소",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t연계 기록\t확정 → 연계·제공 기록 중\t서비스 연계 기록\n다제약물 관리사업",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t계획 안내 기록\t확정 → 확정\t계획 안내 기록",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t계획 확정\t초안 → 확정\t계획 확정",
+        "2026. 11. 13. 오후 01:08\t가상 읍면동 담당자 A-1\n읍면동 담당자\t지원계획 초안 저장\t판정 기록 완료 → 초안\t계획 초안 저장",
+        "2026. 11. 13. 오후 01:08\t가상 시군구 담당자 A\n시군구 담당자\t판정 결과 기록\t사전조사 완료 → 판정 기록 완료\t판정 결과 기록",
+        "2026. 11. 13. 오후 01:08\t가상 읍면동 담당자 A-1\n읍면동 담당자\t사전조사 기록\t접수 → 사전조사 완료\t사전조사 기록",
+        "2026. 11. 13. 오후 01:08\t가상 읍면동 담당자 A-1\n읍면동 담당자\t신청 접수\t접수\t신청 접수"
+      ],
+      "monitoring": "모니터링\n기록일·방법\n2026-11-09 · 방문\n상태 변화\n상태 변화 없음\n후속 검토\n후속 검토 불필요\n\n다제약물 관리사업\n\n기존 제공 현황 · 이용 중\n\n모니터링 확인 · 이용 중\n\n찾아가는 보건소\n\n기존 제공 현황 · 이용 중\n\n모니터링 확인 · 이용 중\n\n일차의료 방문진료 수가 시범사업(한의과)\n\n기존 제공 현황 · 확인 중\n\n모니터링 확인 · 확인 중 · 가상 대상자가 기관을 검토 중",
+      "tracking": "서비스별 연계와 제공 현황\n프로그램\t출처\t연계\t제공 현황\n다제약물 관리사업\n국민건강보험공단\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 부서·공단 의뢰 · 가상 담당부서\t이용 중 · 2026-11-08\n찾아가는 보건소\n보건소\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 제공기관 의뢰 · 보건소\t이용 중 · 2026-11-08\n일차의료 방문진료 수가 시범사업(한의과)\n무극한의원\t국민건강보험공단_통합돌봄 서비스 자원\n2026-06-30 기준\t2026-11-06 대상자 안내\n후보 제공기관 · 무극한의원\t확인 중 · 2026-11-08 · 가상 대상자가 기관을 검토 중",
+      "screenshots": [
+        "v13-district-summary.png",
+        "v13-district-history.png",
+        "v13-district-monitoring.png"
+      ]
+    }
+  ],
+  "browserErrors": [],
+  "directHealth": {
+    "status": 200,
+    "server": "uvicorn",
+    "body": {
+      "status": "ok"
+    }
+  },
+  "directUi": {
+    "/": {
+      "status": 404,
+      "contentType": "application/json"
+    },
+    "/cases/demo-readback-check": {
+      "status": 404,
+      "contentType": "application/json"
+    }
+  },
+  "chromium": "156.0.8078.4",
+  "final": {
+    "id": "5fd16f75-a614-4f49-8e4a-fea55acdf64a",
+    "receiptNumber": "DEMO-0001",
+    "status": "FIRST_MONITORING_RECORDED",
+    "version": 13,
+    "events": 13,
+    "monitoring": {
+      "monitoredOn": "2026-11-09",
+      "method": "VISIT",
+      "condition": "UNCHANGED",
+      "reviewNeeded": false,
+      "reviewReason": null,
+      "observations": [
+        {
+          "itemId": "f44745f2-ed57-4bd6-8618-ab4ecf517f26",
+          "status": "IN_USE",
+          "reason": null
+        },
+        {
+          "itemId": "0687c993-a7b2-492e-b725-90c1b33c3899",
+          "status": "IN_USE",
+          "reason": null
+        },
+        {
+          "itemId": "34f9c8b3-6c8b-480b-89e0-816bd7c52f80",
+          "status": "UNKNOWN",
+          "reason": "가상 대상자가 기관을 검토 중"
+        }
+      ]
+    },
+    "itemBDelivery": {
+      "observedOn": "2026-11-08",
+      "status": "IN_USE",
+      "reason": null
+    }
+  },
+  "result": "통과",
+  "finishedAt": "2026-11-13T04:08:48.667Z"
+}

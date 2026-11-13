@@ -1,0 +1,30 @@
+로그인 전 | 실 API 연결 | HTTP 200
+TOWN | 로그인과 관할 신청 목록 | HTTP 200
+TOWN | 가상 대리 신청 접수 v1 | HTTP 201
+TOWN | 사전조사 v2와 시군구 인계 안내 | HTTP 200
+DISTRICT | 로그인과 관할 신청 목록 | HTTP 200
+DISTRICT | 같은 사례 v2 조회 | HTTP 200
+DISTRICT | 판정 결과와 수신일 v3 | HTTP 200
+TOWN | 로그인과 관할 신청 목록 | HTTP 200
+TOWN | 같은 사례 v3 조회 | HTTP 200
+TOWN | 공단 검색과 선택 nhis_20260630_r00001 | HTTP 200
+TOWN | 공단 검색과 선택 nhis_20260630_r52411 | HTTP 200
+TOWN | 공단 검색과 선택 nhis_20260630_r52405 | HTTP 200
+TOWN | 지원계획 초안 저장 v4 | HTTP 200
+TOWN | 브라우저 새로고침에서 동일 사례와 초안 v4 | HTTP 200
+DISTRICT | 로그인과 관할 신청 목록 | HTTP 200
+DISTRICT | 같은 v4 상세에서 계획 확정 입력 활성 확인 | HTTP 200
+DISTRICT | CONFIRM_PLAN v5 | HTTP 200
+DISTRICT | RECORD_NOTICE v6 | HTTP 200
+DISTRICT | RECORD_LINKAGE v7 | HTTP 200
+DISTRICT | RECORD_LINKAGE v8 | HTTP 200
+DISTRICT | RECORD_LINKAGE v9 | HTTP 200
+DISTRICT | RECORD_DELIVERY v10 | HTTP 200
+DISTRICT | RECORD_DELIVERY v11 | HTTP 200
+DISTRICT | RECORD_DELIVERY v12 | HTTP 200
+TOWN | 로그인과 관할 신청 목록 | HTTP 200
+TOWN | 같은 사례 v12 조회 후 모니터링 입력 | HTTP 200
+TOWN | RECORD_MONITORING v13 | HTTP 200
+TOWN | 상세 새로고침에서 동일 사례 v13·이력 13건 | HTTP 200
+DISTRICT | 로그인과 관할 신청 목록 | HTTP 200
+DISTRICT | 상세 새로고침에서 동일 사례 v13·이력 13건 | HTTP 200

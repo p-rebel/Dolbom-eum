@@ -1,0 +1,4 @@
+C-01 | 5fd16f75-a614-4f49-8e4a-fea55acdf64a | 13 browser saves | final fixture / both role reloads / SQLite match
+C-01 | direct FastAPI UI paths return 404; local Vite navigation and reload work
+C-06 | 392a7d22-f1df-46ac-8a58-666ef724cc66 | 13 browser saves | final fixture / both role reloads / SQLite match
+C-06 | direct FastAPI UI paths return 404; local Vite navigation and reload work

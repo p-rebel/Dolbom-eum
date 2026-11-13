@@ -1,0 +1,62 @@
+INFO:     Started server process [23288]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:56827 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56828 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56827 - "GET /cases/demo-readback-check HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56836 - "GET /api/v1/session HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:56837 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56839 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56840 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56841 - "GET /api/v1/demo-profiles HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56842 - "POST /api/v1/cases HTTP/1.1" 201 Created
+INFO:     127.0.0.1:56844 - "GET /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56846 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/screening HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56848 - "DELETE /api/v1/session HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:56850 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56852 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56854 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56856 - "GET /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56858 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/assessment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56860 - "DELETE /api/v1/session HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:56862 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56864 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56866 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56868 - "GET /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56871 - "GET /api/v1/catalog/nhis-filters?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56874 - "GET /api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&q=%EB%8B%A4%EC%A0%9C%EC%95%BD%EB%AC%BC&page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56876 - "GET /api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&q=%EC%B0%BE%EC%95%84%EA%B0%80%EB%8A%94+%EB%B3%B4%EA%B1%B4%EC%86%8C&page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56878 - "GET /api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&q=%EB%AC%B4%EA%B7%B9%ED%95%9C%EC%9D%98%EC%9B%90&page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56880 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56885 - "GET /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56886 - "GET /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56887 - "DELETE /api/v1/session HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:56889 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56891 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56893 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56895 - "GET /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56897 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/confirmation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56900 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/notice HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56902 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/f44745f2-ed57-4bd6-8618-ab4ecf517f26/linkage HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56904 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/0687c993-a7b2-492e-b725-90c1b33c3899/linkage HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56906 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/34f9c8b3-6c8b-480b-89e0-816bd7c52f80/linkage HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56908 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/f44745f2-ed57-4bd6-8618-ab4ecf517f26/delivery HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56910 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/34f9c8b3-6c8b-480b-89e0-816bd7c52f80/delivery HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56912 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/plan/items/0687c993-a7b2-492e-b725-90c1b33c3899/delivery HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "DELETE /api/v1/session HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:56916 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56918 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56920 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56922 - "GET /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56924 - "PUT /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a/monitoring HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56929 - "GET /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56930 - "GET /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56931 - "DELETE /api/v1/session HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:56933 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56935 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56937 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56939 - "GET /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56945 - "GET /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56946 - "GET /api/v1/cases/5fd16f75-a614-4f49-8e4a-fea55acdf64a HTTP/1.1" 200 OK
