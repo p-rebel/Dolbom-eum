@@ -1,0 +1,7 @@
+python -m app.db init | exit=0
+초기화 완료: var\verification\C-01-W-38-7c59bcf7.sqlite3
+python -m app.db seed | exit=0
+시드 완료: 계정 4개 → var\verification\C-01-W-38-7c59bcf7.sqlite3
+python -m app.db load-nhis | exit=0
+공단 v1.4 적재 완료: data\processed\nhis_services.csv → var\verification\C-01-W-38-7c59bcf7.sqlite3
+  CSV 90,081행, DB 90,081행, 고유 ID 90,081개, 조회 대상(N) 89,738행, 숨김(Y) 343행

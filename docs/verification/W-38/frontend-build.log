@@ -1,0 +1,19 @@
+
+> build
+> tsc --noEmit && vite build
+
+vite v8.3.7 building client environment for production...
+transforming...
+✓ 52 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                            0.44 kB │ gzip:  0.30 kB
+dist/assets/ico_logo_krds_high_contrast-DcApoiWi.svg      10.25 kB │ gzip:  3.96 kB
+dist/assets/ico_logo_krds-Dg5lEdxE.svg                    10.26 kB │ gzip:  3.97 kB
+dist/assets/PretendardGOV-Regular.subset-RgV5jWl6.woff2  263.04 kB
+dist/assets/PretendardGOV-Medium.subset-BnGIyvMz.woff2   265.41 kB
+dist/assets/PretendardGOV-Bold.subset-Crg1ui7b.woff2     267.24 kB
+dist/assets/index-Br4aSsKy.css                           819.64 kB │ gzip: 91.24 kB
+dist/assets/index-CAjVnb7x.js                            299.79 kB │ gzip: 88.86 kB
+
+✓ built in 660ms

@@ -1,0 +1,63 @@
+INFO:     Started server process [25016]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58694 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58695 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58694 - "GET /cases/demo-readback-check HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58698 - "GET /api/v1/session HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:58701 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62773 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62774 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62776 - "GET /api/v1/demo-profiles HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62778 - "POST /api/v1/cases HTTP/1.1" 201 Created
+INFO:     127.0.0.1:62780 - "GET /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62782 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/screening HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62784 - "DELETE /api/v1/session HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:62786 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62788 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62790 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62792 - "GET /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62801 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/assessment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62805 - "DELETE /api/v1/session HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:62807 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62811 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62813 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62817 - "GET /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62821 - "GET /api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62820 - "GET /api/v1/catalog/nhis-filters?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62824 - "GET /api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&q=%EB%8B%A4%EC%A0%9C%EC%95%BD%EB%AC%BC&page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62826 - "GET /api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&q=%EC%B0%BE%EC%95%84%EA%B0%80%EB%8A%94+%EB%B3%B4%EA%B1%B4%EC%86%8C&page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62828 - "GET /api/v1/catalog/nhis-services?sido=%EC%B6%A9%EC%B2%AD%EB%B6%81%EB%8F%84&sigungu=%EC%9D%8C%EC%84%B1%EA%B5%B0&q=%EB%AC%B4%EA%B7%B9%ED%95%9C%EC%9D%98%EC%9B%90&page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62830 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/plan HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62833 - "GET /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62835 - "GET /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62836 - "DELETE /api/v1/session HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:62838 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62840 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62842 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62844 - "GET /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62846 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/plan/confirmation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62848 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/plan/notice HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62860 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/plan/items/fe682197-3128-442e-8d5a-417f329343ec/linkage HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62863 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/plan/items/4c30d4ed-5761-473d-a411-40c4fb38d465/linkage HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62865 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/plan/items/d84a9782-4597-46d9-bf23-cd7834e82e55/linkage HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62869 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/plan/items/fe682197-3128-442e-8d5a-417f329343ec/delivery HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62871 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/plan/items/d84a9782-4597-46d9-bf23-cd7834e82e55/delivery HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62873 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/plan/items/4c30d4ed-5761-473d-a411-40c4fb38d465/delivery HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62875 - "DELETE /api/v1/session HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:62879 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62881 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62883 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62885 - "GET /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62891 - "PUT /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab/monitoring HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62894 - "GET /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62896 - "GET /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62899 - "DELETE /api/v1/session HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:62901 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62903 - "POST /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62905 - "GET /api/v1/cases?page=1&pageSize=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62907 - "GET /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62910 - "GET /api/v1/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62912 - "GET /api/v1/cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62916 - "GET /cases/18c52ffc-4b26-4d73-b117-d3148ba4b2ab HTTP/1.1" 404 Not Found
