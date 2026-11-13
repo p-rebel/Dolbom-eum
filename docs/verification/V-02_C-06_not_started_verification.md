@@ -1,0 +1,254 @@
+# 작업 36. 일부 미개시 사례 검증표 (C-06)
+
+## 검증 기록
+
+문서 갱신 기준: `expected-results.md` 및 설계·JSON·검증 실행 조건 대조 (2026-11-12). **시연 앱 검증을 수행한 기록은 아님.**
+
+| 항목 | 작성 내용 |
+| --- | --- |
+| 검증 ID / 관련 작업·요구사항 | `V-36-C-06` / 작업 36 / AC-06, REQ-06·07 (공통 선행 흐름은 AC-01~05와 연결) |
+| 검증자 / 실행일 | 김예랑 / **미실행** (실행 시 작성) |
+| 검증 환경 / 버전·커밋 | 시연 앱 주소·커밋·API/데이터 버전 **실행 후 기입**. 기준 데이터 `v1.4` |
+| 사전 조건 / 사용 자료 | **C-06 전용으로 초기화한 시연 DB**; `demo-town-a`(TOWN), `demo-district-a`(DISTRICT), `demo-town-b`(관외), `demo-town-a2`(타 읍면동)의 가상 계정과 접근 권한; 가상 프로필 `DEMO-ELDER-01` 준비. 계정 비밀번호는 서버 운영 담당에게 별도 수령 |
+| 입력 | `C-01_C-06.json`의 `commonSteps` → `scenarios.C-06` → `finalCheck`; 실제 요청은 `/api/v1` 접두 경로 사용. 서비스 ID·업무 일자는 아래 표 참고 |
+| 수행 순서 | 아래 **공통 32단계** 실행 후 **C-06 전용 11단계**, 마지막으로 **최종 재조회**. 별도 초기화 없이 두 사례를 이어서 실행하지 않는다 |
+| 기대 결과 | API 결과는 `C-01_C-06.json`, 화면 문구·실패 후 저장값은 `expected-results.md`와 일치; `finalCheck`에서 v13·이력 13건·A→B→C 순서 검증 |
+| 실제 결과 | **미실행** — 검증 버전 인수 후 화면·응답·재조회 결과 기록 |
+| 근거 링크·화면·로그 | **미수집** — 검증 시 커밋·접속 환경·화면 캡처·응답/로그 링크 추가 |
+| 판정 | **미실행** |
+
+### 작업 범위와 주의사항
+
+- 이 문서는 **11/13까지 준비할 검증 절차 및 기대값(설계서의 기대 결과)**이다. **실제 결과/통과 판정은 11/14 인수 후 11/15 검증에서** 기록한다. 시연 서버를 직접 실행하거나 결과를 확인한 기록은 아직 없다.
+- 가상 프로필은 **대상자 `가상 대상자 01` / 대리 신청인 `가상 대리 신청인 01` / 안내대상 `가상 대리 신청인 01`**이다. 지역은 충청북도 음성군(`DEMO-A`, `DEMO-A-1`)이다.
+- `{{caseId}}`, `{{receiptNumber}}`, `{{itemA}}`, `{{itemB}}`, `{{itemC}}`는 서버 응답에서 실제로 받은 값을 사용하는 변수다. UUID·접수번호를 임의로 고정하지 않는다.
+- `expect.body`는 JSON 예제에 지정된 객체 키를 재귀 비교하고, 배열은 **길이·순서까지** 일치해야 한다. `errorCode`는 `error.code`와 비교한다.
+- 오류를 내도록 설계된 요청에서 기대한 `403`·`404`·`409`·`422`가 반환되는 것은 **정상 검증 조건**이다. 정상 저장 성공과 오류 거절을 모두 확인해야 해당 항목을 통과로 판단할 수 있다.
+- 회의 확정·안내·연계는 **외부 실제 발송이나 기관 연동이 아니라 가상 발생 사실의 저장**을 뜻한다.
+- `docs/design/expected-results.md`의 **단계별 화면 문구·재조회 값·오류 후 무변경 기준**을 D-01~06 및 JSON 예제와 대조해 반영했다. 실제 앱 화면 확인과 판정은 검증 버전 인수 후 실시한다.
+
+## 사전 준비 및 입력값
+
+| 항목 | 값 / 확인 방법 |
+| --- | --- |
+| API 기본 경로 | `/api/v1` (실제 앱 주소 + API 경로) |
+| DB 초기화와 실행 환경 | **양이수의 B-03 실행·초기화·복구 안내**를 따라 시나리오별 시연 DB를 초기화하고 서버·프론트가 같은 앱 Origin을 사용하도록 준비. 검증 시 서버 주소와 실행 커밋 기록 |
+| API 호출 전 로그인·쿠키 | 역할별로 `POST /api/v1/session`에 `{"username":"<각 계정명>","password":"<별도 전달 비밀번호>"}`를 보내고 정상 로그인한 세션의 **`dolbom_session` 쿠키**를 해당 역할의 모든 후속 요청에 포함. `GET /api/v1/session`에서 계정 역할·관할 확인. 비밀번호·세션 쿠키는 기록 파일이나 GitHub에 올리지 않음 |
+| 상태 변경 요청의 앱 출처 | `POST`·`PUT`·`DELETE` 요청에 실제 앱 주소와 일치하는 **`Origin: <앱 Origin>`** 헤더 사용 (로그인 요청 포함). `localhost`와 `127.0.0.1`은 별개 Origin |
+| 요청 본문 형식 | JSON 본문이 있는 API 요청에는 **`Content-Type: application/json`** 지정. 누락 시 기대한 업무 오류 대신 `415`가 발생할 수 있음 |
+| 호출 방법 구분 | 화면에서 재현할 수 없는 거절·무결성 검사(요청 키 직접 제어, 숨김 데이터 직접 조회, 버튼 부재 등)는 **API 전용**으로 수행. 화면에서는 버튼 부재·숨김 항목 미노출·오류 안내 중 해당 검증 조건을 별도로 확인. `추가 수동 재조회`는 JSON 단계 외의 증거 확보용 |
+| 계정 | 읍면동 `demo-town-a` / 시군구 `demo-district-a` / 관외 `demo-town-b` / 타 읍면동 `demo-town-a2` |
+| 접수 | `profileCode=DEMO-ELDER-01`, 접수일 `2026-11-01`, `noticeMethod=SMS`, `evidenceChecked=true` |
+| 접수 중복 방지 키 | `Idempotency-Key: demo-receive-01` |
+| 조사·판정 | 사전조사 `2026-11-02`, `PHONE`, `NHIS_ASSESSMENT_REQUIRED`; 판정·수신일 `2026-11-03`, `SUPPORT_PLAN_REQUIRED` |
+| 계획 수립 | `2026-11-04`, 목표 `가상 사례의 약 복용과 일상생활 지원을 확인한다.` |
+| 계획 서비스 A/B/C | `nhis_20260630_r00001` / `nhis_20260630_r52411` / `nhis_20260630_r52405` |
+| 회의 확정 / 안내 | 회의일 `2026-11-05`, 결과 `APPROVED`; 안내일 `2026-11-05` (별도 기록) |
+| 서비스 연계 | `2026-11-06`: A `DEPARTMENT_REFERRAL`+`가상 담당부서`, B `PROVIDER_REFERRAL`, C `PERSON_GUIDANCE` |
+| 제공 현황 기초 | `2026-11-08`: A `IN_USE`; C `UNKNOWN`+`가상 대상자가 기관을 검토 중`; B는 시나리오별로 처리 |
+| 최초 모니터링 일자 | `2026-11-09`, 방법 `VISIT`, 대상자 상태 `UNCHANGED` |
+
+## 1. 공통 처리·거절 조건 검증 (`commonSteps` 1~32)
+
+두 사례에 각각 **새로 초기화된 DB**에서 동일하게 실행한다. HTTP 오류 예제는 의도적 입력이므로 거절 후 버전과 저장 값이 그대로인지 다시 조회한다.
+
+**실행 방법 구분:** 각 행의 `PUT/POST` 요청 본문에는 기재된 필수 필드를 **모두** 포함한다. `[API 전용]` 요청은 화면의 버튼·입력만으로 재현할 수 없으므로 인증된 API 세션으로 직접 호출한다. 화면에서는 상황에 따라 **버튼 부재·숨김 항목 미노출·정상 안내**를 구분해 확인한다. `추가 수동 재조회`로 표시한 GET은 원본 JSON의 번호 붙은 단계에는 없지만 `expected-results.md`의 불변 조건 검증을 위해 별도로 수행하며 공통 32단계에 포함해 세지 않는다.
+
+**화면 입력 사전 검증 시 유의:** 화면이 저장 전에 입력 오류를 막는 경우, 화면에서는 **오류 표시·첫 오류 필드 초점 이동·입력값 유지**를 확인하고 서버의 **HTTP `422`와 `error.field`는 API에서 별도로 확인**한다. 화면이 요청을 서버에 전송한 경우에는 네트워크 응답과 화면 표시를 각각 기록한다.
+
+| 번호 | 실행 주체·요청 | 주요 입력·조건 | 기대 결과 | 실제 결과·판정 |
+| --- | --- | --- | --- | --- |
+| 공통-01 | **가상 프로필로 대리 신청 1건 접수** / 읍면동(TOWN)<br>`POST /cases` | 키=demo-receive-01; profileCode=DEMO-ELDER-01; receivedOn=2026-11-01; noticeMethod=SMS; evidenceChecked=true | 201 · `RECEIVED` · v1; 대상자/신청인/안내대상 구분; RECEIVE 이력 1건<br>화면: `접수`, 발급 접수번호, 대상자 `가상 대상자 01` / 대리 신청인·안내대상 `가상 대리 신청인 01` 구분; 읍면동 `사전조사 기록` | 미실행 |
+| 공통-02 | **[API 전용]** **동일 키·동일 본문 재접수** / 읍면동(TOWN)<br>`POST /cases` | 키=demo-receive-01; profileCode=DEMO-ELDER-01; receivedOn=2026-11-01; noticeMethod=SMS; evidenceChecked=true | 200 · 같은 `caseId`·접수번호 · v1; 접수 이력 증가 없음<br>API 재조회: 접수번호·ID 유지, 목록 1건·`RECEIVE` 이력 1건 (화면에서는 접수 키 직접 지정 불가) | 미실행 |
+| 공통-03 | **[API 전용]** **동일 키·변경된 접수일로 재접수** / 읍면동(TOWN)<br>`POST /cases` | 키=demo-receive-01; profileCode=DEMO-ELDER-01; receivedOn=2026-11-02; noticeMethod=SMS; evidenceChecked=true | 409 `IDEMPOTENCY_CONFLICT`; 새 사례 생성 없음<br>API 재조회: 접수일 `2026-11-01` 그대로, v1·이력 1건. 화면에서 기존 접수 확인은 가능하나 같은 키·다른 본문의 재전송은 API 전용 | 미실행 |
+| 공통-04 | **읍면동 신청 목록 조회** / 읍면동(TOWN)<br>`GET /cases` | 입력 없음 (조회) | 200 · 목록 1건 · `total=1`, v1<br>화면: 목록에 접수번호·가상 대상자·접수일 `11/01`·진행 상태 1건 | 미실행 |
+| 공통-05 | **다른 시군구 계정이 상세 조회** / 관외 읍면동<br>`GET /cases/{{caseId}}` | 입력 없음 (조회) | 404 `NOT_FOUND`<br>화면: `사례를 찾을 수 없음` 취지의 오류 및 목록 복귀 경로(실제 문구는 D-02에 정확히 지정하지 않음) | 미실행 |
+| 공통-06 | **같은 시군구의 다른 읍면동 계정이 상세 조회** / 타 읍면동<br>`GET /cases/{{caseId}}` | 입력 없음 (조회) | 404 `NOT_FOUND`<br>화면: 권한 밖 사례 표시 금지·신청 목록 복귀 가능 | 미실행 |
+| 공통-07 | **같은 시군구의 다른 읍면동 계정이 목록 조회** / 타 읍면동<br>`GET /cases` | 입력 없음 (조회) | 200 · 목록 0건 · `total=0`<br>화면: 목록 0건, 빈 목록 안내·조건 초기화 가능 | 미실행 |
+| 공통-08 | **접수일보다 빠른 사전조사일 입력** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/screening` | v1; screenedOn=2026-10-31; method=PHONE; outcome=NHIS_ASSESSMENT_REQUIRED | 422 `VALIDATION_ERROR` · `field=screenedOn`<br>화면: 사전조사일 입력 오류 표시·**첫 오류 필드로 초점 이동**·입력값 유지 | 미실행 |
+| 공통-09 | **오류 직후 상세 재조회** / 읍면동(TOWN)<br>`GET /cases/{{caseId}}` | 입력 없음 (조회) | 200 · v1 · `screening=null`; 이력 1건 유지<br>재조회: `screening=null`, v1, `RECEIVE` 1건, 화면의 사전조사 기록 동작 유지 | 미실행 |
+| 공통-10 | **정상 사전조사 입력** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/screening` | v1; screenedOn=2026-11-02; method=PHONE; outcome=NHIS_ASSESSMENT_REQUIRED | 200 · `SCREENED` · v2; 읍면동 `allowedActions=[]`<br>화면: `사전조사 완료`·`통합판정조사군`; 읍면동 `시군구 판정 결과 기록 대기`, 시군구 `판정 결과 기록` | 미실행 |
+| 공통-11 | **[API 전용]** **판정 전 계획 초안 저장 시도** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/plan` | v2; preparedOn=2026-11-04; 목표=가상 판정 전 초안; 서비스 ID 1건 | 409 `INVALID_TRANSITION`<br>**추가 수동 재조회**: `plan=null`, v2·이력 2건 유지, 다음 단계로 임의 이동하지 않음 | 미실행 |
+| 공통-12 | **시군구가 가상 판정 결과·수신일 입력** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/assessment` | v2; assessedOn=2026-11-03; resultReceivedOn=2026-11-03; outcome=SUPPORT_PLAN_REQUIRED | 200 · `ASSESSED` · v3<br>화면: `판정 기록 완료`·`지원계획 수립 대상`, 읍면동 `지원계획 초안 저장` | 미실행 |
+| 공통-13 | **충북 음성군 다제약물 검색** / 읍면동(TOWN)<br>`GET /catalog/nhis-services` | sido=충청북도; sigungu=음성군; q=다제약물 | 200 · `total=1`, 공단 ID `nhis_20260630_r00001`, 데이터 `v1.4`; `providerPhone=1577-1000`, `sourceName=국민건강보험공단_통합돌봄 서비스 자원`, `sourceUrl=https://www.data.go.kr/data/15173720/fileData.do`, `referenceDate=2026-06-30` 확인<br>화면: `다제약물 관리사업`·`국민건강보험공단`·출처·기준일 `2026-06-30` | 미실행 |
+| 공통-14 | **존재하지 않는 검색어 조회** / 읍면동(TOWN)<br>`GET /catalog/nhis-services` | sido=충청북도; sigungu=음성군; q=검증용검색어없음123 | 200 · 0건 · `items=[]`<br>화면: 검색 결과 0건·지역/검색어 변경 가능 | 미실행 |
+| 공통-15 | **음성군 보건의료 대분류·페이지 2 조회** / 읍면동(TOWN)<br>`GET /catalog/nhis-services` | sido=충청북도; sigungu=음성군; categoryLarge=보건의료; page=2; pageSize=1 | 200 · `total=32`, 2페이지 1건, ID `nhis_20260630_r52406`<br>화면: `보건의료` 필터·2페이지 조회값 반영 | 미실행 |
+| 공통-16 | **충청북도 지역·분류 필터 목록 조회** / 읍면동(TOWN)<br>`GET /catalog/nhis-filters` | sido=충청북도 | 200 · 시군구 11개·대분류 6개(값·순서 JSON과 대조)<br>화면: 충북 시군구 11개·대분류 6개 선택지 | 미실행 |
+| 공통-17 | **기관 연락처 결측 서비스 상세 조회** / 읍면동(TOWN)<br>`GET /catalog/nhis-services/nhis_20260630_r00015` | 입력 없음 (조회) | 200 · ID `nhis_20260630_r00015`, `providerPhone=null`<br>화면: 결측 연락처는 `자료 없음` | 미실행 |
+| 공통-18 | **[API 전용]** **조회 불가 서비스 상세 조회** / 읍면동(TOWN)<br>`GET /catalog/nhis-services/nhis_20260630_r00931` | 입력 없음 (조회) | 404 `NOT_FOUND`<br>화면: 숨김 서비스는 조회·선택 가능한 목록에 **노출되지 않음**. `404 NOT_FOUND`는 **API 직접 조회**로 확인 | 미실행 |
+| 공통-19 | **서비스 3건을 선택해 계획 초안 저장** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/plan` | v3; preparedOn=2026-11-04; 목표=가상 사례의 약 복용과 일상생활 지원을 확인한다.; 서비스 ID 3건 | 200 · `PLAN_DRAFTED` · v4; `confirmation=null`, `notice=null`; `itemA/B/C` 캡처<br>화면: `초안`, A·B·C 3개 서비스·기준일, 읍면동 `초안 저장`/시군구 `계획 확정`; 확정/안내 아직 없음 | 미실행 |
+| 공통-20 | **시군구의 초안 상세 재조회** / 시군구(DISTRICT)<br>`GET /cases/{{caseId}}` | 입력 없음 (조회) | 200 · v4; `allowedActions=CONFIRM_PLAN`<br>화면: 시군구 `계획 확정` 동작, 기존 항목 A·B·C 동일 순서 | 미실행 |
+| 공통-21 | **[API 전용]** **오래된 v3로 초안 다시 저장 시도** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/plan` | v3; preparedOn=2026-11-04; 목표=오래된 초안 요청; 서비스 ID 1건 | 409 `VERSION_CONFLICT`; 기존 v4 유지<br>**추가 수동 재조회**: v4, `goal` 기존 값, `SAVE_DRAFT` 이력 1건·전체 이력 4건 유지 | 미실행 |
+| 공통-22 | **[API 전용]** **읍면동 계정으로 계획 확정 시도** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/plan/confirmation` | v4; meetingOn=2026-11-05; outcome=APPROVED | 403 `FORBIDDEN`<br>화면(확정 버튼 없음) / **추가 수동 재조회**: 읍면동 `계획 확정` 버튼 없음, `confirmation=null`, v4·이력 4건 유지 | 미실행 |
+| 공통-23 | **시군구 계정으로 회의 승인/계획 확정** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/confirmation` | v4; meetingOn=2026-11-05; outcome=APPROVED | 200 · `PLAN_CONFIRMED` · v5; 회의일 11/05; `notice=null`; **계획 항목 ID와 순서가 초안 v4의 `itemA→itemB→itemC`와 동일**<br>화면: `확정`·회의일 `11/05`·승인, `계획 안내 기록`; 확정 후 `notice=null` | 미실행 |
+| 공통-24 | **[API 전용]** **안내 기록 전에 서비스 A 연계 시도** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemA}}/linkage` | v5; linkedOn=2026-11-06; method=DEPARTMENT_REFERRAL; destinationLabel=가상 담당부서 | 409 `INVALID_TRANSITION`<br>**추가 수동 재조회**: 해당 항목 `linkage=null`, v5·이력 5건 유지 | 미실행 |
+| 공통-25 | **시군구가 별도 계획 안내일 기록** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/notice` | v5; announcedOn=2026-11-05 | 200 · `PLAN_CONFIRMED` · v6; 안내일 11/05; A/B/C `RECORD_LINKAGE` 허용<br>화면: 계획 안내일 `11/05`, 안내대상 `가상 대리 신청인 01`, 방식 `문자`; 각 항목 `연계 기록` | 미실행 |
+| 공통-26 | **시군구가 서비스 A 부서·공단 의뢰** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemA}}/linkage` | v6; linkedOn=2026-11-06; method=DEPARTMENT_REFERRAL; destinationLabel=가상 담당부서 | 200 · `SERVICE_TRACKING` · v7; **A `delivery=null`(연계 직후, 현황 저장 전)**<br>화면: `연계·제공 기록 중`, A `가상 담당부서` 의뢰, A `제공 현황 기록` | 미실행 |
+| 공통-27 | **시군구가 서비스 B 제공기관 의뢰** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemB}}/linkage` | v7; linkedOn=2026-11-06; method=PROVIDER_REFERRAL | 200 · `SERVICE_TRACKING` · v8; **B `delivery=null`(연계 직후, 현황 저장 전)**<br>화면: B `보건소` 제공기관 의뢰 및 `제공 현황 기록` | 미실행 |
+| 공통-28 | **시군구가 서비스 C 대상자 안내** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemC}}/linkage` | v8; linkedOn=2026-11-06; method=PERSON_GUIDANCE | 200 · `SERVICE_TRACKING` · v9; **C `delivery=null`(연계 직후, 현황 저장 전)**<br>화면: C 대상자 안내, `무극한의원`은 제공 확정이 아닌 후보, C `제공 현황 기록` | 미실행 |
+| 공통-29 | **시군구가 서비스 A 제공 현황 `IN_USE` 입력** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemA}}/delivery` | v9; observedOn=2026-11-08; status=IN_USE | 200 · `SERVICE_TRACKING` · v10<br>화면: A `이용 중`·확인일 `11/08`; B·C 기존 기록에 영향 없음 | 미실행 |
+| 공통-30 | **시군구가 서비스 C 제공 현황 `UNKNOWN`·사유 입력** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemC}}/delivery` | v10; observedOn=2026-11-08; status=UNKNOWN; reason=가상 대상자가 기관을 검토 중 | 200 · `SERVICE_TRACKING` · v11<br>화면: C `확인 중`·사유 `가상 대상자가 기관을 검토 중`·확인일 `11/08` | 미실행 |
+| 공통-31 | **[API 전용]** **B 제공 현황 없이 읍면동이 모니터링 입력 시도** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/monitoring` | v11; monitoredOn=2026-11-09; method=VISIT; condition=UNCHANGED; reviewNeeded=false | 409 `INVALID_TRANSITION`; 미저장<br>재조회: B `delivery=null`, `monitoring=null`, v11·이력 11건; 읍면동 모니터링 아직 불가 | 미실행 |
+| 공통-32 | **공통 단계 종료 시 상세 재조회** / 읍면동(TOWN)<br>`GET /cases/{{caseId}}` | 입력 없음 (조회) | 200 · v11 · `monitoring=null`, B `delivery=null`, 읍면동 `allowedActions=[]`<br>화면: 세 항목 제공 현황이 전부 기록되지 않았으므로 `최초 모니터링 기록` 동작 없음 | 미실행 |
+
+## 화면·재조회 체크포인트 (`expected-results.md` 반영)
+
+`D-02`의 화면 구성과 `expected-results.md`의 단계별 결과 기준을 함께 적용한다. 아래는 **API 결과와 별도로 화면에서 확인해야 하는 기준**이다. 정확한 오류 안내 문장 자체가 정해지지 않은 항목은 D-02의 표시 원칙으로 판정하고, 문장을 임의로 확정하지 않는다.
+
+| 완료 시점 | 화면/재조회 확인 내용 | 실제 결과·증거 | 판정 |
+| --- | --- | --- | --- |
+| v1 접수 | 상태 `접수`; 서버 발급 접수번호. 대상자 `가상 대상자 01`, 신청인·안내대상 `가상 대리 신청인 01` 각각 구분. 읍면동 `사전조사 기록` | 미실행 | 미실행 |
+| v2 사전조사 | `사전조사 완료`·`통합판정조사군`; 읍면동 `시군구 판정 결과 기록 대기`, 시군구 `판정 결과 기록` | 미실행 | 미실행 |
+| v3 가상 판정 | `판정 기록 완료`·`지원계획 수립 대상`; 읍면동 `지원계획 초안 저장` | 미실행 | 미실행 |
+| v4 계획 초안 | `초안`·서비스 3개(A→B→C)·기준일. 읍면동 `초안 저장`, 시군구 `계획 확정`. `confirmation=null`, `notice=null` | 미실행 | 미실행 |
+| v5 회의 승인 | `확정`·회의일 `11/05`·승인, 시군구 `계획 안내 기록`; 안내일 미기록(`notice=null`); **확정 전후 `itemA/B/C` ID·배열 순서 동일** | 미실행 | 미실행 |
+| v6 안내 | 안내일 `11/05`; 안내대상 `가상 대리 신청인 01`, 안내방식 `문자`; 항목별 `연계 기록` | 미실행 | 미실행 |
+| v7~9 연계 | `연계·제공 기록 중`. **A 수신처 `가상 담당부서`, B 수신처 `보건소`, C 수신처 `null`**이며 C의 `무극한의원`은 **제공기관 후보**로 표시. 연계 직후 각각 A/B/C의 `delivery=null` 확인. 연계된 항목에 `제공 현황 기록` | 미실행 | 미실행 |
+| v10~11 제공 일부 기록 | A `이용 중`, C `확인 중`과 사유·확인일. **B 현황은 아직 `null`**이고 모니터링 저장 불가 | 미실행 | 미실행 |
+| v12 세 항목 현황 완료 | A/B/C에 확인일·제공 상태 기록. B 상태는 사례별로 다름. 읍면동 `최초 모니터링 기록` 표시 | 미실행 | 미실행 |
+| v13 최초 모니터링 | `최초 모니터링 기록 완료`·`상태 변화 없음`; 두 역할 모두 저장 동작 없음(`allowedActions=[]`). 후속 검토 문구는 사례별 점검 | 미실행 | 미실행 |
+
+각 단계는 성공 직후 화면만 보지 말고 **상세 새로고침 → 저장값 비교**까지 기록한다. 자동화/수동 검증을 구분해서 API 응답과 화면 증거를 각각 남긴다.
+
+## 입력 거절·재시도 후 불변 조건 (`expected-results.md` 반영)
+
+아래 오류는 기대한 거절이므로 해당 요청이 통과하려면 **HTTP 오류 코드 확인과 재조회에서 무변경 확인이 모두 필요**하다.
+
+| 관련 실행 단계 | 요청의 기대 오류 | 반드시 유지되어야 하는 저장값 | 화면 확인 포인트 | 실제 결과·판정 |
+| --- | --- | --- | --- | --- |
+| 공통-02~03 | 동일 본문 재시도 `200`, 같은 키·다른 날짜 `409 IDEMPOTENCY_CONFLICT` | 단일 사례 ID·접수번호, 접수일 `2026-11-01`, v1, 이력 1건 | 중복 사례 생성 없이 기존 접수 확인 가능 | 미실행 |
+| 공통-05~07 | 관할 밖 상세 `404 NOT_FOUND` | 해당 계정에는 사례 노출 안 됨. 본 담당 계정 사례는 유지 | 타 읍면동 목록 0건 및 빈 상태 표시 | 미실행 |
+| 공통-08~09 | 날짜 역전 `422 VALIDATION_ERROR`, `field=screenedOn` | `screening=null`, v1, 이력 1건 | 조사일 필드 오류·**첫 오류 필드로 초점 이동**·입력값 유지 | 미실행 |
+| 공통-11 (추가 수동 재조회) | 판정 전 초안 `409 INVALID_TRANSITION` | `plan=null`, v2, 이력 2건 | 진행 불가 안내 | 미실행 |
+| 공통-21 (추가 수동 재조회) | 구버전 초안 `409 VERSION_CONFLICT` | 정상 저장된 초안, v4, 이력 4건 | 최신 상세 재조회 후 입력 재확인 가능 | 미실행 |
+| 공통-22 (추가 수동 재조회) | 읍면동 계획 확정 `403 FORBIDDEN` | `confirmation=null`, v4, 이력 4건 | 읍면동 확정 버튼 없음 | 미실행 |
+| 공통-24 (추가 수동 재조회) | 안내 전 연계 `409 INVALID_TRANSITION` | A `linkage=null`, v5, 이력 5건 | 연계 기록 동작은 안내 후에만 가능 | 미실행 |
+| 공통-31~32 | B 제공 현황 없이 모니터링 `409 INVALID_TRANSITION` | B `delivery=null`, `monitoring=null`, v11, 이력 11건 | 최초 모니터링 버튼 없음 | 미실행 |
+
+서버 오류나 세션 만료는 D-02·D-04의 일반 규칙에 따르되, 원본 JSON에 없는 요청을 이미 수행했다고 기재하지 않는다.
+
+### 공단 조회에서 확인하는 기대 화면 (`expected-results.md`)
+
+| 실행 연결 | API 기대값 | 화면 기대값 | 실제 결과·증거 |
+| --- | --- | --- | --- |
+| 공통-13 | 음성군 ‘다제약물’ `total=1`; 공단 행 `nhis_20260630_r00001`, 자료 `v1.4`, `providerPhone=1577-1000`, `sourceName=국민건강보험공단_통합돌봄 서비스 자원`, `sourceUrl=https://www.data.go.kr/data/15173720/fileData.do`, 기준일 `2026-06-30` | `다제약물 관리사업`, `국민건강보험공단`, 공단 출처와 기준일 | 미실행 |
+| 공통-15~16 | 보건의료 2페이지 `total=32`·ID `nhis_20260630_r52406`; 충북 시군구 11개·대분류 6개 | 검색 필터와 페이지 결과 정확히 표시 | 미실행 |
+| 공통-17 | `providerPhone=null` | 연락처 `자료 없음` | 미실행 |
+| 공통-18 | **[API 전용]** 중복 추가 행 ID `nhis_20260630_r00931` 직접 상세 조회 `404 NOT_FOUND` | 해당 서비스는 조회·선택 가능한 목록에 **노출되지 않음**. 화면에서 404 요청을 재현하려 하지 않음 | 미실행 |
+| 공통-14 | 검색 결과 `200`, `items=[]`, `total=0` | 빈 검색 결과와 조건 변경 가능 | 미실행 |
+
+※ 공단 원본 전체 행수(90,081)·조회 대상(89,738)·세종 표준 지역명 대조는 `expected-results.md`에 있으나, D-06의 **AC-04/07 데이터 적재 검증 담당은 이보미**다. 김예랑은 본 사례의 화면·업무 검증과 연계되는 조회 표본을 확인한다.
+
+## 2. 36번 일부 미개시 고유 검증 (`scenarios.C-06`)
+
+C-06에서 시군구는 B 서비스의 **기존 제공 현황을 `UNKNOWN(확인 중)`으로 저장**하고, 읍면동은 방문 모니터링에서 **새 관찰 결과를 `NOT_STARTED(미개시)`로 기록**한다. 둘은 서로 덮어써지면 안 된다.
+
+| 번호 | 실행 주체·요청 | 주요 입력·조건 | 기대 결과 | 실제 결과·판정 |
+| --- | --- | --- | --- | --- |
+| C06-01 | **B를 `NOT_STARTED`로 기록하면서 사유 생략** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemB}}/delivery` | v11; observedOn=2026-11-08; status=NOT_STARTED | 422 `VALIDATION_ERROR` · `field=reason`<br>화면: B 미개시 사유의 필드 오류, 저장되지 않음·입력값 유지 | 미실행 |
+| C06-02 | **거절 직후 시군구 상세 조회** / 시군구(DISTRICT)<br>`GET /cases/{{caseId}}` | 입력 없음 (조회) | 200 · v11 · B `delivery=null`<br>재조회: B 기존 제공 현황이 아직 없고 v11·이력 11건 유지 | 미실행 |
+| C06-03 | **시군구가 B를 `UNKNOWN`·사유 입력해 저장** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemB}}/delivery` | v11; observedOn=2026-11-08; status=UNKNOWN; reason=가상 개시 여부 확인 전 | 200 · `SERVICE_TRACKING` · v12; B 기존 현황 `UNKNOWN`, 사유 `가상 개시 여부 확인 전`<br>화면: B 기존 제공 현황 `확인 중`·사유 `가상 개시 여부 확인 전`; 읍면동에 `최초 모니터링 기록` 가능 | 미실행 |
+| C06-04 | **읍면동 미개시 관찰에서 항목 사유 생략** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/monitoring` | v12; monitoredOn=2026-11-09; method=VISIT; condition=UNCHANGED; reviewNeeded=true; reviewReason=가상 미개시 항목의 후속 확인; 관찰[{{itemB}} NOT_STARTED] | 422 `VALIDATION_ERROR` · `field=observations.0.reason`<br>화면: B `미개시` 선택 시 사유 필수 오류 표시, **첫 오류 입력란으로 초점 이동**, 입력값 유지 | 미실행 |
+| C06-05 | **[API 전용]** **이 사례에 속하지 않는 임의 항목 ID를 관찰에 입력** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/monitoring` | v12; monitoredOn=2026-11-09; method=VISIT; condition=UNCHANGED; reviewNeeded=false; 관찰[other-case-item IN_USE] | 422 `VALIDATION_ERROR` · `field=observations.0.itemId`<br>**API 전용**: 임의 ID `other-case-item`은 화면에서 선택할 수 없어야 하며, API 요청은 저장 거절 | 미실행 |
+| C06-06 | **[API 전용]** **같은 B 항목을 관찰 배열에 중복 입력** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/monitoring` | v12; monitoredOn=2026-11-09; method=VISIT; condition=UNCHANGED; reviewNeeded=false; 관찰[{{itemB}} IN_USE; {{itemB}} UNKNOWN] | 422 `VALIDATION_ERROR` · `field=observations.1.itemId`<br>**API 전용**: 화면은 동일 항목 중복 선택을 제공하지 않고, API 요청은 저장 거절 | 미실행 |
+| C06-07 | **후속 검토 필요로 선택하고 검토 사유 생략** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/monitoring` | v12; monitoredOn=2026-11-09; method=VISIT; condition=UNCHANGED; reviewNeeded=true; 관찰[{{itemB}} NOT_STARTED 사유=가상 개시일 미정] | 422 `VALIDATION_ERROR` · `field=reviewReason`<br>화면: `후속 검토 필요` 선택 시 **바로 아래 `후속 검토 사유` 입력란 표시**, 누락하면 필수값 오류와 **첫 오류 필드로 초점 이동** | 미실행 |
+| C06-08 | **후속 검토 사유에 공백만 입력** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/monitoring` | v12; monitoredOn=2026-11-09; method=VISIT; condition=UNCHANGED; reviewNeeded=true; reviewReason=공백 3칸; 관찰[{{itemB}} NOT_STARTED 사유=가상 개시일 미정] | 422 `VALIDATION_ERROR` · `field=reviewReason`<br>화면: 공백만 입력한 `후속 검토 사유`도 오류·**첫 오류 입력란으로 초점 이동**·입력값 유지 | 미실행 |
+| C06-09 | **거절 후 상세 재조회** / 읍면동(TOWN)<br>`GET /cases/{{caseId}}` | 입력 없음 (조회) | 200 · v12 · `monitoring=null` · 읍면동 `RECORD_MONITORING` 여전히 가능<br>재조회: `monitoring=null`, v12·이력 12건, `최초 모니터링 기록` 재시도 가능 | 미실행 |
+| C06-10 | **B 미개시 사유와 후속 검토 사유를 채워 모니터링 저장** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/monitoring` | v12; monitoredOn=2026-11-09; method=VISIT; condition=UNCHANGED; reviewNeeded=true; reviewReason=가상 미개시 항목의 후속 확인; 관찰[{{itemB}} NOT_STARTED 사유=가상 개시일 미정] | 200 · `FIRST_MONITORING_RECORDED` · v13; B 관찰 `NOT_STARTED`+사유; `reviewNeeded=true`+검토 사유<br>화면: B의 `기존 제공 현황 · 확인 중`과 `모니터링 확인 · 미개시`를 함께 표시; `후속 검토 필요` 바로 아래 `가상 미개시 항목의 후속 확인` | 미실행 |
+| C06-11 | **[API 전용]** **모니터링 완료 이후 B 현황 변경 시도** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemB}}/delivery` | v13; observedOn=2026-11-09; status=IN_USE | 409 `INVALID_TRANSITION`; v13 유지<br>재조회: B의 기존 `UNKNOWN`과 관찰 `NOT_STARTED` 유지, v13·이력 13건, 완료 후 수정 불가 | 미실행 |
+
+### C-06 추가 화면·오류·완료 기준
+
+**화면/서버 검증 구분:** 화면이 저장 전에 입력을 막으면 화면에서는 오류 표시·첫 오류 필드 초점 이동·입력값 유지를 확인하고, 서버의 `422`·`error.field`는 인증된 API에서 별도로 재현한다.
+
+**화면에서 별도로 실행·확인:** (1) 읍면동 계정의 모니터링 화면에서 `후속 검토 필요`를 선택하면 바로 아래 `후속 검토 사유` 입력란이 나타난다. (2) 화면에서 재현 가능한 `422` 입력 오류는 첫 오류 필드로 초점 이동하고, 작성 중인 값이 유지된다. (3) `C06-05`와 `C06-06`의 임의 항목·중복 항목 오류는 **API 전용**이며, 화면에 존재하지 않는 항목을 선택할 수 있거나 같은 항목을 중복 선택하도록 유도해서는 안 된다.
+
+| 확인 시점 | 기대 화면/저장 결과 | 실제 결과·증거 | 판정 |
+| --- | --- | --- | --- |
+| C06-01~02 | B를 `미개시`로 기록하면서 사유 미입력 → `422`·`field=reason`, 해당 입력란 오류·입력값 유지. 재조회 결과 B `delivery=null`, v11·이력 11건 | 미실행 | 미실행 |
+| C06-03, v12 | 시군구 B 기존 제공 현황 `확인 중`·확인일 `11/08`·사유 `가상 개시 여부 확인 전`; 읍면동 `최초 모니터링 기록` 활성화 | 미실행 | 미실행 |
+| C06-04 | 읍면동 관찰 B `미개시`의 사유 누락 → `422`·`field=observations.0.reason`. 누락 필드 안내·**첫 오류 필드로 초점 이동**·입력 유지 | 미실행 | 미실행 |
+| C06-05~06 | 이 사례에 속하지 않는 임의 항목 ID 또는 같은 B 중복 관찰 → `422`·각 `itemId` 오류. 검증 실패 요청은 저장되지 않음 | 미실행 | 미실행 |
+| C06-07~08 | `후속 검토 필요` 선택 시 **바로 아래 사유 입력란 표시**. 사유 누락·공백 입력 → `422`·`field=reviewReason`. **첫 오류 필드로 초점 이동**, 입력값 유지 | 미실행 | 미실행 |
+| C06-09 | 실패 요청 이후 재조회: `monitoring=null`, v12·이력 12건, 읍면동 `RECORD_MONITORING` 재시도 가능 | 미실행 | 미실행 |
+| C06-10, v13 | B 기존 `확인 중` + 읍면동 관찰 `미개시`가 **동시에 표시**, 모니터링 사유 `가상 개시일 미정`, `후속 검토 필요` 아래 `가상 미개시 항목의 후속 확인` 표시 | 미실행 | 미실행 |
+| C06-11, 완료 후 | **API 전용** 추가 제공 현황 변경 `409 INVALID_TRANSITION`; B 기존 상태 `UNKNOWN`, B 관찰 `NOT_STARTED`, v13·이력 13건 유지. 양쪽 역할 `allowedActions=[]` | 미실행 | 미실행 |
+
+> 주의: 기존 제공 현황과 모니터링 관찰을 **서로 덮어쓰면 실패**다. C-06은 이번 시연에서 계획 재확정/재의뢰/종결을 수행하지 않는다.
+
+## 3. 최종 재조회 기준 (`finalCheck`)
+
+시군구 계정으로 `GET /api/v1/cases/{{caseId}}`를 호출하거나 신청 상세를 새로고침한다. 아래 **서로 다른 두 종류의 기록**을 특히 비교한다.
+
+| 점검 항목 | 기대값 | 실제 결과 |
+| --- | --- | --- |
+| 전체 상태·버전 | `FIRST_MONITORING_RECORDED`, `version=13`, `allowedActions=[]` | 미실행 |
+| 공통 흐름 | 접수·조사·가상 판정·계획 수립/확정/안내·3가지 연계 방식이 공통 32단계와 같음 | 미실행 |
+| A 기존 제공 현황 | `plan.items[A].delivery.status=IN_USE` | 미실행 |
+| **B 기존 제공 현황 (시군구 기록)** | `plan.items[B].delivery.status=UNKNOWN`, `observedOn=2026-11-08`, `reason=가상 개시 여부 확인 전` | 미실행 |
+| C 기존 제공 현황 | `plan.items[C].delivery.status=UNKNOWN`, `reason=가상 대상자가 기관을 검토 중` | 미실행 |
+| **B 새 모니터링 관찰 (읍면동 기록)** | `monitoring.observations[B].status=NOT_STARTED`, `reason=가상 개시일 미정` | 미실행 |
+| A·C의 모니터링 관찰 | A `IN_USE`; C `UNKNOWN` 및 기존 사유. 관찰 배열은 **A→B→C 순서**로 3건 | 미실행 |
+| 후속 검토 여부·사유 | `reviewNeeded=true`, `reviewReason=가상 미개시 항목의 후속 확인` | 미실행 |
+| 날짜·방법·상태 | `monitoredOn=2026-11-09`, `method=VISIT`, `condition=UNCHANGED` | 미실행 |
+| UI의 별도 표시 | B `기존 제공 현황 · 확인 중` / `모니터링 확인 · 미개시`를 각각 표시, `후속 검토 필요` 바로 아래 `가상 미개시 항목의 후속 확인` 표시; 완료 `상태 변화 없음` | 미실행 |
+| 누락·공백 오류 화면 | B 제공 사유 누락 `field=reason`; 미개시 관찰 사유 누락 `field=observations.0.reason`; 후속 검토 사유 누락·공백 `field=reviewReason` (모두 `422`). `후속 검토 필요` 선택 시 사유 입력란 표시, **첫 오류 필드 초점 이동**·입력값 유지, 모니터링 저장 실패 후 `monitoring=null` | 미실행 |
+| 처리 이력 | 성공 기록 **13건**, 최신순 **v13 `RECORD_MONITORING`(TOWN) → v12 B `RECORD_DELIVERY` → v11 C `RECORD_DELIVERY` → v10 A `RECORD_DELIVERY`**; 오류 422·409 요청은 기록/버전 변화 없음 | 미실행 |
+| 완료 후 재입력 | 제공 현황 변경 시도는 `409 INVALID_TRANSITION`; 버전 13과 기존 기록 유지 | 미실행 |
+
+### 구현 범위 주의
+
+- 이 시나리오는 **미개시·사유·후속 검토 기록까지** 검증한다. `D-01_scope.md`에 따르면 **계획 재확정·재의뢰·자동 종결**은 이번 시연 범위에 포함되지 않는다.
+- R-04의 C-06에 ‘이후 계획 수정’이 등장하더라도, 이 검증표에서는 **계획 변경 버튼이나 종결 기능을 합격 조건으로 요구하지 않는다**.
+
+## 4. 화면 확인 및 증거 수집
+
+| 확인 영역 | 확인 내용 | 화면 캡처·응답/로그 링크 | 판정 |
+| --- | --- | --- | --- |
+| UI-01~03 로그인·목록·접수 | 계정 역할/관할, 가상 정보 표시, 대리 신청인·안내대상 구분 | 실행 후 기입 | 미실행 |
+| UI-04 접수·조사 | 단계별 기록 및 관할·역할에 맞는 편집 동작 | 실행 후 기입 | 미실행 |
+| UI-05 공단 조회 | 지역·검색·필터·빈 결과·출처·기준일 | 실행 후 기입 | 미실행 |
+| UI-04 계획 | 초안·회의 승인·안내일을 별도 표시하고 역할별 저장 권한 적용 | 실행 후 기입 | 미실행 |
+| UI-04 연계·제공 | A/B/C별 연계 방식·기존 제공 현황·사유 | 실행 후 기입 | 미실행 |
+| UI-04 모니터링 | `최초 모니터링 기록 완료`·`상태 변화 없음` 및 B의 기존 `확인 중`/새 관찰 `미개시`·`후속 검토 필요`·검토 사유 표시 | 실행 후 기입 | 미실행 |
+| UI-04 처리 이력 | 이벤트 역할·순서·시각 및 동일 사례 재조회 결과 | 실행 후 기입 | 미실행 |
+| 오류·거절 처리 | 입력 422, 권한 403, 관할 404, 상태·버전 409 화면 표시 | 실행 후 기입 | 미실행 |
+
+실행할 때는 **화면 캡처만으로 통과 판정을 내리지 말고**, 가능하면 API의 HTTP 코드 및 주요 응답 필드, 저장 뒤 새로고침 결과도 함께 남긴다. 실제 실행 커밋/앱 주소가 다르면 그 차이를 검증 기록에 적는다.
+
+## 오류와 재검증
+
+| 오류 ID | 영향 | 재현 절차 | 수정 담당자 | 수정 버전 | 재검증 결과 |
+| --- | --- | --- | --- | --- | --- |
+| — | 미실행: 아직 오류 여부 확인 전 | 실행 후 기입 | 미정 | — | 미실행 |
+
+## 남은 제약
+
+| 제약·미완료 항목 | 영향 | 대응·우회 방법 | 최종 인수 시 전달 내용 |
+| --- | --- | --- | --- |
+| 실제 시연 버전 미인수·미실행 | 실제 결과·성공/실패 판정 불가 | H-03에서 접속 주소·커밋·가상 계정·초기화 안내를 받고 검증 | 검증 버전·일시·결과 기입 |
+| 기대값 문서 확보·실제 실행 전 | `expected-results.md` 기준의 **기대값은 대조 완료**했으나 실제 앱의 일치 여부 미검증 | H-03에서 같은 커밋의 화면·API 응답과 비교 | 기대값과 실제값이 다르면 오류·재검증 기록 |
+
+## 완료 전 확인
+
+- [x] D-01~06·`C-01_C-06.json`·`expected-results.md`를 대조해 검증 단계·입력·API/화면 기대값을 작성했다.
+- [x] 공식 업무 조사 R-04와 이번 앱의 구현 범위를 구분했다.
+- [ ] 실제 검증 환경의 버전·커밋·데이터 버전을 기록했다.
+- [ ] 기대 결과와 실제 결과를 각각 기록했다.
+- [ ] 확인 근거의 버전이 검증 버전과 같다.
+- [ ] 오류가 있으면 수정 담당·수정 버전·재검증 결과를 남겼다.
+- [x] 미실행·실패·보류를 통과로 표시하지 않았다.
+
+## 근거 자료
+
+- `docs/development/WORK_SCHEDULE.md`: 작업 36·44·50의 일정과 선행관계
+- `docs/design/D-01_scope.md`: 범위와 제외 기능
+- `docs/design/D-02_screens.md`: 화면과 오류 처리
+- `docs/design/D-03_data_model.md`: 기존 제공 현황·모니터링·이력 저장 구조
+- `docs/design/D-04_api.md`: 권한·경로·요청·응답·오류 규칙
+- `docs/design/D-05_workflow.md`: 상태 전이와 실행 순서
+- `docs/design/D-06_work_items.md`: AC-01~07 판정 기준과 김예랑 담당
+- `docs/design/fixtures/C-01_C-06.json`: 정확한 공통/시나리오 단계와 최종 재조회 기대 JSON
+- `docs/design/expected-results.md`: 상태별 화면 문구·조회 데이터·실패 후 재조회·동시 저장 기대값
+- `docs/templates/verification-record.md`: 검증 기록·오류·제약·완료 확인 양식
+- `docs/research/R-04.md`: 조사 단계의 가상 대표 사례(설계 요구사항과 구분)
