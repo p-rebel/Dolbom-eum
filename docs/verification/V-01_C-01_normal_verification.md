@@ -58,7 +58,7 @@
 
 | 번호 | 실행 주체·요청 | 주요 입력·조건 | 기대 결과 | 실제 결과·판정 |
 | --- | --- | --- | --- | --- |
-| 공통-01 | **가상 프로필로 대리 신청 1건 접수** / 읍면동(TOWN)<br>`POST /cases` | 키=demo-receive-01; profileCode=DEMO-ELDER-01; receivedOn=2026-11-01; noticeMethod=SMS; evidenceChecked=true | 201 · `RECEIVED` · v1; 대상자/신청인/안내대상 구분; RECEIVE 이력 1건<br>화면: `접수`, 발급 접수번호, 대상자 `가상 대상자 01` / 대리 신청인·안내대상 `가상 대리 신청인 01` 구분; 읍면동 `사전조사 기록` | 미실행 |
+| 공통-01 | **가상 프로필로 대리 신청 1건 접수** / 읍면동(TOWN)<br>`POST /cases` | 키=demo-receive-01; profileCode=DEMO-ELDER-01; receivedOn=2026-11-01; noticeMethod=SMS; evidenceChecked=true | 201 · `RECEIVED` · v1; 대상자/신청인/안내대상 구분; RECEIVE 이력 1건<br>화면: `접수 완료`, 발급 접수번호, 대상자 `가상 대상자 01` / 대리 신청인·안내대상 `가상 대리 신청인 01` 구분; 읍면동 `사전조사 기록` | 미실행 |
 | 공통-02 | **[API 전용]** **동일 키·동일 본문 재접수** / 읍면동(TOWN)<br>`POST /cases` | 키=demo-receive-01; profileCode=DEMO-ELDER-01; receivedOn=2026-11-01; noticeMethod=SMS; evidenceChecked=true | 200 · 같은 `caseId`·접수번호 · v1; 접수 이력 증가 없음<br>API 재조회: 접수번호·ID 유지, 목록 1건·`RECEIVE` 이력 1건 (화면에서는 접수 키 직접 지정 불가) | 미실행 |
 | 공통-03 | **[API 전용]** **동일 키·변경된 접수일로 재접수** / 읍면동(TOWN)<br>`POST /cases` | 키=demo-receive-01; profileCode=DEMO-ELDER-01; receivedOn=2026-11-02; noticeMethod=SMS; evidenceChecked=true | 409 `IDEMPOTENCY_CONFLICT`; 새 사례 생성 없음<br>API 재조회: 접수일 `2026-11-01` 그대로, v1·이력 1건. 화면에서 기존 접수 확인은 가능하나 같은 키·다른 본문의 재전송은 API 전용 | 미실행 |
 | 공통-04 | **읍면동 신청 목록 조회** / 읍면동(TOWN)<br>`GET /cases` | 입력 없음 (조회) | 200 · 목록 1건 · `total=1`, v1<br>화면: 목록에 접수번호·가상 대상자·접수일 `11/01`·진행 상태 1건 | 미실행 |
@@ -76,11 +76,11 @@
 | 공통-16 | **충청북도 지역·분류 필터 목록 조회** / 읍면동(TOWN)<br>`GET /catalog/nhis-filters` | sido=충청북도 | 200 · 시군구 11개·대분류 6개(값·순서 JSON과 대조)<br>화면: 충북 시군구 11개·대분류 6개 선택지 | 미실행 |
 | 공통-17 | **기관 연락처 결측 서비스 상세 조회** / 읍면동(TOWN)<br>`GET /catalog/nhis-services/nhis_20260630_r00015` | 입력 없음 (조회) | 200 · ID `nhis_20260630_r00015`, `providerPhone=null`<br>화면: 결측 연락처는 `자료 없음` | 미실행 |
 | 공통-18 | **[API 전용]** **조회 불가 서비스 상세 조회** / 읍면동(TOWN)<br>`GET /catalog/nhis-services/nhis_20260630_r00931` | 입력 없음 (조회) | 404 `NOT_FOUND`<br>화면: 숨김 서비스는 조회·선택 가능한 목록에 **노출되지 않음**. `404 NOT_FOUND`는 **API 직접 조회**로 확인 | 미실행 |
-| 공통-19 | **서비스 3건을 선택해 계획 초안 저장** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/plan` | v3; preparedOn=2026-11-04; 목표=가상 사례의 약 복용과 일상생활 지원을 확인한다.; 서비스 ID 3건 | 200 · `PLAN_DRAFTED` · v4; `confirmation=null`, `notice=null`; `itemA/B/C` 캡처<br>화면: `초안`, A·B·C 3개 서비스·기준일, 읍면동 `초안 저장`/시군구 `계획 확정`; 확정/안내 아직 없음 | 미실행 |
+| 공통-19 | **서비스 3건을 선택해 계획 초안 저장** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/plan` | v3; preparedOn=2026-11-04; 목표=가상 사례의 약 복용과 일상생활 지원을 확인한다.; 서비스 ID 3건 | 200 · `PLAN_DRAFTED` · v4; `confirmation=null`, `notice=null`; `itemA/B/C` 캡처<br>화면: `지원계획 초안 저장 완료`, A·B·C 3개 서비스·기준일, 읍면동 `초안 저장`/시군구 `계획 확정`; 확정/안내 아직 없음 | 미실행 |
 | 공통-20 | **시군구의 초안 상세 재조회** / 시군구(DISTRICT)<br>`GET /cases/{{caseId}}` | 입력 없음 (조회) | 200 · v4; `allowedActions=CONFIRM_PLAN`<br>화면: 시군구 `계획 확정` 동작, 기존 항목 A·B·C 동일 순서 | 미실행 |
 | 공통-21 | **[API 전용]** **오래된 v3로 초안 다시 저장 시도** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/plan` | v3; preparedOn=2026-11-04; 목표=오래된 초안 요청; 서비스 ID 1건 | 409 `VERSION_CONFLICT`; 기존 v4 유지<br>**추가 수동 재조회**: v4, `goal` 기존 값, `SAVE_DRAFT` 이력 1건·전체 이력 4건 유지 | 미실행 |
 | 공통-22 | **[API 전용]** **읍면동 계정으로 계획 확정 시도** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/plan/confirmation` | v4; meetingOn=2026-11-05; outcome=APPROVED | 403 `FORBIDDEN`<br>화면(확정 버튼 없음) / **추가 수동 재조회**: 읍면동 `계획 확정` 버튼 없음, `confirmation=null`, v4·이력 4건 유지 | 미실행 |
-| 공통-23 | **시군구 계정으로 회의 승인/계획 확정** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/confirmation` | v4; meetingOn=2026-11-05; outcome=APPROVED | 200 · `PLAN_CONFIRMED` · v5; 회의일 11/05; `notice=null`; **계획 항목 ID와 순서가 초안 v4의 `itemA→itemB→itemC`와 동일**<br>화면: `확정`·회의일 `11/05`·승인, `계획 안내 기록`; 확정 후 `notice=null` | 미실행 |
+| 공통-23 | **시군구 계정으로 회의 승인/계획 확정** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/confirmation` | v4; meetingOn=2026-11-05; outcome=APPROVED | 200 · `PLAN_CONFIRMED` · v5; 회의일 11/05; `notice=null`; **계획 항목 ID와 순서가 초안 v4의 `itemA→itemB→itemC`와 동일**<br>화면: `지원계획 확정`·회의일 `11/05`·승인, `계획 안내 기록`; 확정 후 `notice=null` | 미실행 |
 | 공통-24 | **[API 전용]** **안내 기록 전에 서비스 A 연계 시도** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemA}}/linkage` | v5; linkedOn=2026-11-06; method=DEPARTMENT_REFERRAL; destinationLabel=가상 담당부서 | 409 `INVALID_TRANSITION`<br>**추가 수동 재조회**: 해당 항목 `linkage=null`, v5·이력 5건 유지 | 미실행 |
 | 공통-25 | **시군구가 별도 계획 안내일 기록** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/notice` | v5; announcedOn=2026-11-05 | 200 · `PLAN_CONFIRMED` · v6; 안내일 11/05; A/B/C `RECORD_LINKAGE` 허용<br>화면: 계획 안내일 `11/05`, 안내대상 `가상 대리 신청인 01`, 방식 `문자`; 각 항목 `연계 기록` | 미실행 |
 | 공통-26 | **시군구가 서비스 A 부서·공단 의뢰** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemA}}/linkage` | v6; linkedOn=2026-11-06; method=DEPARTMENT_REFERRAL; destinationLabel=가상 담당부서 | 200 · `SERVICE_TRACKING` · v7; **A `delivery=null`(연계 직후, 현황 저장 전)**<br>화면: `연계·제공 기록 중`, A `가상 담당부서` 의뢰, A `제공 현황 기록` | 미실행 |
@@ -97,15 +97,15 @@
 
 | 완료 시점 | 화면/재조회 확인 내용 | 실제 결과·증거 | 판정 |
 | --- | --- | --- | --- |
-| v1 접수 | 상태 `접수`; 서버 발급 접수번호. 대상자 `가상 대상자 01`, 신청인·안내대상 `가상 대리 신청인 01` 각각 구분. 읍면동 `사전조사 기록` | 미실행 | 미실행 |
+| v1 접수 | 상태 `접수 완료`; 서버 발급 접수번호. 대상자 `가상 대상자 01`, 신청인·안내대상 `가상 대리 신청인 01` 각각 구분. 읍면동 `사전조사 기록` | 미실행 | 미실행 |
 | v2 사전조사 | `사전조사 완료`·`통합판정조사군`; 읍면동 `시군구 판정 결과 기록 대기`, 시군구 `판정 결과 기록` | 미실행 | 미실행 |
 | v3 가상 판정 | `판정 기록 완료`·`지원계획 수립 대상`; 읍면동 `지원계획 초안 저장` | 미실행 | 미실행 |
-| v4 계획 초안 | `초안`·서비스 3개(A→B→C)·기준일. 읍면동 `초안 저장`, 시군구 `계획 확정`. `confirmation=null`, `notice=null` | 미실행 | 미실행 |
-| v5 회의 승인 | `확정`·회의일 `11/05`·승인, 시군구 `계획 안내 기록`; 안내일 미기록(`notice=null`); **확정 전후 `itemA/B/C` ID·배열 순서 동일** | 미실행 | 미실행 |
+| v4 계획 초안 | `지원계획 초안 저장 완료`·서비스 3개(A→B→C)·기준일. 읍면동 `초안 저장`, 시군구 `계획 확정`. `confirmation=null`, `notice=null` | 미실행 | 미실행 |
+| v5 회의 승인 | `지원계획 확정`·회의일 `11/05`·승인, 시군구 `계획 안내 기록`; 안내일 미기록(`notice=null`); **확정 전후 `itemA/B/C` ID·배열 순서 동일** | 미실행 | 미실행 |
 | v6 안내 | 안내일 `11/05`; 안내대상 `가상 대리 신청인 01`, 안내방식 `문자`; 항목별 `연계 기록` | 미실행 | 미실행 |
 | v7~9 연계 | `연계·제공 기록 중`. **A 수신처 `가상 담당부서`, B 수신처 `보건소`, C 수신처 `null`**이며 C의 `무극한의원`은 **제공기관 후보**로 표시. 연계 직후 각각 A/B/C의 `delivery=null` 확인. 연계된 항목에 `제공 현황 기록` | 미실행 | 미실행 |
 | v10~11 제공 일부 기록 | A `이용 중`, C `확인 중`과 사유·확인일. **B 현황은 아직 `null`**이고 모니터링 저장 불가 | 미실행 | 미실행 |
-| v12 세 항목 현황 완료 | A/B/C에 확인일·제공 상태 기록. B 상태는 사례별로 다름. 읍면동 `최초 모니터링 기록` 표시 | 미실행 | 미실행 |
+| v12 세 항목 현황 완료 | A/B/C에 확인일·제공 상태 기록. B 상태는 사례별로 다름. 읍면동 `최초 모니터링 기록`, 시군구 `읍면동 최초 모니터링 대기`와 항목별 `제공 현황 수정` 표시 | 미실행 | 미실행 |
 | v13 최초 모니터링 | `최초 모니터링 기록 완료`·`상태 변화 없음`; 두 역할 모두 저장 동작 없음(`allowedActions=[]`). 후속 검토 문구는 사례별 점검 | 미실행 | 미실행 |
 
 각 단계는 성공 직후 화면만 보지 말고 **상세 새로고침 → 저장값 비교**까지 기록한다. 자동화/수동 검증을 구분해서 API 응답과 화면 증거를 각각 남긴다.
@@ -145,7 +145,7 @@ C-01은 **모든 서비스가 실제 이용 중인 사례가 아니라**, 업무
 
 | 번호 | 실행 주체·요청 | 주요 입력·조건 | 기대 결과 | 실제 결과·판정 |
 | --- | --- | --- | --- | --- |
-| C01-01 | **시군구가 서비스 B 제공 현황 `IN_USE` 저장** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemB}}/delivery` | v11; observedOn=2026-11-08; status=IN_USE | 200 · `SERVICE_TRACKING` · v12; B `delivery.status=IN_USE`<br>화면: B `이용 중`, 세 항목 현황 완료로 읍면동에 `최초 모니터링 기록` 가능 | 미실행 |
+| C01-01 | **시군구가 서비스 B 제공 현황 `IN_USE` 저장** / 시군구(DISTRICT)<br>`PUT /cases/{{caseId}}/plan/items/{{itemB}}/delivery` | v11; observedOn=2026-11-08; status=IN_USE | 200 · `SERVICE_TRACKING` · v12; B `delivery.status=IN_USE`<br>화면: B `이용 중`, 세 항목 현황 완료로 읍면동에 `최초 모니터링 기록` 가능, 시군구 다음 작업 `읍면동 최초 모니터링 대기` | 미실행 |
 | C01-02 | **읍면동 상세 조회로 모니터링 권한 확인** / 읍면동(TOWN)<br>`GET /cases/{{caseId}}` | 입력 없음 (조회) | 200 · v12; `allowedActions=RECORD_MONITORING`<br>화면: 읍면동에 `최초 모니터링 기록` 버튼/동작 표시 | 미실행 |
 | C01-03 | **읍면동 최초 방문 모니터링 기록** / 읍면동(TOWN)<br>`PUT /cases/{{caseId}}/monitoring` | v12; monitoredOn=2026-11-09; method=VISIT; condition=UNCHANGED; reviewNeeded=false | 200 · `FIRST_MONITORING_RECORDED` · v13; `reviewNeeded=false`, `reviewReason=null`; 전체 관찰 A 이용 중/B 이용 중/C 확인 중<br>화면: `최초 모니터링 기록 완료`, `상태 변화 없음`, `후속 검토 불필요`; 양쪽 역할 후속 입력 버튼 없음 | 미실행 |
 

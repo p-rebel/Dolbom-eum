@@ -12,11 +12,12 @@ import type {
 } from './types';
 
 export const STATUS_LABEL: Record<CaseStatus, string> = {
-  RECEIVED: '접수',
+  RECEIVED: '접수 완료',
   SCREENED: '사전조사 완료',
   ASSESSED: '판정 기록 완료',
-  PLAN_DRAFTED: '초안',
-  PLAN_CONFIRMED: '확정',
+  // 작성 중이 아니라 초안이 저장되어 시군구 확정을 기다리는 단계임을 드러낸다(24번 통합 검증 의견).
+  PLAN_DRAFTED: '지원계획 초안 저장 완료',
+  PLAN_CONFIRMED: '지원계획 확정',
   SERVICE_TRACKING: '연계·제공 기록 중',
   FIRST_MONITORING_RECORDED: '최초 모니터링 기록 완료',
 };
@@ -89,6 +90,13 @@ export const ACTION_LABEL: Record<ActionCode, string> = {
 
 /** 다음 작업 문구. 동작할 수 있으면 동작 이름, 아니면 다음 담당 역할의 대기 문구를 표시한다(D-02). */
 export function nextStepLabel(detail: CaseDetail): string {
+  const allRecorded = detail.plan?.items.every((item) => item.linkage && item.delivery) ?? false;
+  // 모든 서비스의 연계·제공 현황이 기록되면 시군구에는 제공 현황 갱신(RECORD_DELIVERY)이 남아 있어도
+  // 다음 차례인 읍면동 모니터링을 기다린다고 표시한다. 정정은 서비스별 ‘제공 현황 수정’ 버튼으로 한다.
+  const canMonitor = detail.allowedActions.some((item) => item.action === 'RECORD_MONITORING');
+  if (detail.status === 'SERVICE_TRACKING' && allRecorded && !canMonitor) {
+    return '읍면동 최초 모니터링 대기';
+  }
   const first = detail.allowedActions[0];
   if (first) {
     if (first.action === 'SAVE_DRAFT' && detail.plan) {
@@ -107,10 +115,8 @@ export function nextStepLabel(detail: CaseDetail): string {
       return '시군구 계획 확정 대기';
     case 'PLAN_CONFIRMED':
       return detail.plan?.notice ? '시군구 연계 기록 대기' : '시군구 계획 안내 기록 대기';
-    case 'SERVICE_TRACKING': {
-      const allRecorded = detail.plan?.items.every((item) => item.linkage && item.delivery) ?? false;
-      return allRecorded ? '읍면동 최초 모니터링 기록 대기' : '시군구 연계·제공 현황 기록 대기';
-    }
+    case 'SERVICE_TRACKING':
+      return '시군구 연계·제공 현황 기록 대기';
     case 'FIRST_MONITORING_RECORDED':
       return '최초 모니터링 기록 완료';
   }

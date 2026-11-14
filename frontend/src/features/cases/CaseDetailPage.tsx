@@ -467,7 +467,7 @@ function ItemActions({ detail, handlers }: { detail: CaseDetail; handlers: SaveH
 
 /**
  * 모니터링 전, 계획 항목 중 연계·제공 현황이 빠진 서비스와 빠진 값을 보여 준다.
- * D-02:54 ‘누락된 항목은 서비스명과 빠진 값을 표시한다’ — 2026-11-13 김재현 해석(DEV-03 4절), 이동수 님 확인 요청 중.
+ * D-02:54 ‘누락된 항목은 서비스명과 빠진 값을 표시한다’ — 2026-11-13 김재현 해석(DEV-07 2절), 24번 통합 검증에서 확인됨.
  */
 function MissingRecords({ detail }: { detail: CaseDetail }) {
   const rows = (detail.plan?.items ?? [])
