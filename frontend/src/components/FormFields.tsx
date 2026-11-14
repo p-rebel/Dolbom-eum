@@ -11,14 +11,17 @@ interface FieldFrameProps {
   error?: string;
   children: ReactNode;
   contsClassName?: string;
+  /** 오류·도움말을 입력 영역 안에서 직접 그린다(textarea: 글자 수와 같은 줄). */
+  messageInside?: boolean;
 }
 
 function describedBy(id: string, hint?: string, error?: string) {
-  return [error && `${id}-error`, hint && `${id}-hint`].filter(Boolean).join(' ') || undefined;
+  // 오류가 있으면 도움말 대신 오류 한 줄만 보여 준다(KRDS 입력 상태 예시: 칸 아래 메시지 하나).
+  return error ? `${id}-error` : hint ? `${id}-hint` : undefined;
 }
 
 /** form-group > form-tit > form-conts > 오류·도움말 */
-function FieldFrame({ id, label, optional, hint, error, children, contsClassName }: FieldFrameProps) {
+function FieldFrame({ id, label, optional, hint, error, children, contsClassName, messageInside }: FieldFrameProps) {
   return (
     <div className="form-group">
       <div className="form-tit">
@@ -28,18 +31,25 @@ function FieldFrame({ id, label, optional, hint, error, children, contsClassName
         </label>
       </div>
       <div className={['form-conts', contsClassName, error && 'is-error'].filter(Boolean).join(' ')}>{children}</div>
-      {error && (
-        <p id={`${id}-error`} className="form-hint-invalid">
-          {error}
-        </p>
-      )}
-      {hint && (
-        <p id={`${id}-hint`} className="form-hint">
-          {hint}
-        </p>
-      )}
+      {!messageInside && <FieldMessage id={id} hint={hint} error={error} />}
     </div>
   );
+}
+
+/** 칸 아래 메시지 한 줄: 오류가 있으면 오류, 없으면 도움말 */
+function FieldMessage({ id, hint, error }: { id: string; hint?: string; error?: string }) {
+  if (error) {
+    return (
+      <p id={`${id}-error`} className="form-hint-invalid">
+        {error}
+      </p>
+    );
+  }
+  return hint ? (
+    <p id={`${id}-hint`} className="form-hint">
+      {hint}
+    </p>
+  ) : null;
 }
 
 interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'id' | 'className'> {
@@ -92,7 +102,7 @@ interface TextAreaFieldProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaEle
 
 export function TextAreaField({ id, label, maxLength, value, optional, hint, error, textareaRef, ...rest }: TextAreaFieldProps) {
   return (
-    <FieldFrame id={id} label={label} optional={optional} hint={hint} error={error}>
+    <FieldFrame id={id} label={label} optional={optional} hint={hint} error={error} messageInside>
       <div className="textarea-wrap">
         <textarea
           ref={textareaRef}
@@ -104,10 +114,14 @@ export function TextAreaField({ id, label, maxLength, value, optional, hint, err
           aria-describedby={describedBy(id, hint, error)}
           {...rest}
         />
-        <p className="textarea-count" aria-hidden="true">
-          <span className="count-now">{value.length}</span>
-          <span className="count-total">/{maxLength}</span>
-        </p>
+        {/* KRDS textarea-bottom: 오류·도움말(왼쪽)과 글자 수(오른쪽)를 한 줄에 둔다. 아래에 따로 두면 입력칸과 한 줄 떨어진다. */}
+        <div className="textarea-bottom">
+          <FieldMessage id={id} hint={hint} error={error} />
+          <p className="textarea-count" aria-hidden="true">
+            <span className="count-now">{value.length}</span>
+            <span className="count-total">/{maxLength}</span>
+          </p>
+        </div>
       </div>
     </FieldFrame>
   );

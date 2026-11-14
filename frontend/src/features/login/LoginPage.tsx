@@ -95,12 +95,6 @@ export function LoginPage({ notice }: { notice: string | null }) {
             <p className="form-hint-information">{notice}</p>
           </div>
         )}
-        {formError && (
-          <div className="form-group" role="alert">
-            <p className="form-hint-invalid">{formError}</p>
-          </div>
-        )}
-
         <form className="login-form" onSubmit={handleSubmit} noValidate>
           <div className="fieldset">
             <TextField
@@ -126,6 +120,12 @@ export function LoginPage({ notice }: { notice: string | null }) {
               inputRef={passwordRef}
             />
           </div>
+          {/* 계정·비밀번호가 틀리면 입력칸 바로 아래, 로그인 버튼 위에 알린다(폼 맨 위에 두면 눈길이 닿지 않고 입력칸이 밀린다). */}
+          {formError && (
+            <div className="form-group login-error" role="alert">
+              <p className="form-hint-invalid">{formError}</p>
+            </div>
+          )}
           {/* KRDS 피그마 로그인 버튼은 입력칸과 같은 56px(large), 입력 열 전체 너비 */}
           <button type="submit" className="krds-btn large primary login-submit" disabled={submitting}>
             {submitting ? '로그인 중…' : '로그인'}
@@ -141,7 +141,6 @@ export function LoginPage({ notice }: { notice: string | null }) {
           {/* 서비스 소개는 KRDS 안내 상자(회색 바탕)로 둔다. 국민건강보험 로그인 화면의 안내 상자 참고 */}
           <div className="login-about-box">
             <h2 id="login-about-title" className="login-about-title">
-              <span className="login-about-icon" aria-hidden="true" />
               돌봄e음은
             </h2>
             <p className="login-about">{ABOUT_INTRO}</p>

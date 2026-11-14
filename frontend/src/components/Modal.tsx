@@ -7,13 +7,15 @@ interface ModalProps {
   /** 버튼 영역. 첫 버튼이 처음 초점을 받는다. */
   actions: ReactNode;
   onClose: () => void;
+  /** KRDS 모달 크기. 확인 창은 sm, 검색처럼 내용이 많은 창은 lg. */
+  size?: 'sm' | 'lg';
 }
 
 /**
  * KRDS 모달(modal) 구조를 React로 연 상태로 그린다. KRDS ui-script.js 대신
  * 열림 클래스(shown·in), 배경 스크롤 막기, Esc 닫기, 초점 가두기와 복귀를 직접 처리한다.
  */
-export function Modal({ title, children, actions, onClose }: ModalProps) {
+export function Modal({ title, children, actions, onClose, size = 'sm' }: ModalProps) {
   const titleId = useId();
   const bodyId = useId();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -59,7 +61,7 @@ export function Modal({ title, children, actions, onClose }: ModalProps) {
 
   return createPortal(
     <section className="krds-modal fade shown in" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={bodyId}>
-      <div className="modal-dialog modal-sm">
+      <div className={`modal-dialog modal-${size}`}>
         <div className="modal-content" ref={contentRef}>
           <div className="modal-header">
             <h2 id={titleId} className="modal-title">
