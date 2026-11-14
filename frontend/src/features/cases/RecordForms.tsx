@@ -2,9 +2,10 @@ import { useRef, useState, type FormEvent } from 'react';
 import { recordAssessment, recordScreening } from '../../api/cases';
 import { ASSESSMENT_OUTCOME_LABEL, CONTACT_METHOD_LABEL, SCREENING_OUTCOME_LABEL } from '../../api/labels';
 import type { CaseDetail, ContactMethod } from '../../api/types';
+import { useConfirm } from '../../components/ConfirmDialog';
 import { FormMessage } from '../../components/Feedback';
 import { RadioGroup, RequiredNotice } from '../../components/FormFields';
-import { TextField } from '../../components/TextField';
+import { DateField } from '../../components/DateField';
 import { checkDate, minDate } from '../../dates';
 import { useUnsavedChanges } from '../../router';
 import type { SaveHandlers } from './CaseDetailPage';
@@ -21,6 +22,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
   const [saving, setSaving] = useState(false);
   const dateRef = useRef<HTMLInputElement>(null);
   const methodRef = useRef<HTMLInputElement>(null);
+  const confirm = useConfirm();
   useUnsavedChanges(screenedOn !== '' || method !== '');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -38,6 +40,16 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
       (next.screenedOn ? dateRef : methodRef).current?.focus();
       return;
     }
+    const ok = await confirm.ask({
+      title: '사전조사를 저장할까요?',
+      rows: [
+        ['조사일', screenedOn],
+        ['조사 방법', CONTACT_METHOD_LABEL[method as ContactMethod]],
+        ['조사 결과', SCREENING_OUTCOME_LABEL.NHIS_ASSESSMENT_REQUIRED],
+      ],
+      confirmLabel: '사전조사 저장',
+    });
+    if (!ok) return;
     setSaving(true);
     setMessage(null);
     try {
@@ -66,14 +78,14 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="사전조사 기록">
       <RequiredNotice />
       {message && <FormMessage tone="error">{message}</FormMessage>}
-      <TextField
+      {confirm.dialog}
+      <DateField
         id="screened-on"
         label="조사일"
-        type="date"
         hint={`접수일(${detail.receivedOn})과 같거나 이후 날짜`}
         min={minDate(detail.receivedOn)}
         value={screenedOn}
-        onChange={(event) => { setScreenedOn(event.target.value); clearError('screenedOn'); }}
+        onChange={(value) => { setScreenedOn(value); clearError('screenedOn'); }}
         error={errors.screenedOn}
         inputRef={dateRef}
       />
@@ -109,6 +121,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
   const [saving, setSaving] = useState(false);
   const assessedRef = useRef<HTMLInputElement>(null);
   const receivedRef = useRef<HTMLInputElement>(null);
+  const confirm = useConfirm();
   useUnsavedChanges(assessedOn !== '' || resultReceivedOn !== '');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -129,6 +142,16 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
       (next.assessedOn ? assessedRef : receivedRef).current?.focus();
       return;
     }
+    const ok = await confirm.ask({
+      title: '판정 결과를 저장할까요?',
+      rows: [
+        ['가상 판정일', assessedOn],
+        ['판정 수신일', resultReceivedOn],
+        ['판정 결과', ASSESSMENT_OUTCOME_LABEL.SUPPORT_PLAN_REQUIRED],
+      ],
+      confirmLabel: '판정 결과 저장',
+    });
+    if (!ok) return;
     setSaving(true);
     setMessage(null);
     try {
@@ -157,25 +180,24 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="판정 결과 기록">
       <RequiredNotice />
       {message && <FormMessage tone="error">{message}</FormMessage>}
-      <TextField
+      {confirm.dialog}
+      <DateField
         id="assessed-on"
         label="가상 판정일"
-        type="date"
         hint={detail.screening ? `조사일(${detail.screening.screenedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(detail.screening?.screenedOn)}
         value={assessedOn}
-        onChange={(event) => { setAssessedOn(event.target.value); clearError('assessedOn'); }}
+        onChange={(value) => { setAssessedOn(value); clearError('assessedOn'); }}
         error={errors.assessedOn}
         inputRef={assessedRef}
       />
-      <TextField
+      <DateField
         id="result-received-on"
         label="판정 수신일"
-        type="date"
         hint="판정일과 같거나 이후 날짜"
         min={minDate(detail.screening?.screenedOn, assessedOn)}
         value={resultReceivedOn}
-        onChange={(event) => { setResultReceivedOn(event.target.value); clearError('resultReceivedOn'); }}
+        onChange={(value) => { setResultReceivedOn(value); clearError('resultReceivedOn'); }}
         error={errors.resultReceivedOn}
         inputRef={receivedRef}
       />

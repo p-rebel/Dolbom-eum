@@ -12,8 +12,10 @@ import {
   orMissing,
 } from '../../api/labels';
 import type { CaseDetail, Condition, ContactMethod, DeliveryStatus, LinkageMethod, PlanItem } from '../../api/types';
+import { useConfirm, type ConfirmRequest } from '../../components/ConfirmDialog';
 import { FormMessage } from '../../components/Feedback';
 import { RadioGroup, RequiredNotice, SelectField, TextAreaField } from '../../components/FormFields';
+import { DateField } from '../../components/DateField';
 import { TextField } from '../../components/TextField';
 import { checkDate, minDate } from '../../dates';
 import { useUnsavedChanges } from '../../router';
@@ -37,6 +39,9 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
   // 칸 오류·폼 위 안내는 다른 입력 폼과 같은 규칙(fieldErrors.ts)을 쓴다.
   const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<string>();
   const [saving, setSaving] = useState(false);
+  // 저장하지 않고 끝난 이유(예: 저장된 값과 같음). 오류가 아니므로 정보 문구로 보여 준다.
+  const [info, setInfo] = useState<string | null>(null);
+  const confirmDialog = useConfirm();
   const refs = useRef<Record<string, HTMLElement | null>>({});
   // 칸마다 같은 콜백 ref를 재사용한다(렌더마다 새로 만들면 매번 떼었다 붙인다).
   const binders = useRef<Record<string, (element: HTMLElement | null) => void>>({});
@@ -51,8 +56,19 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
     send: () => Promise<CaseDetail>;
     success: string;
     mapField?: (name: string) => string | undefined;
+    /** 되돌릴 수 없는 저장이면 저장 전에 값을 다시 보여 주고 확인한다(D-05 한 번 기록). */
+    confirm?: ConfirmRequest;
+    /** 저장된 값과 같으면 그 안내 문구. 저장하지 않아 버전과 처리 이력이 늘지 않는다. */
+    unchanged?: string;
   }) {
     if (saving) return;
+    setInfo(null);
+    if (options.unchanged) {
+      setErrors({});
+      setMessage(null);
+      setInfo(options.unchanged);
+      return;
+    }
     setErrors(options.errors);
     const first = options.order.find((field) => options.errors[field]);
     if (first) {
@@ -60,6 +76,7 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
       refs.current[first]?.focus();
       return;
     }
+    if (options.confirm && !(await confirmDialog.ask(options.confirm))) return;
     setSaving(true);
     setMessage(null);
     try {
@@ -86,7 +103,12 @@ function useSaveForm({ onSaved, onReload }: SaveHandlers) {
     }
   }
 
-  return { errors, message, saving, bind, clear: clearError, submit };
+  // 값을 고치면 ‘저장하지 않았습니다’ 안내도 지운다.
+  const clear = (...fields: string[]) => {
+    setInfo(null);
+    clearError(...fields);
+  };
+  return { errors, message, info, saving, bind, clear, submit, dialog: confirmDialog.dialog };
 }
 
 /** 작업 30. 시군구 회의 결과와 계획 확정(CONFIRM_PLAN). 확정할 서비스 목록은 바로 위 계획 내용으로 재확인한다(D-02). */
@@ -103,6 +125,16 @@ export function ConfirmPlanForm({ detail, ...handlers }: Props) {
       order: ['meetingOn'],
       send: () => confirmPlan(detail.id, { version: detail.version, meetingOn, outcome: 'APPROVED' }),
       success: '회의 결과를 기록하고 계획을 확정했습니다.',
+      confirm: {
+        title: '계획을 확정할까요?',
+        rows: [
+          ['회의일', meetingOn],
+          ['회의 결과', MEETING_OUTCOME_LABEL.APPROVED],
+          ['확정할 서비스', `${detail.plan?.items.length ?? 0}개 · ${(detail.plan?.items ?? []).map((item) => orMissing(item.catalog.programName)).join(', ')}`],
+        ],
+        confirmLabel: '계획 확정',
+        note: '확정한 뒤에는 초안을 고치거나 확정을 되돌릴 수 없습니다.',
+      },
     });
   }
 
@@ -110,15 +142,15 @@ export function ConfirmPlanForm({ detail, ...handlers }: Props) {
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="계획 확정">
       <RequiredNotice />
       {form.message && <FormMessage tone="error">{form.message}</FormMessage>}
+      {form.dialog}
       <p className="text-subtle">위에 저장된 서비스 {detail.plan?.items.length ?? 0}개를 회의 결과로 확정합니다.</p>
-      <TextField
+      <DateField
         id="meeting-on"
         label="회의일"
-        type="date"
         hint={preparedOn ? `수립일(${preparedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(preparedOn)}
         value={meetingOn}
-        onChange={(event) => { setMeetingOn(event.target.value); form.clear('meetingOn'); }}
+        onChange={(value) => { setMeetingOn(value); form.clear('meetingOn'); }}
         error={form.errors.meetingOn}
         inputRef={form.bind('meetingOn')}
       />
@@ -128,6 +160,8 @@ export function ConfirmPlanForm({ detail, ...handlers }: Props) {
           <dd>{MEETING_OUTCOME_LABEL.APPROVED}</dd>
         </div>
       </dl>
+      {/* 저장하지 않은 이유는 방금 누른 저장 버튼 바로 위에 알린다. */}
+      {form.info && <FormMessage tone="info">{form.info}</FormMessage>}
       <div className="form-actions">
         <button type="submit" className="krds-btn xlarge primary" disabled={form.saving}>
           {form.saving ? '저장 중…' : '계획 확정'}
@@ -151,6 +185,15 @@ export function NoticeForm({ detail, ...handlers }: Props) {
       order: ['announcedOn'],
       send: () => recordNotice(detail.id, { version: detail.version, announcedOn }),
       success: '계획 안내를 기록했습니다.',
+      confirm: {
+        title: '계획 안내를 기록할까요?',
+        rows: [
+          ['안내일', announcedOn],
+          ['안내대상', detail.profile.noticeRecipientName],
+          ['안내방식', NOTICE_METHOD_LABEL[detail.noticeMethod]],
+        ],
+        confirmLabel: '안내 기록 저장',
+      },
     });
   }
 
@@ -158,6 +201,7 @@ export function NoticeForm({ detail, ...handlers }: Props) {
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="계획 안내 기록">
       <RequiredNotice />
       {form.message && <FormMessage tone="error">{form.message}</FormMessage>}
+      {form.dialog}
       <dl className="info-list">
         <div>
           <dt>안내대상</dt>
@@ -168,17 +212,18 @@ export function NoticeForm({ detail, ...handlers }: Props) {
           <dd>{NOTICE_METHOD_LABEL[detail.noticeMethod]}</dd>
         </div>
       </dl>
-      <TextField
+      <DateField
         id="announced-on"
         label="안내일"
-        type="date"
         hint={meetingOn ? `회의일(${meetingOn})과 같거나 이후 날짜` : undefined}
         min={minDate(meetingOn)}
         value={announcedOn}
-        onChange={(event) => { setAnnouncedOn(event.target.value); form.clear('announcedOn'); }}
+        onChange={(value) => { setAnnouncedOn(value); form.clear('announcedOn'); }}
         error={form.errors.announcedOn}
         inputRef={form.bind('announcedOn')}
       />
+      {/* 저장하지 않은 이유는 방금 누른 저장 버튼 바로 위에 알린다. */}
+      {form.info && <FormMessage tone="info">{form.info}</FormMessage>}
       <div className="form-actions">
         <button type="submit" className="krds-btn xlarge primary" disabled={form.saving}>
           {form.saving ? '저장 중…' : '안내 기록 저장'}
@@ -226,6 +271,18 @@ export function LinkageForm({ detail, item, ...handlers }: ItemProps) {
           destinationLabel: method === 'DEPARTMENT_REFERRAL' ? label : null,
         }),
       success: `${orMissing(item.catalog.programName)} 연계를 기록했습니다.`,
+      confirm: {
+        title: '연계를 기록할까요?',
+        rows: [
+          ['서비스', orMissing(item.catalog.programName)],
+          ['연계일', linkedOn],
+          ['연계 방식', method ? LINKAGE_METHOD_LABEL[method] : ''],
+          ...(method === 'DEPARTMENT_REFERRAL' ? [['수신처', label] as [string, string]] : []),
+          ...(method === 'PROVIDER_REFERRAL' && provider ? [['의뢰처', provider] as [string, string]] : []),
+        ],
+        confirmLabel: '연계 저장',
+        note: '서비스마다 연계는 한 번만 기록하며, 저장한 뒤에는 수정할 수 없습니다. 제공 현황은 최초 모니터링 전까지 고칠 수 있습니다.',
+      },
     });
   }
 
@@ -233,14 +290,14 @@ export function LinkageForm({ detail, item, ...handlers }: ItemProps) {
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label={`연계 기록: ${orMissing(item.catalog.programName)}`}>
       <RequiredNotice />
       {form.message && <FormMessage tone="error">{form.message}</FormMessage>}
-      <TextField
+      {form.dialog}
+      <DateField
         id={`linked-on-${item.id}`}
         label="연계일"
-        type="date"
         hint={announcedOn ? `안내일(${announcedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(announcedOn)}
         value={linkedOn}
-        onChange={(event) => { setLinkedOn(event.target.value); form.clear('linkedOn'); }}
+        onChange={(value) => { setLinkedOn(value); form.clear('linkedOn'); }}
         error={form.errors.linkedOn}
         inputRef={form.bind('linkedOn')}
       />
@@ -281,6 +338,8 @@ export function LinkageForm({ detail, item, ...handlers }: ItemProps) {
           </div>
         </dl>
       )}
+      {/* 저장하지 않은 이유는 방금 누른 저장 버튼 바로 위에 알린다. */}
+      {form.info && <FormMessage tone="info">{form.info}</FormMessage>}
       <div className="form-actions">
         <button type="submit" className="krds-btn xlarge primary" disabled={form.saving}>
           {form.saving ? '저장 중…' : '연계 저장'}
@@ -306,7 +365,9 @@ export function DeliveryForm({ detail, item, ...handlers }: ItemProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text = reason.trim();
+    const same = !!saved && observedOn === saved.observedOn && status === saved.status && text === (saved.reason ?? '');
     void form.submit({
+      unchanged: same ? '저장된 제공 현황과 같아 저장하지 않았습니다. 바꿀 값을 고친 뒤 저장해 주세요.' : undefined,
       errors: {
         observedOn: checkDate(observedOn, { required: '확인일을 입력해 주세요.', notBefore: { date: linkedOn, label: '연계일' } }),
         status: status ? undefined : '제공 상태를 선택해 주세요.',
@@ -328,14 +389,14 @@ export function DeliveryForm({ detail, item, ...handlers }: ItemProps) {
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label={`제공 현황: ${orMissing(item.catalog.programName)}`}>
       {/* 선택 칸이 있어 ‘모든 항목은 필수’ 안내를 두지 않는다. 선택 칸에는 (선택)을 붙인다. */}
       {form.message && <FormMessage tone="error">{form.message}</FormMessage>}
-      <TextField
+      {form.dialog}
+      <DateField
         id={`observed-on-${item.id}`}
         label="확인일"
-        type="date"
         hint={linkedOn ? `연계일(${linkedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(linkedOn)}
         value={observedOn}
-        onChange={(event) => { setObservedOn(event.target.value); form.clear('observedOn'); }}
+        onChange={(value) => { setObservedOn(value); form.clear('observedOn'); }}
         error={form.errors.observedOn}
         inputRef={form.bind('observedOn')}
       />
@@ -359,6 +420,8 @@ export function DeliveryForm({ detail, item, ...handlers }: ItemProps) {
         error={form.errors.reason}
         textareaRef={form.bind('reason')}
       />
+      {/* 저장하지 않은 이유는 방금 누른 저장 버튼 바로 위에 알린다. */}
+      {form.info && <FormMessage tone="info">{form.info}</FormMessage>}
       <div className="form-actions">
         <button type="submit" className="krds-btn xlarge primary" disabled={form.saving}>
           {form.saving ? '저장 중…' : '제공 현황 저장'}
@@ -431,6 +494,18 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
           observations: sent.map((entry) => ({ ...entry, reason: entry.reason === '' ? null : entry.reason })),
         }),
       success: '최초 모니터링을 기록했습니다.',
+      confirm: {
+        title: '최초 모니터링을 기록할까요?',
+        rows: [
+          ['기록일', monitoredOn],
+          ['확인 방법', method ? CONTACT_METHOD_LABEL[method] : ''],
+          ['상태 변화', condition ? CONDITION_LABEL[condition] : ''],
+          ['새로 확인한 항목', sent.length ? `${sent.length}개` : '없음(기존 제공 현황 그대로)'],
+          ['후속 검토', review === 'yes' ? `필요 · ${reviewReason.trim()}` : '불필요'],
+        ],
+        confirmLabel: '최초 모니터링 저장',
+        note: '저장하면 이번 시연 경로가 끝나며, 기록과 제공 현황을 더 고칠 수 없습니다.',
+      },
       // 서버의 observations.0.reason은 보낸 배열의 순번이므로 해당 항목 칸으로 바꾼다.
       mapField: (name) => {
         const match = /^observations\.(\d+)/.exec(name);
@@ -444,14 +519,14 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
     <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="최초 모니터링 기록">
       {/* 선택 칸이 있어 ‘모든 항목은 필수’ 안내를 두지 않는다. 선택 칸에는 (선택)을 붙인다. */}
       {form.message && <FormMessage tone="error">{form.message}</FormMessage>}
-      <TextField
+      {form.dialog}
+      <DateField
         id="monitored-on"
         label="모니터링 기록일"
-        type="date"
         hint={lastObserved ? `마지막 제공 확인일(${lastObserved})과 같거나 이후 날짜` : undefined}
         min={minDate(lastObserved)}
         value={monitoredOn}
-        onChange={(event) => { setMonitoredOn(event.target.value); form.clear('monitoredOn'); }}
+        onChange={(value) => { setMonitoredOn(value); form.clear('monitoredOn'); }}
         error={form.errors.monitoredOn}
         inputRef={form.bind('monitoredOn')}
       />
@@ -542,6 +617,8 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
           textareaRef={form.bind('reviewReason')}
         />
       )}
+      {/* 저장하지 않은 이유는 방금 누른 저장 버튼 바로 위에 알린다. */}
+      {form.info && <FormMessage tone="info">{form.info}</FormMessage>}
       <div className="form-actions">
         <button type="submit" className="krds-btn xlarge primary" disabled={form.saving}>
           {form.saving ? '저장 중…' : '최초 모니터링 저장'}

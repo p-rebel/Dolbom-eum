@@ -252,11 +252,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           연계·제공
         </h2>
         {detail.plan?.confirmation ? (
-          <TrackingTable detail={detail} />
+          <TrackingItems detail={detail} handlers={handlers} />
         ) : (
           <EmptyBlock message="계획이 확정되면 서비스별 연계와 제공 현황을 기록합니다." />
         )}
-        {detail.plan?.confirmation && <ItemActions detail={detail} handlers={handlers} />}
       </section>
 
       <section id="section-monitoring" className="page-section" aria-labelledby="section-monitoring-title">
@@ -381,18 +380,15 @@ function InPageNavigation({ title }: { title: string }) {
 }
 
 /**
- * 작업 32·33. 서버가 허용한 항목별 동작(연계 기록 → 제공 현황 기록)을 계획 순서로 보여 주고, 버튼을 누른 항목의 폼을 펼친다.
+ * 작업 32·33. 서비스마다 연계·제공 현황(D-02:53 프로그램·출처·연계·제공)을 한 카드에 보여 주고, 서버가 허용한 동작 버튼을 누르면 그 카드 안에 폼을 펼친다.
+ * (11/14 표와 ‘항목별 기록’ 카드에 같은 서비스가 두 번 나오던 것을 합침)
  * 닫거나 다른 항목을 열어도 저장 전 입력은 숨긴 채 유지하고(F-35), 409 재조회 뒤에도 입력을 남긴다(D-02:68).
  * 저장에 성공한 항목의 폼만 닫고 지운다.
  */
-function ItemActions({ detail, handlers }: { detail: CaseDetail; handlers: SaveHandlers }) {
+function TrackingItems({ detail, handlers }: { detail: CaseDetail; handlers: SaveHandlers }) {
   const [visibleId, setVisibleId] = useState<string | null>(null);
   const [mountedIds, setMountedIds] = useState<string[]>([]);
   const items = detail.plan?.items ?? [];
-  const rows = items
-    .map((item, index) => ({ item, index, action: detail.allowedActions.find((allowed) => allowed.itemId === item.id)?.action }))
-    .filter((row) => row.action === 'RECORD_LINKAGE' || row.action === 'RECORD_DELIVERY');
-  if (rows.length === 0) return null;
 
   function toggle(itemId: string) {
     if (visibleId === itemId) {
@@ -415,30 +411,29 @@ function ItemActions({ detail, handlers }: { detail: CaseDetail; handlers: SaveH
   }
 
   return (
-    <>
-      <h3 className="sub-title">항목별 기록</h3>
-      <ol className="plan-item-list">
-        {rows.map(({ item, index, action }) => {
-          const open = visibleId === item.id;
-          const formId = `item-form-${item.id}`;
-          const label =
-            action === 'RECORD_LINKAGE' ? ACTION_LABEL.RECORD_LINKAGE : item.delivery ? '제공 현황 수정' : ACTION_LABEL.RECORD_DELIVERY;
-          return (
-            <li key={item.id}>
-              <div className="plan-item-row">
-                <div>
-                  <p className="plan-item-title">
-                    {index + 1}. {orMissing(item.catalog.programName)}
-                  </p>
-                  <p className="text-subtle">
-                    {orMissing(item.catalog.providerName)} ·{' '}
-                    {item.linkage ? LINKAGE_METHOD_LABEL[item.linkage.method] : '연계 전'} ·{' '}
-                    {item.delivery ? DELIVERY_STATUS_LABEL[item.delivery.status] : '제공 현황 기록 전'}
-                  </p>
-                </div>
+    <ol className="plan-item-list tracking-list" aria-label="서비스별 연계와 제공 현황">
+      {items.map((item, index) => {
+        const action = detail.allowedActions.find((allowed) => allowed.itemId === item.id)?.action;
+        const canRecord = action === 'RECORD_LINKAGE' || action === 'RECORD_DELIVERY';
+        const open = visibleId === item.id;
+        const formId = `item-form-${item.id}`;
+        const label =
+          action === 'RECORD_LINKAGE' ? ACTION_LABEL.RECORD_LINKAGE : item.delivery ? '제공 현황 수정' : ACTION_LABEL.RECORD_DELIVERY;
+        return (
+          <li key={item.id}>
+            <div className="plan-item-row">
+              <div>
+                <p className="plan-item-title">
+                  {index + 1}. {orMissing(item.catalog.programName)}
+                </p>
+                <p className="plan-item-meta">
+                  {orMissing(item.catalog.providerName)} · {orMissing(item.catalog.sourceName)} · {orMissing(item.catalog.referenceDate)} 기준
+                </p>
+              </div>
+              {canRecord && (
                 <button
                   type="button"
-                  className="krds-btn medium secondary"
+                  className={open ? 'krds-btn medium tertiary' : 'krds-btn medium secondary'}
                   aria-expanded={open}
                   aria-controls={formId}
                   onClick={() => toggle(item.id)}
@@ -447,21 +442,43 @@ function ItemActions({ detail, handlers }: { detail: CaseDetail; handlers: SaveH
                   {open ? '닫기' : mountedIds.includes(item.id) ? `${label} (작성 중)` : label}
                   <span className="sr-only"> {orMissing(item.catalog.programName)}</span>
                 </button>
-              </div>
-              {mountedIds.includes(item.id) && (
-                <div id={formId} className="item-form" hidden={!open}>
-                  {action === 'RECORD_LINKAGE' ? (
-                    <LinkageForm detail={detail} item={item} {...itemHandlers(item.id)} />
-                  ) : (
-                    <DeliveryForm detail={detail} item={item} {...itemHandlers(item.id)} />
-                  )}
-                </div>
               )}
-            </li>
-          );
-        })}
-      </ol>
-    </>
+            </div>
+            <dl className="tracking-status">
+              <div>
+                <dt>연계</dt>
+                <dd>
+                  {item.linkage
+                    ? `${item.linkage.linkedOn} · ${LINKAGE_METHOD_LABEL[item.linkage.method]}${item.linkage.destinationLabel ? ` · ${item.linkage.destinationLabel}` : ''}`
+                    : '연계 전'}
+                  {/* 대상자 안내는 제공기관을 후보로 표시한다(D-02:53, expected-results 7~9). */}
+                  {item.linkage?.method === 'PERSON_GUIDANCE' && (
+                    <span className="tracking-sub">후보 제공기관 · {orMissing(item.catalog.providerName)}</span>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>제공 현황</dt>
+                <dd>
+                  {item.delivery
+                    ? `${DELIVERY_STATUS_LABEL[item.delivery.status]} · ${item.delivery.observedOn}${item.delivery.reason ? ` · ${item.delivery.reason}` : ''}`
+                    : '기록 전'}
+                </dd>
+              </div>
+            </dl>
+            {canRecord && mountedIds.includes(item.id) && (
+              <div id={formId} className="item-form" hidden={!open}>
+                {action === 'RECORD_LINKAGE' ? (
+                  <LinkageForm detail={detail} item={item} {...itemHandlers(item.id)} />
+                ) : (
+                  <DeliveryForm detail={detail} item={item} {...itemHandlers(item.id)} />
+                )}
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -533,57 +550,6 @@ function PlanView({ detail }: { detail: CaseDetail }) {
         ))}
       </ol>
     </>
-  );
-}
-
-function TrackingTable({ detail }: { detail: CaseDetail }) {
-  return (
-    <div className="krds-table-wrap mob-scroll">
-      <table className="tbl col data">
-        <caption>서비스별 연계와 제공 현황</caption>
-        <thead>
-          <tr>
-            <th scope="col">프로그램</th>
-            <th scope="col">출처</th>
-            <th scope="col">연계</th>
-            <th scope="col">제공 현황</th>
-          </tr>
-        </thead>
-        <tbody>
-          {detail.plan!.items.map((item) => (
-            <tr key={item.id}>
-              <th scope="row">
-                {orMissing(item.catalog.programName)}
-                <br />
-                <span className="text-subtle">{orMissing(item.catalog.providerName)}</span>
-              </th>
-              <td>
-                {orMissing(item.catalog.sourceName)}
-                <br />
-                <span className="text-subtle">{orMissing(item.catalog.referenceDate)} 기준</span>
-              </td>
-              <td>
-                {item.linkage
-                  ? `${item.linkage.linkedOn} ${LINKAGE_METHOD_LABEL[item.linkage.method]}${item.linkage.destinationLabel ? ` · ${item.linkage.destinationLabel}` : ''}`
-                  : '연계 전'}
-                {/* 대상자 안내는 제공기관을 후보로 표시한다(D-02:53, expected-results 7~9). */}
-                {item.linkage?.method === 'PERSON_GUIDANCE' && (
-                  <>
-                    <br />
-                    <span className="text-subtle">후보 제공기관 · {orMissing(item.catalog.providerName)}</span>
-                  </>
-                )}
-              </td>
-              <td>
-                {item.delivery
-                  ? `${DELIVERY_STATUS_LABEL[item.delivery.status]} · ${item.delivery.observedOn}${item.delivery.reason ? ` · ${item.delivery.reason}` : ''}`
-                  : '기록 전'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
 

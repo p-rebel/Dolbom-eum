@@ -16,12 +16,19 @@ interface CatalogSearchProps {
     selectedIds: string[];
     canAddMore: boolean;
     onSelect: (item: CatalogItem) => void;
+    /** 고른 줄의 ‘빼기’를 누르면 뺀다. */
+    onDeselect: (id: string) => void;
   };
   headingLevel?: 'h2' | 'h3';
+  /**
+   * 모달 안 선택용 촘촘한 배치(11/14): 조건을 한 줄(작은 칸)로 두고 목록을 내려도 위에 고정, 결과는 한 줄 목록.
+   * KRDS 구조화 목록의 카드는 독립 조회 화면에 맞는 크기라 모달에서는 한 번에 1~2건밖에 보이지 않았다.
+   */
+  compact?: boolean;
 }
 
 /** UI-05 공단 서비스·기관 조회. 시도·시군구·대분류·검색어로 찾고 출처·기준일을 표시한다. */
-export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSearchProps) {
+export function CatalogSearch({ initial, pick, headingLevel = 'h2', compact = false }: CatalogSearchProps) {
   const baseId = useId();
   const startQuery: CatalogQuery = { sido: initial.sido, sigungu: initial.sigungu, categoryLarge: '', q: '', page: 1 };
   /** 입력 중인 조건 */
@@ -57,7 +64,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
   ].filter(Boolean);
 
   return (
-    <div className="catalog-search">
+    <div className={compact ? 'catalog-search compact' : 'catalog-search'}>
       {/* 계획 초안 폼 안에서도 쓰이므로 form 대신 search 영역으로 두고, 검색어 입력의 Enter를 직접 처리한다. */}
       <div className="filter-form" role="search" aria-label="공단 서비스 검색 조건">
         <div className="filter-grid">
@@ -65,7 +72,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             id={`${baseId}-sido`}
             label="시도"
             emptyOption="전체"
-            fieldSize="medium"
+            fieldSize={compact ? 'small' : 'medium'}
             value={draft.sido}
             options={(filters.data?.sidos ?? []).map((value) => ({ value, label: value }))}
             onChange={(event) => setDraft({ ...draft, sido: event.target.value, sigungu: '' })}
@@ -74,7 +81,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             id={`${baseId}-sigungu`}
             label="시군구"
             emptyOption={draft.sido ? '전체' : '시도를 먼저 선택'}
-            fieldSize="medium"
+            fieldSize={compact ? 'small' : 'medium'}
             value={draft.sigungu}
             disabled={!draft.sido || filters.loading || !!filters.error}
             options={(filters.data?.sigungus ?? []).map((value) => ({ value, label: value }))}
@@ -84,7 +91,7 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             id={`${baseId}-category`}
             label="대분류"
             emptyOption="전체"
-            fieldSize="medium"
+            fieldSize={compact ? 'small' : 'medium'}
             value={draft.categoryLarge}
             options={(filters.data?.categoriesLarge ?? []).map((value) => ({ value, label: value }))}
             onChange={(event) => setDraft({ ...draft, categoryLarge: event.target.value })}
@@ -94,8 +101,10 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
           <TextField
             id={`${baseId}-q`}
             label="검색어"
-            fieldSize="medium"
-            hint="프로그램명 또는 기관명"
+            fieldSize={compact ? 'small' : 'medium'}
+            // 촘촘한 배치에서는 도움말 줄 대신 입력 예시로 둔다(레이블은 그대로 있음).
+            hint={compact ? undefined : '프로그램명 또는 기관명'}
+            placeholder={compact ? '프로그램명 또는 기관명' : undefined}
             value={draft.q}
             onChange={(event) => { setDraft({ ...draft, q: event.target.value }); setQError(undefined); }}
             onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
@@ -107,10 +116,10 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
             error={qError}
           />
           <div className="filter-buttons">
-            <button type="button" className={pick ? "krds-btn medium secondary" : "krds-btn medium primary"} onClick={runSearch}>
+            <button type="button" className={`krds-btn ${compact ? 'small' : 'medium'} ${pick ? 'secondary' : 'primary'}`} onClick={runSearch}>
               검색
             </button>
-            <button type="button" className="krds-btn medium tertiary" onClick={reset}>
+            <button type="button" className={`krds-btn ${compact ? 'small' : 'medium'} tertiary`} onClick={reset}>
               조건 초기화
             </button>
           </div>
@@ -135,11 +144,19 @@ export function CatalogSearch({ initial, pick, headingLevel = 'h2' }: CatalogSea
         )}
         {results.data && results.data.items.length > 0 && (
           <>
-            <ul className="krds-structured-list type-full catalog-list">
-              {results.data.items.map((item) => (
-                <CatalogResult key={item.id} item={item} pick={pick} keyword={applied.q.trim()} />
-              ))}
-            </ul>
+            {compact ? (
+              <ul className="catalog-rows">
+                {results.data.items.map((item) => (
+                  <CatalogRow key={item.id} item={item} pick={pick} keyword={applied.q.trim()} />
+                ))}
+              </ul>
+            ) : (
+              <ul className="krds-structured-list type-full catalog-list">
+                {results.data.items.map((item) => (
+                  <CatalogResult key={item.id} item={item} pick={pick} keyword={applied.q.trim()} />
+                ))}
+              </ul>
+            )}
             <Pagination
               page={results.data.page}
               pageSize={CATALOG_PAGE_SIZE}
@@ -165,6 +182,7 @@ function CatalogResult({ item, pick, keyword }: { item: CatalogItem; pick?: Cata
       <div className="in">
         <div className="card-top">
           <span className="krds-badge bg-light-primary">{orMissing(item.categoryLarge)}</span>
+          {selected && <SelectedBadge size="medium" />}
         </div>
         <div className="card-body">
           {/*
@@ -206,17 +224,9 @@ function CatalogResult({ item, pick, keyword }: { item: CatalogItem; pick?: Cata
           </div>
           {/* 선택 버튼은 계획 초안에서만. 빈 버튼 영역이 남지 않게 함께 렌더링한다. */}
           {pick && (
-          <div className="c-btn">
-              <button
-                type="button"
-                className="krds-btn medium secondary"
-                disabled={selected || !pick.canAddMore}
-                onClick={() => pick.onSelect(item)}
-              >
-                {selected ? '선택됨' : '선택'}
-                <span className="sr-only"> {orMissing(item.programName)}</span>
-              </button>
-          </div>
+            <div className="c-btn">
+              <PickButton item={item} pick={pick} selected={selected} size="medium" />
+            </div>
           )}
         </div>
         {/* KRDS 펼치기(disclosure). 닫힌 내용은 KRDS가 높이만 0으로 두므로 렌더링하지 않아 Tab 이동에서 빠지게 한다. */}
@@ -228,46 +238,127 @@ function CatalogResult({ item, pick, keyword }: { item: CatalogItem; pick?: Cata
           <div className="expand-wrap" id={detailId}>
         {open && (
           <div className="expand-in">
-          <dl className="info-list catalog-detail">
-            <div>
-              <dt>분류</dt>
-              <dd>
-                {orMissing(item.categoryLarge)} &gt; {orMissing(item.categoryMiddle)}
-              </dd>
-            </div>
-            <div>
-              <dt>기관 주소</dt>
-              <dd>{orMissing(item.providerAddress)}</dd>
-            </div>
-            <div>
-              <dt>연락처</dt>
-              <dd>{orMissing(item.providerPhone)}</dd>
-            </div>
-            <div>
-              <dt>출처</dt>
-              <dd>
-                {item.sourceUrl ? (
-                  <a href={item.sourceUrl} target="_blank" rel="noreferrer" title="새 창 열기">
-                    {orMissing(item.sourceName)}
-                  </a>
-                ) : (
-                  orMissing(item.sourceName)
-                )}{' '}
-                · 자료 {item.datasetVersion} · {orMissing(item.referenceDate)} 기준
-              </dd>
-            </div>
-            <div>
-              <dt>공단 행 ID</dt>
-              <dd>
-                <code>{item.id}</code>
-              </dd>
-            </div>
-          </dl>
+          <CatalogDetail item={item} />
           </div>
         )}
           </div>
         </div>
       </div>
+    </li>
+  );
+}
+
+/**
+ * 고르기 전 ‘선택’, 고른 뒤 ‘빼기’(11/14). 버튼 이름은 누르면 일어날 일이고, 고른 상태는 ‘✓ 선택됨’ 배지로 따로 보인다.
+ * 계획 화면 선택 목록의 ‘빼기’와 같은 말을 쓴다. KRDS도 고른 것을 없애는 버튼은 행동 이름(삭제)으로 둔다(태그·파일 업로드).
+ */
+function PickButton({
+  item,
+  pick,
+  selected,
+  size,
+}: {
+  item: CatalogItem;
+  pick: NonNullable<CatalogSearchProps['pick']>;
+  selected: boolean;
+  size: 'small' | 'medium';
+}) {
+  return (
+    <button
+      type="button"
+      className={`krds-btn ${size} ${selected ? 'tertiary' : 'secondary'}`}
+      disabled={!selected && !pick.canAddMore}
+      onClick={() => (selected ? pick.onDeselect(item.id) : pick.onSelect(item))}
+    >
+      {selected ? '빼기' : '선택'}
+      <span className="sr-only"> {orMissing(item.programName)}</span>
+    </button>
+  );
+}
+
+/** 고른 상태 표시. 색만으로 구분하지 않도록 체크 표시와 글자를 함께 쓴다. */
+function SelectedBadge({ size }: { size: 'small' | 'medium' }) {
+  return (
+    <span className={size === 'small' ? 'krds-badge small bg-primary' : 'krds-badge bg-primary'}>
+      <span aria-hidden="true">✓ </span>선택됨
+    </span>
+  );
+}
+
+/** 자세히 보기 내용: 분류, 기관 주소·연락처, 출처·기준일, 공단 행 ID(D-02:57) */
+function CatalogDetail({ item }: { item: CatalogItem }) {
+  return (
+    <dl className="info-list catalog-detail">
+      <div>
+        <dt>분류</dt>
+        <dd>
+          {orMissing(item.categoryLarge)} &gt; {orMissing(item.categoryMiddle)}
+        </dd>
+      </div>
+      <div>
+        <dt>기관 주소</dt>
+        <dd>{orMissing(item.providerAddress)}</dd>
+      </div>
+      <div>
+        <dt>연락처</dt>
+        <dd>{orMissing(item.providerPhone)}</dd>
+      </div>
+      <div>
+        <dt>출처</dt>
+        <dd>
+          {item.sourceUrl ? (
+            <a href={item.sourceUrl} target="_blank" rel="noreferrer" title="새 창 열기">
+              {orMissing(item.sourceName)}
+            </a>
+          ) : (
+            orMissing(item.sourceName)
+          )}{' '}
+          · 자료 {item.datasetVersion} · {orMissing(item.referenceDate)} 기준
+        </dd>
+      </div>
+      <div>
+        <dt>공단 행 ID</dt>
+        <dd>
+          <code>{item.id}</code>
+        </dd>
+      </div>
+    </dl>  );
+}
+
+/**
+ * 모달 안 선택용 한 줄 목록. 제목·분류 / 기관·출처 기준일 두 줄과 오른쪽 ‘자세히’·‘선택’ 버튼.
+ * KRDS 구조화 목록 표형(structured_list_table)처럼 행을 선으로 나누고, 자세히는 행 아래로 펼친다.
+ */
+function CatalogRow({ item, pick, keyword }: { item: CatalogItem; pick?: CatalogSearchProps['pick']; keyword: string }) {
+  const [open, setOpen] = useState(false);
+  const detailId = useId();
+  const selected = pick?.selectedIds.includes(item.id) ?? false;
+  return (
+    <li className={selected ? 'catalog-row is-selected' : 'catalog-row'}>
+      <div className="catalog-row-main">
+        <p className="catalog-row-title">
+          <span className="span"><Highlight text={orMissing(item.programName)} keyword={keyword} /></span>
+          <span className="krds-badge small bg-light-primary">{orMissing(item.categoryLarge)}</span>
+          {selected && <SelectedBadge size="small" />}
+        </p>
+        <p className="catalog-row-sub">
+          <Highlight text={orMissing(item.providerName)} keyword={keyword} />
+          <span aria-hidden="true"> · </span>
+          {orMissing(item.sourceName)} · {orMissing(item.referenceDate)} 기준
+        </p>
+      </div>
+      <div className="catalog-row-actions">
+        <button type="button" className="krds-btn small text" aria-expanded={open} aria-controls={detailId} onClick={() => setOpen((value) => !value)}>
+          {open ? '접기' : '자세히'}
+          <span className="sr-only"> {orMissing(item.programName)}</span>
+        </button>
+        {pick && <PickButton item={item} pick={pick} selected={selected} size="small" />}
+      </div>
+      {open && (
+        <div className="catalog-row-detail" id={detailId}>
+          <CatalogDetail item={item} />
+        </div>
+      )}
     </li>
   );
 }

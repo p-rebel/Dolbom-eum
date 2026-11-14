@@ -6,7 +6,7 @@ import type { NoticeMethod } from '../../api/types';
 import { useAccount } from '../../auth/AuthContext';
 import { ErrorBlock, FormMessage, LoadingBlock } from '../../components/Feedback';
 import { CheckboxField, RadioGroup, RequiredNotice, SelectField } from '../../components/FormFields';
-import { TextField } from '../../components/TextField';
+import { DateField } from '../../components/DateField';
 import { checkDate } from '../../dates';
 import { setFlash } from '../../flash';
 import { useApiData } from '../../hooks/useApiData';
@@ -177,13 +177,12 @@ function NewCaseForm() {
               </dl>
             )}
 
-            <TextField
+            <DateField
               id="received-on"
               label="접수일"
-              hint="연도-월-일 순서로 입력(예: 2026-11-01)"
-              type="date"
+              hint="숫자만 입력해도 됩니다(예: 20261101 → 2026-11-01)"
               value={receivedOn}
-              onChange={(event) => { setReceivedOn(event.target.value); clearError('receivedOn'); }}
+              onChange={(value) => { setReceivedOn(value); clearError('receivedOn'); }}
               error={errors.receivedOn}
               inputRef={refs.receivedOn}
             />

@@ -247,8 +247,133 @@ fieldset.form-group {
   border: 0;
 }
 
+/* 기록 폼은 카드·구역 폭을 그대로 쓴다. 폭을 줄이면 저장 버튼과 안내 문구가 카드 가운데 떠 보인다(11/14).
+   날짜처럼 짧은 값은 칸 자체의 폭을 줄인다(.date-field). */
 .record-form {
-  max-width: 72rem;
+  min-width: 0;
+}
+
+/* 날짜 입력: KRDS 달력 폭(38.4rem)에 맞춘다. 안내 문구도 같은 폭 아래에 붙는다. */
+.date-field .calendar-conts {
+  max-width: 38.4rem;
+}
+
+.date-field .krds-calendar-area .calendar-wrap {
+  box-shadow: 0 0.4rem 1.6rem rgb(0 0 0 / 12%);
+}
+
+/* 되돌릴 수 없는 저장 전 확인 창: 저장할 값 목록 + 안내 한 줄 */
+.confirm-list > div {
+  grid-template-columns: 10rem minmax(0, 1fr);
+}
+
+.confirm-note {
+  margin-top: var(--krds-gap-5);
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+/* 서비스 추가 창 */
+.modal-lead {
+  margin-bottom: var(--krds-gap-3);
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+/* 선택한 서비스: 카드 여러 개 대신 한 상자 안의 번호 목록(검색 결과 카드와 모양을 구분) */
+.selected-count {
+  margin-left: var(--krds-gap-2);
+  color: var(--krds-light-color-text-primary);
+}
+
+.selected-empty {
+  padding: var(--krds-padding-6);
+  border: 1px dashed var(--krds-light-color-border-gray-light);
+  border-radius: var(--krds-radius-medium2);
+  color: var(--krds-light-color-text-subtle);
+  text-align: center;
+}
+
+.selected-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--krds-light-color-border-gray-light);
+  border-radius: var(--krds-radius-medium2);
+}
+
+.selected-list > li {
+  display: flex;
+  align-items: center;
+  gap: var(--krds-gap-4);
+  padding: var(--krds-padding-5) var(--krds-padding-6);
+}
+
+.selected-list > li + li {
+  border-top: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
+.selected-index {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 50%;
+  background-color: var(--krds-light-color-surface-secondary-subtler);
+  color: var(--krds-light-color-text-secondary);
+  font-size: var(--krds-pc-font-size-body-small);
+  font-weight: 700;
+}
+
+.selected-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.selected-title {
+  font-weight: 700;
+}
+
+.selected-provider {
+  margin-left: var(--krds-gap-3);
+  color: var(--krds-light-color-text-subtle);
+  font-weight: 400;
+}
+
+.selected-meta {
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+/* 연계·제공: 서비스 카드 안에 연계·제공 현황 두 줄 */
+.tracking-status {
+  display: grid;
+  gap: var(--krds-gap-2);
+  margin-top: var(--krds-gap-4);
+  padding-top: var(--krds-padding-4);
+  border-top: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
+.tracking-status > div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: var(--krds-gap-4);
+}
+
+.tracking-status dt {
+  color: var(--krds-light-color-text-subtle);
+}
+
+.tracking-status dd {
+  margin: 0;
+}
+
+.tracking-sub {
+  display: block;
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
 }
 
 .form-actions {
@@ -411,8 +536,7 @@ fieldset.form-group {
 }
 
 .catalog-search,
-.catalog-results,
-.plan-catalog {
+.catalog-results {
   display: grid;
   gap: var(--krds-gap-5);
   min-width: 0;
@@ -426,6 +550,145 @@ fieldset.form-group {
 /* 공단 조회 결과의 KRDS 펼치기(disclosure). 회색 펼침 상자가 구분을 맡으므로 선은 두지 않는다. */
 .catalog-list .krds-disclosure {
   margin-top: var(--krds-gap-4);
+}
+
+/*
+ * 모달 안 공단 서비스 선택(촘촘한 배치, 11/14).
+ * KRDS 구조화 목록 카드(안쪽 여백 32px 이상, 제목 21px)는 독립 조회 화면 크기라 모달에서 한 번에 1~2건만 보였다.
+ * 탐색용이므로 조건은 작은 칸(40px) 한 줄로 두고 위에 고정하며, 결과는 선으로 나눈 한 줄 목록으로 둔다.
+ */
+.catalog-search.compact {
+  gap: var(--krds-gap-4);
+}
+
+.catalog-search.compact .filter-form {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  gap: var(--krds-gap-3);
+  padding: var(--krds-padding-5) var(--krds-padding-6);
+  /* 위 여백으로 스크롤된 결과가 비쳐 보이지 않게 흰 띠를 둔다 */
+  box-shadow: 0 -2.4rem 0 var(--krds-light-color-surface-white);
+}
+
+.catalog-search.compact .filter-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--krds-gap-3);
+}
+
+.catalog-search.compact .form-group {
+  gap: var(--krds-gap-1);
+}
+
+.catalog-search.compact .form-tit label {
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+.catalog-search.compact .filter-search {
+  align-items: flex-end;
+  gap: var(--krds-gap-3);
+}
+
+.catalog-search.compact .filter-buttons {
+  padding-top: 0;
+}
+
+.catalog-search.compact .catalog-results {
+  gap: var(--krds-gap-3);
+}
+
+.catalog-search.compact .result-summary {
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+.catalog-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 2px solid var(--krds-light-color-divider-gray-dark);
+}
+
+.catalog-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--krds-gap-2) var(--krds-gap-4);
+  padding: var(--krds-padding-4) var(--krds-padding-3);
+  border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
+.catalog-row.is-selected {
+  background-color: var(--krds-light-color-surface-secondary-subtler);
+}
+
+.catalog-row-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--krds-gap-1) var(--krds-gap-3);
+  font-weight: 700;
+}
+
+.catalog-row-sub {
+  margin-top: 0.2rem;
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+.catalog-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--krds-gap-2);
+}
+
+.catalog-row-detail {
+  grid-column: 1 / -1;
+  padding: var(--krds-padding-4) var(--krds-padding-5);
+  border-radius: var(--krds-radius-medium2);
+  background-color: var(--krds-light-color-surface-gray-subtler);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+.catalog-row-detail .info-list > div {
+  grid-template-columns: 10rem minmax(0, 1fr);
+}
+
+@media (max-width: 767px) {
+  .catalog-search.compact .filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .catalog-search.compact .filter-form {
+    position: static;
+  }
+
+  .catalog-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * 모달 스크롤바: KRDS 기본(폭 8px, 아주 연한 하늘색 위 연한 하늘색)은 거의 보이지 않아
+ * 폭을 넓히고 회색 손잡이로 대비를 높인다(11/14).
+ * 표준 scrollbar-color는 쓰지 않는다: 지정하면 크롬이 아래 ::-webkit-scrollbar 규칙을 무시하고,
+ * 맥에서는 평소에 숨는 기본 스크롤바로 돌아가 다시 보이지 않는다.
+ */
+.krds-modal .modal-conts {
+  scrollbar-gutter: stable;
+}
+
+.krds-modal .modal-conts::-webkit-scrollbar {
+  width: 1.2rem;
+}
+
+.krds-modal .modal-conts::-webkit-scrollbar-thumb {
+  border: 0.2rem solid var(--krds-light-color-element-gray-lighter);
+  border-radius: 0.8rem;
+  background-color: var(--krds-light-color-element-gray);
+}
+
+.krds-modal .modal-conts::-webkit-scrollbar-track {
+  background-color: var(--krds-light-color-element-gray-lighter);
 }
 
 /* 표는 KRDS mob-scroll 변형을 써서 영역 안에서만 가로로 스크롤한다. */
@@ -491,15 +754,6 @@ fieldset.form-group {
 }
 
 .selected-head .sub-title {
-  margin-top: 0;
-}
-
-.plan-catalog {
-  padding-top: var(--krds-padding-8);
-  border-top: 2px solid var(--krds-light-color-border-primary);
-}
-
-.plan-catalog > .sub-title {
   margin-top: 0;
 }
 
@@ -603,7 +857,8 @@ fieldset.form-group {
   border-left: 1px solid var(--krds-light-color-divider-gray-light);
 }
 
-/* 서비스 소개 안내 상자: 회색 바탕, ⓘ 제목, 소개 한 문장, 기능 이름 점 목록 */
+/* 서비스 소개 안내 상자: 회색 바탕, 제목, 소개 한 문장, 기능 이름 점 목록.
+   KRDS ‘정보’ 아이콘은 느낌표 모양이라 소개 제목에 붙이면 경고처럼 읽혀 쓰지 않는다(11/14). */
 .login-about-box {
   display: grid;
   align-content: center;
@@ -614,18 +869,8 @@ fieldset.form-group {
 }
 
 .login-about-title {
-  display: flex;
-  align-items: center;
-  gap: var(--krds-gap-2);
   font-size: var(--krds-pc-font-size-heading-xsmall);
   font-weight: 700;
-}
-
-.login-about-icon {
-  flex: none;
-  width: 2rem;
-  height: 2rem;
-  background: url('../node_modules/krds-uiux/resources/img/component/icon/ico_information.svg') center / contain no-repeat;
 }
 
 .login-about {

@@ -1,5 +1,4 @@
 import { useState, type InputHTMLAttributes, type Ref } from 'react';
-import { DATE_MAX } from '../dates';
 import { sizeClass, type FieldSize } from './fieldSize';
 
 type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'className'>;
@@ -7,7 +6,7 @@ type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'className'
 interface TextFieldProps extends InputProps {
   id: string;
   label: string;
-  /** 입력 형식을 알려주는 도움말. KRDS form-hint */
+  /** 입력 형식을 알려주는 도움말. KRDS form-hint. 오류가 있으면 오류 문구로 대신한다(KRDS 입력 상태: 메시지 한 줄). */
   hint?: string;
   /** 오류 문구. 있으면 KRDS 오류 상태(is-error)로 표시한다. */
   error?: string;
@@ -20,10 +19,10 @@ interface TextFieldProps extends InputProps {
  * KRDS 텍스트 입력(text_input) 구조.
  * form-group > form-tit(label) > form-conts(input) > form-hint / form-hint-invalid
  */
-export function TextField({ id, label, hint, error, inputRef, type = 'text', max, fieldSize, ...inputProps }: TextFieldProps) {
+export function TextField({ id, label, hint, error, inputRef, type = 'text', fieldSize, ...inputProps }: TextFieldProps) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = type === 'password';
-  const hintId = hint ? `${id}-hint` : undefined;
+  const hintId = hint && !error ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
 
@@ -40,8 +39,6 @@ export function TextField({ id, label, hint, error, inputRef, type = 'text', max
           id={id}
           className={sizeClass('krds-input', fieldSize)}
           type={isPassword && passwordVisible ? 'text' : type}
-          // 날짜는 최댓값이 없으면 브라우저가 연도를 6자리까지 받는다.
-          max={type === 'date' ? (max ?? DATE_MAX) : max}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           {...inputProps}
@@ -64,7 +61,7 @@ export function TextField({ id, label, hint, error, inputRef, type = 'text', max
           {error}
         </p>
       )}
-      {hint && (
+      {hintId && (
         <p id={hintId} className="form-hint">
           {hint}
         </p>
