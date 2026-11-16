@@ -217,13 +217,13 @@ export function Link({ to, onClick, ...rest }: LinkProps) {
 }
 
 /** 쪽 제목. D-02에 따라 화면이 열리면 제목으로 초점을 옮긴다. */
-export function PageTitle({ children, id }: { children: ReactNode; id?: string }) {
+export function PageTitle({ children, id, className }: { children: ReactNode; id?: string; className?: string }) {
   const ref = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     ref.current?.focus();
   }, []);
   return (
-    <h1 ref={ref} id={id} tabIndex={-1} className="page-title">
+    <h1 ref={ref} id={id} tabIndex={-1} className={className ? 'page-title ' + className : 'page-title'}>
       {children}
     </h1>
   );

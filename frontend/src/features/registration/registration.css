@@ -1,33 +1,8 @@
-.registration-logins {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .6rem;
-}
-
 #krds-header .krds-main-menu .gnb-menu {
   flex-wrap: wrap;
 }
 
-.registration-home {
-  padding-block: clamp(3.2rem, 6vw, 7rem);
-}
-
-.registration-overview {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
-  align-items: start;
-  gap: clamp(2.4rem, 5vw, 6rem);
-}
-
-.registration-home .page-title,
-.registration-guide .page-title {
-  color: #11243c;
-  font-size: clamp(2.8rem, 4.5vw, 4.4rem);
-  letter-spacing: -.04em;
-  line-height: 1.2;
-}
-
-.registration-overview,
+.home,
 .registration-guide,
 .registration-form-page,
 .registration-submissions {
@@ -43,17 +18,8 @@
   line-height: 1.6;
 }
 
-.registration-cta {
-  margin-top: 2.2rem;
-}
-
-.registration-section {
-  margin-top: clamp(3.2rem, 6vw, 5.8rem);
-  scroll-margin-top: 2.4rem;
-}
-
-.registration-section h2,
-.registration-guide-panel h2 {
+.home-section h2,
+.guide-section h2 {
   color: #142f4d;
   font-size: clamp(2.2rem, 3vw, 2.7rem);
   line-height: 1.3;
@@ -67,8 +33,7 @@
   margin-top: 1.6rem;
 }
 
-.registration-support section,
-.registration-guide-panel {
+.registration-support section {
   padding: clamp(1.6rem, 3vw, 2.4rem);
   border-radius: 1.2rem;
   background: #edf3fc;
@@ -85,65 +50,10 @@
   line-height: 1.6;
 }
 
-.registration-toc {
-  padding-left: 1.4rem;
-  border-left: 1px solid #d8e3f0;
-  color: #435368;
-}
-
-.registration-toc p {
-  margin-bottom: .7rem;
-  font-size: 1.4rem;
-}
-
-.registration-toc a {
-  display: block;
-  padding: .6rem .8rem;
-}
-
-.registration-toc a:first-of-type {
-  background: #edf3fc;
-  color: #073768;
-  font-weight: 700;
-}
-
-.registration-process {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .8rem 2.2rem;
-  padding: 0;
-  margin-block: 1.3rem 1.6rem;
-  list-style: decimal inside;
-}
-
-.registration-process li {
-  list-style: inherit;
-}
-
-.registration-process li::marker {
-  color: #073768;
-  font-weight: 700;
-}
-
 .registration-text-link {
   color: #073768;
   text-decoration: underline;
   text-underline-offset: .2em;
-}
-
-.registration-guide-panel {
-  max-width: 74rem;
-  margin-top: 2.4rem;
-}
-
-.registration-guide-panel ul {
-  padding-left: 2.1rem;
-  margin-top: 1.2rem;
-}
-
-.registration-guide-panel li {
-  list-style: disc;
-  margin-top: .5rem;
 }
 
 .registration-actions,
@@ -168,39 +78,22 @@
   max-width: 96rem;
 }
 
-.registration-stepper {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .8rem 2rem;
-  margin-block: 2.5rem;
-  padding: 1.3rem 0;
-  border-block: 1px solid #dce5ef;
+/* KRDS 단계 표시(krds-step-wrap)를 그대로 쓰고 위아래 간격만 맞춘다. */
+.registration-steps {
+  margin-block: 2.4rem 0;
 }
 
-.registration-stepper li {
-  display: flex;
-  align-items: center;
-  gap: .7rem;
-  color: #526073;
-}
-
-.registration-stepper span {
-  display: inline-grid;
-  min-width: 2.7rem;
-  min-height: 2.7rem;
-  place-items: center;
-  border-radius: 50%;
-  background: #e8eef6;
-}
-
-.registration-stepper [aria-current="step"] {
-  color: #073768;
+/* KRDS는 767px 이하에서 단계 이름을 숨기고 점만 남긴다. 지금 단계 이름은 화면에도 한 줄로 보여 준다. */
+.registration-step-caption {
+  display: none;
+  margin-top: 1.2rem;
   font-weight: 700;
 }
 
-.registration-stepper [aria-current="step"] span {
-  background: #073768;
-  color: #fff;
+@media (max-width: 767px) {
+  .registration-step-caption {
+    display: block;
+  }
 }
 
 .registration-form-section {
@@ -222,12 +115,73 @@
 .registration-form-section > legend,
 .registration-consent > legend {
   position: static !important;
+  float: left;
   width: auto !important;
   height: auto !important;
   clip: auto !important;
   overflow: visible !important;
   white-space: normal !important;
-  padding-inline: .5rem;
+  padding-inline: 0;
+}
+
+/*
+ * fieldset 제목(legend)은 기본으로 상자 테두리 위에 걸린다. float으로 상자 안 첫 줄에 넣어
+ * h2로 제목을 단 상자와 같은 모양으로 맞춘다(11/16). 다음 요소는 제목 아래로 내린다.
+ */
+.registration-form-section > legend {
+  width: 100% !important;
+  box-sizing: border-box;
+  /* float된 제목의 아래 margin은 다음 요소와 겹쳐 사라지므로 padding으로 간격을 둔다. */
+  padding-bottom: 1.6rem !important;
+}
+
+/* 날짜 칸도 같은 줄의 다른 입력칸과 폭을 맞춘다(공통 달력 칸의 최대 폭은 업무 화면 기준). */
+.registration-fields .date-field .calendar-conts {
+  max-width: none;
+}
+
+.registration-form-section > legend ~ *,
+.registration-consent > legend ~ * {
+  clear: both;
+}
+
+.registration-form-section {
+  position: relative;
+}
+
+/* ‘가상 정보 불러오기’처럼 묶음 제목 오른쪽에 두는 버튼 */
+.registration-section-action {
+  position: absolute;
+  top: 1.6rem;
+  right: clamp(1.4rem, 3vw, 2.6rem);
+}
+
+.registration-section-lead {
+  margin-top: .8rem;
+  color: var(--krds-light-color-text-subtle);
+}
+
+/* 필요한 돌봄: 체크박스를 한 줄로 늘어놓는다(좁으면 줄바꿈). */
+.registration-care-needs .krds-check-area {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1.2rem 2.4rem;
+}
+
+.registration-care-needs {
+  margin-top: 0;
+}
+
+.registration-confirm {
+  margin-top: 2.2rem;
+}
+
+.registration-photo-upload {
+  margin-block: 1.6rem;
+}
+
+.registration-photo-upload .file-upload.is-error {
+  border-color: var(--krds-light-color-border-danger, #d50136);
 }
 
 .registration-section-title,
@@ -252,10 +206,6 @@
 }
 
 .registration-step-fields { min-inline-size: 0; }
-
-.registration-caregiver {
-  margin-top: 1.1rem;
-}
 
 .registration-consent {
   margin-block: 1.2rem;
@@ -398,13 +348,6 @@
   border-radius: .6rem;
 }
 
-.registration-photo-selection {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .7rem 1.2rem;
-}
-
 .registration-verification figcaption,
 .registration-verification-empty {
   margin-top: 1rem;
@@ -491,14 +434,9 @@
 }
 
 @media (max-width: 790px) {
-  .registration-overview,
   .registration-detail-staff,
   .registration-verification-body {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .registration-toc {
-    display: none;
   }
 }
 
@@ -506,5 +444,509 @@
   .registration-support,
   .registration-fields {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* 좁은 화면에서는 제목 옆 버튼을 제목 아래로 내려 겹치지 않게 한다. */
+  .registration-section-action {
+    position: static;
+    margin-bottom: 1.2rem;
+  }
+}
+
+/*
+ * 공개 홈(11/16): 정부 누리집 첫 화면 구성(전체 폭 사진 + 왼쪽 큰 문구, 사진 아래에 걸친 안내 상자).
+ * 사진 왼쪽이 밝아 글자는 진한 색으로 두고, 사진이 없거나 늦게 와도 읽히도록 밝은 바탕색과 왼쪽 그라데이션을 깐다.
+ */
+.home-hero {
+  display: flex;
+  align-items: center;
+  min-height: clamp(36rem, 36vw, 52rem);
+  padding-block: 6rem 13rem;
+  background:
+    linear-gradient(90deg, rgb(247 241 234 / 96%) 0%, rgb(247 241 234 / 82%) 32%, rgb(247 241 234 / 0%) 58%),
+    url("/images/home-hero.jpg") 70% center / cover no-repeat,
+    #f3ebe2;
+}
+
+.home-hero .inner {
+  width: 100%;
+}
+
+.home .home-hero-title {
+  color: #1b2a3b;
+  font-size: clamp(3.4rem, 4.6vw, 5.6rem);
+  line-height: 1.22;
+  letter-spacing: -.04em;
+}
+
+.home-hero-lead {
+  max-width: 58rem;
+  margin-top: 2rem;
+  color: #2f3d4e;
+  font-size: clamp(1.7rem, 1.5vw, 2rem);
+  line-height: 1.65;
+}
+
+.home-intro {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2.4rem 4rem;
+  margin-top: -9rem;
+  padding: 2.8rem 4rem;
+  border-radius: 2.4rem;
+  background: #eef4fd;
+  box-shadow: 0 .8rem 2.4rem rgb(16 42 84 / 8%);
+}
+
+.home-intro-art {
+  align-self: stretch;
+  min-height: 18rem;
+  margin-block: -1.2rem;
+  background: url("/images/home-intro.png") center bottom / contain no-repeat;
+}
+
+.home-intro h2 {
+  color: #1b2a3b;
+  font-size: clamp(2.2rem, 2.2vw, 2.6rem);
+  line-height: 1.35;
+}
+
+.home-intro p {
+  margin-top: 1.2rem;
+  color: #3a4757;
+  line-height: 1.65;
+}
+
+.home-intro-actions {
+  display: grid;
+  gap: 1rem;
+  min-width: 27rem;
+}
+
+.home-intro-actions .krds-btn {
+  justify-content: space-between;
+}
+
+/* 참고 화면의 진한 남색 두 번째 버튼. KRDS secondary(밝은 바탕)는 첫 버튼과 구분이 약하다. */
+.home-intro-actions .home-intro-guide {
+  border-color: #0b2e5c;
+  background: #0b2e5c;
+  color: #fff;
+}
+
+.home-intro-actions .home-intro-guide:hover {
+  background: #06224a;
+}
+
+.home-intro-actions .home-intro-guide .svg-icon {
+  filter: brightness(0) invert(1);
+}
+
+.home-section {
+  margin-top: clamp(4.8rem, 7vw, 8rem);
+  scroll-margin-top: 2.4rem;
+}
+
+.home-section:last-child {
+  margin-bottom: clamp(4.8rem, 7vw, 8rem);
+}
+
+.home-process {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1.2rem;
+  margin-block: 1.6rem 2rem;
+  padding: 0;
+  counter-reset: none;
+}
+
+.home-process li {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 1.6rem 1.8rem;
+  border: 1px solid #d8e3ef;
+  border-radius: 1.2rem;
+  background: #fff;
+  list-style: none;
+}
+
+.home-process-num {
+  display: inline-grid;
+  flex: none;
+  width: 3.2rem;
+  height: 3.2rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #0b2e5c;
+  color: #fff;
+  font-weight: 700;
+}
+
+.home-process-label {
+  font-weight: 700;
+}
+
+@media (max-width: 1023px) {
+  .home-intro {
+    grid-template-columns: 16rem minmax(0, 1fr);
+  }
+
+  .home-intro-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+  }
+
+  .home-process {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  /* 좁은 화면: 사진을 글자 밑에 깔면 얼굴이 글자에 가려져, 사진은 아래쪽에 두 배로 키워 인물 쪽(오른쪽)만 보인다. */
+  .home-hero {
+    align-items: flex-start;
+    min-height: 0;
+    padding-block: 3.2rem 30rem;
+    background:
+      linear-gradient(180deg, #f3ebe2 0%, #f3ebe2 42%, rgb(243 235 226 / 0%) 54%),
+      url("/images/home-hero.jpg") 85% 100% / 200% auto no-repeat,
+      #f3ebe2;
+  }
+
+  .home-intro {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: -6rem;
+    padding: 2.4rem 2rem;
+  }
+
+  .home-intro-art {
+    display: none;
+  }
+
+  .home-intro-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-process {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/*
+ * 신청 완료(KRDS 신청 서비스 패턴 ‘완료’, 예시 sample_appl_04의 comp-* 구조). 패턴 CSS는 krds-uiux 패키지에 없어 같은 모양으로 둔다.
+ */
+.comp-wrap {
+  max-width: 80rem;
+  margin: 2.4rem auto 0;
+  text-align: center;
+}
+
+.comp-msg-icon {
+  display: grid;
+  width: 6.4rem;
+  height: 6.4rem;
+  margin: 0 auto 2rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--krds-light-color-surface-primary-subtler, #ecf2fe);
+}
+
+.comp-msg-icon::after {
+  content: "";
+  width: 1.4rem;
+  height: 2.6rem;
+  margin-top: -.6rem;
+  border: solid var(--krds-light-color-text-primary, #256ef4);
+  border-width: 0 .4rem .4rem 0;
+  transform: rotate(45deg);
+}
+
+.comp-msg-wrap {
+  color: var(--krds-light-color-text-bolder, #1e2124);
+  font-size: clamp(2.4rem, 3vw, 3.2rem);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.comp-msg-wrap .point {
+  color: var(--krds-light-color-text-primary, #256ef4);
+}
+
+.comp-msg-sub {
+  margin-top: 1.2rem;
+  color: var(--krds-light-color-text-subtle);
+}
+
+.comp-info-box {
+  display: grid;
+  gap: 1.2rem;
+  margin-top: 3.2rem;
+  padding: 2.4rem 3.2rem;
+  border-radius: 1.2rem;
+  background: var(--krds-light-color-surface-gray-subtler, #f4f5f6);
+  text-align: left;
+}
+
+.comp-info-box li {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  gap: 1.6rem;
+}
+
+.comp-info-box .key {
+  color: var(--krds-light-color-text-subtle);
+}
+
+.comp-info-box .value {
+  font-weight: 700;
+}
+
+.comp-btn-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.2rem;
+  margin-top: 3.2rem;
+}
+
+.comp-link-box {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1.6rem 3.2rem;
+  margin-top: 4.8rem;
+  padding-top: 2.4rem;
+  border-top: 1px solid var(--krds-light-color-divider-gray-light);
+  text-align: left;
+}
+
+.comp-link-box .tit {
+  font-weight: 700;
+}
+
+.comp-link-box .txt {
+  margin-top: .4rem;
+  color: var(--krds-light-color-text-subtle);
+}
+
+.comp-link-box dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem 1.2rem;
+}
+
+.registration-submitted-docs {
+  margin-top: 6.4rem;
+  color: #142f4d;
+  font-size: 2.2rem;
+}
+
+@media (max-width: 620px) {
+  .comp-info-box {
+    padding: 2rem;
+  }
+
+  .comp-info-box li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .2rem;
+  }
+
+  .comp-btn-wrap .krds-btn {
+    flex: 1 1 100%;
+  }
+}
+
+/*
+ * 신청 안내(11/16): 왼쪽 본문 + 오른쪽 ‘온라인 신청’ 상자(화면을 내려도 따라옴). 대체할 누리집 이용안내와 정부24 서비스 안내 구성.
+ */
+.guide-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32rem;
+  align-items: start;
+  gap: 4.8rem;
+  margin-top: 3.2rem;
+}
+
+.guide-section + .guide-section {
+  margin-top: 4.8rem;
+}
+
+.guide-section h2 {
+  padding-bottom: 1.2rem;
+  border-bottom: 2px solid #142f4d;
+}
+
+.guide-define > div {
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr);
+  gap: 2rem;
+  padding: 1.8rem 0;
+  border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
+}
+
+.guide-define dt {
+  font-weight: 700;
+}
+
+.guide-note {
+  margin-top: .6rem;
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+.guide-check {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.8rem;
+}
+
+.guide-check li {
+  position: relative;
+  padding-left: 3rem;
+  line-height: 1.6;
+}
+
+.guide-check li::before {
+  content: "";
+  position: absolute;
+  top: .4rem;
+  left: .4rem;
+  width: .7rem;
+  height: 1.3rem;
+  border: solid var(--krds-light-color-text-primary, #256ef4);
+  border-width: 0 .25rem .25rem 0;
+  transform: rotate(45deg);
+}
+
+.guide-steps {
+  display: grid;
+  gap: 0;
+  margin-top: 1.8rem;
+  padding: 0;
+}
+
+.guide-steps li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.6rem minmax(0, 1fr);
+  gap: 1.6rem;
+  padding-bottom: 2.4rem;
+  list-style: none;
+}
+
+/* 번호를 잇는 세로선 */
+.guide-steps li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 3.6rem;
+  bottom: 0;
+  left: 1.75rem;
+  width: 2px;
+  background: #d8e3ef;
+}
+
+.guide-step-num {
+  display: grid;
+  width: 3.6rem;
+  height: 3.6rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #0b2e5c;
+  color: #fff;
+  font-weight: 700;
+}
+
+.guide-steps strong {
+  display: block;
+  padding-top: .5rem;
+  font-size: 1.8rem;
+}
+
+.guide-steps p {
+  margin-top: .4rem;
+  color: #3a4757;
+  line-height: 1.6;
+}
+
+.guide-aside {
+  position: sticky;
+  /* 위에 붙어 있는 KRDS 상단 바로 아래에서 멈춘다(높이는 AppHeader가 잰다). */
+  top: calc(var(--app-header-height, 0px) + 2.4rem);
+  /* 화면이 낮거나 글자를 키워 상자가 화면보다 길면 상자 안에서 스크롤해 아래 버튼까지 닿게 한다. */
+  max-height: calc(100vh - var(--app-header-height, 0px) - 4.8rem);
+  overflow-y: auto;
+  display: grid;
+  gap: 1.2rem;
+  padding: 2.8rem 2.4rem;
+  border-radius: 1.6rem;
+  background: #eef4fd;
+}
+
+.guide-aside h2 {
+  color: #142f4d;
+  font-size: 2.2rem;
+}
+
+.guide-aside > p {
+  color: #3a4757;
+  line-height: 1.6;
+}
+
+.guide-aside-info {
+  display: grid;
+  gap: .8rem;
+  margin-block: .4rem .8rem;
+  padding: 1.6rem;
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.guide-aside-info > div {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: .8rem;
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+.guide-aside-info dt {
+  color: var(--krds-light-color-text-subtle);
+}
+
+.guide-aside-info dd {
+  font-weight: 700;
+}
+
+.guide-aside-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.guide-aside-link {
+  justify-self: center;
+  margin-top: .4rem;
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+@media (max-width: 1023px) {
+  .guide-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* 좁은 화면에서는 신청 상자를 본문 위로 올린다. */
+  .guide-aside {
+    position: static;
+    order: -1;
+    max-height: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .guide-define > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .6rem;
   }
 }

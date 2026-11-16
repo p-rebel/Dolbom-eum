@@ -17,11 +17,19 @@ export function isValidDate(value: string): boolean {
   return year >= 1 && date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
+/** 오늘 날짜(YYYY-MM-DD, 브라우저 시간대). */
+export function todayKey(): string {
+  const now = new Date();
+  return [now.getFullYear(), now.getMonth() + 1, now.getDate()].map((value) => String(value).padStart(2, '0')).join('-');
+}
+
 interface DateRule {
   /** 비어 있을 때 문구 */
   required: string;
   /** 이 날짜와 같거나 이후여야 한다(D-05: 동일 일자 처리 가능). */
   notBefore?: { date: string | null | undefined; label: string };
+  /** 이 날짜와 같거나 이전이어야 한다(예: 생년월일은 오늘까지). */
+  notAfter?: { date: string; message: string };
 }
 
 /** 날짜 입력을 검사해 오류 문구를 돌려준다. 문제가 없으면 undefined. */
@@ -31,6 +39,9 @@ export function checkDate(value: string, rule: DateRule): string | undefined {
   }
   if (!isValidDate(value) || value > DATE_MAX) {
     return '날짜를 연도 4자리의 YYYY-MM-DD 형식으로 입력해 주세요.';
+  }
+  if (rule.notAfter && value > rule.notAfter.date) {
+    return rule.notAfter.message;
   }
   const limit = rule.notBefore;
   if (limit?.date && isValidDate(limit.date) && value < limit.date) {
