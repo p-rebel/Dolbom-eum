@@ -23,6 +23,7 @@ import { useUnsavedChanges } from '../../router';
 import type { SaveHandlers } from './CaseDetailPage';
 import { useFieldErrors } from './fieldErrors';
 import { interpretSaveError } from './saveErrors';
+import { siteText } from '../../siteConfig';
 
 type Props = { detail: CaseDetail } & SaveHandlers;
 type Errors = Record<string, string | undefined>;
@@ -315,7 +316,7 @@ export function LinkageForm({ detail, item, ...handlers }: ItemProps) {
         <TextField
           id={`destination-${item.id}`}
           label="수신처"
-          hint={`담당 부서 또는 공단을 가상 수신처로 입력(${DESTINATION_MAX}자 이내)`}
+          hint={`담당 부서 또는 공단을 ${siteText('가상 수신처', '수신처')}로 입력(${DESTINATION_MAX}자 이내)`}
           maxLength={DESTINATION_MAX}
           value={destination}
           onChange={(event) => { setDestination(event.target.value); form.clear('destinationLabel'); }}

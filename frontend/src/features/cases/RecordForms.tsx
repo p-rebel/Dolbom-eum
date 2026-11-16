@@ -11,6 +11,7 @@ import { useUnsavedChanges } from '../../router';
 import type { SaveHandlers } from './CaseDetailPage';
 import { useFieldErrors } from './fieldErrors';
 import { interpretSaveError } from './saveErrors';
+import { siteText } from '../../siteConfig';
 
 type Props = { detail: CaseDetail } & SaveHandlers;
 
@@ -155,7 +156,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
     const ok = await confirm.ask({
       title: '판정 결과를 저장할까요?',
       rows: [
-        ['가상 판정일', assessedOn],
+        [siteText('가상 판정일', '판정일'), assessedOn],
         [receivedLabel, resultReceivedOn],
         ['판정 경로', ASSESSMENT_ROUTE_LABEL[route]],
         ['판정 결과', ASSESSMENT_OUTCOME_LABEL[outcome]],
@@ -195,7 +196,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
       {confirm.dialog}
       <DateField
         id="assessed-on"
-        label="가상 판정일"
+        label={siteText('가상 판정일', '판정일')}
         hint={detail.screening ? `조사일(${detail.screening.screenedOn})과 같거나 이후 날짜` : undefined}
         min={minDate(detail.screening?.screenedOn)}
         value={assessedOn}

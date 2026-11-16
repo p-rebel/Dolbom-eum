@@ -27,6 +27,7 @@ import { Link } from '../../router';
 import { AssessmentForm, ScreeningForm } from './RecordForms';
 import { PlanDraftForm } from './PlanDraftForm';
 import { ConfirmPlanForm, DeliveryForm, LinkageForm, MonitoringForm, MonitoringReviewForm, NoticeForm } from './WorkflowForms';
+import { siteText } from '../../siteConfig';
 
 const SECTIONS = [
   { id: 'section-receipt', title: '접수·조사' },
@@ -138,7 +139,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         </h2>
         <dl className="info-list info-table">
           <div>
-            <dt>가상 대상자</dt>
+            <dt>{siteText('가상 대상자', '대상자')}</dt>
             <dd>{detail.profile.beneficiaryName}</dd>
           </div>
           <div>

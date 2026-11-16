@@ -61,7 +61,7 @@ export function AppHeader({ logoTo, account, menu }: { logoTo: string; account?:
                     <Link to={logoTo}>돌봄e음</Link>
                   </div>
                 )}
-                <span className="krds-badge bg-light-secondary">가상 사례 시연</span>
+                {!OFFICIAL_SITE && <span className="krds-badge bg-light-secondary">가상 사례 시연</span>}
                 {MOCK_API_ENABLED && <span className="krds-badge bg-light-warning">목업 모드</span>}
                 {account}
               </div>

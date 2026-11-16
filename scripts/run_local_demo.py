@@ -75,7 +75,7 @@ def install_if_changed(source, version, marker, command, directory):
     marker.write_text(signature, encoding="utf-8")
 
 
-def prepare_frontend(npm, node_version):
+def prepare_frontend(npm, node_version, official):
     install_if_changed(
         FRONTEND / "package-lock.json",
         node_version,
@@ -83,7 +83,9 @@ def prepare_frontend(npm, node_version):
         [npm, "ci", "--include=dev", "--no-audit", "--no-fund"],
         FRONTEND,
     )
-    subprocess.run([npm, "run", "build"], cwd=FRONTEND, env={**os.environ, "VITE_USE_MOCK_API": "false"}, check=True)
+    # 팀장 확정 디자인(공식 누리집 화면)으로 연다. 이 스크립트는 127.0.0.1에서만 열린다. --demo-labels면 '가상 사례 시연' 화면.
+    env = {**os.environ, "VITE_USE_MOCK_API": "false", "VITE_OFFICIAL_SITE": "true" if official else "false"}
+    subprocess.run([npm, "run", "build"], cwd=FRONTEND, env=env, check=True)
 
 
 def prepare_backend():
@@ -115,7 +117,7 @@ def load_password():
     return value
 
 
-def run_demo(port):
+def run_demo(port, official=True):
     if sys.version_info < (3, 12):
         raise RuntimeError("Python 3.12 이상을 사용해 주세요.")
     node = shutil.which("node")
@@ -134,7 +136,7 @@ def run_demo(port):
     RUNTIME.mkdir(parents=True, exist_ok=True)
     with demo_lock():
         python = prepare_backend()
-        prepare_frontend(npm, node_version)
+        prepare_frontend(npm, node_version, official)
         password = load_password()
         origin = f"http://{HOST}:{port}"
         env = {
@@ -167,11 +169,12 @@ def run_demo(port):
 def main():
     parser = argparse.ArgumentParser(description="돌봄e음 로컬 시연을 시작합니다.")
     parser.add_argument("--port", type=int, default=8080, help="로컬 접속 포트 (기본값 8080)")
+    parser.add_argument("--demo-labels", action="store_true", help="공식 누리집 화면 대신 '가상 사례 시연' 표시로 연다")
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
         parser.error("--port는 1~65535 사이의 번호여야 합니다.")
     try:
-        run_demo(args.port)
+        run_demo(args.port, official=not args.demo_labels)
     except KeyboardInterrupt:
         return 0
     except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:

@@ -16,6 +16,7 @@ import { useApiData } from '../../hooks/useApiData';
 import { PageHead } from '../../layout/PageHead';
 import { Link, navigate, PageTitle, useUnsavedChanges } from '../../router';
 import { DocumentViewer } from './DocumentViewer';
+import { siteText } from '../../siteConfig';
 
 const EMPTY_PERSON: Person = { name: '', address: '', mobile: '' };
 const EMPTY_BENEFICIARY: Beneficiary = { ...EMPTY_PERSON, demoId: '', birthDate: '', sex: null, residence: null };
@@ -215,7 +216,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
     if (!beneficiary.demoId) errors['demo-id'] = '가상 식별자를 입력해 주세요.';
     else if (!DEMO_ID_PATTERN.test(beneficiary.demoId)) errors['demo-id'] = '가상 식별자는 DEMO-로 시작하는 대문자·숫자로 입력해 주세요(예: DEMO-ID-0101).';
     const birth = checkDate(beneficiary.birthDate, {
-      required: '가상 생년월일을 입력해 주세요.',
+      required: siteText('가상 생년월일을 입력해 주세요.', '생년월일을 입력해 주세요.'),
       notAfter: { date: todayKey(), message: '생년월일은 오늘이나 이전 날짜로 입력해 주세요.' },
     });
     if (birth) errors['birth-date'] = birth;
@@ -233,7 +234,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
       if (consents[field] === null) errors[field + '-yes'] = '동의 여부를 선택해 주세요.';
     }
     for (const item of evidence) {
-      if (!preparedEvidence.includes(item)) errors['evidence-' + item] = '준비한 가상 증빙을 확인해 주세요.';
+      if (!preparedEvidence.includes(item)) errors['evidence-' + item] = siteText('준비한 가상 증빙을 확인해 주세요.', '준비한 증빙을 확인해 주세요.');
     }
     if (photoError) errors['evidence-photo-button'] = photoError;
     if (!confirmed) errors['confirm-demo-submission'] = '제출 전에 입력 내용을 확인했는지 선택해 주세요.';
@@ -374,7 +375,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
     <div className="inner page registration-form-page">
       <PageHead parents={[{ label: '홈', to: '/' }]} title={revision ? '보완 신청서 작성' : '돌봄 신청서 작성'} />
       {revision && <p className="registration-lead">{revision.submissionNumber} · 보완 요청 사유 {revision.correctionReason}</p>}
-      <p className="registration-lead">가상 정보를 한 번 입력하면 공식 양식의 신청서와 동의서에 반영됩니다.</p>
+      <p className="registration-lead">{siteText('가상 정보를 한 번 입력하면 공식 양식의 신청서와 동의서에 반영됩니다.', '한 번 입력하면 공식 양식의 신청서와 동의서에 반영됩니다.')}</p>
       {/* KRDS 단계 표시(step indicator): 지난 단계 done, 현재 단계 active와 ‘현재단계’ 숨김 글자 */}
       <ol className="krds-step-wrap registration-steps" aria-label="신청 단계">
         {STEP_NAMES.map((name, index) => (
@@ -399,7 +400,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
           {step === 0 && (
             <>
               <FormSection title="신청 대상과 유형"
-                action={!revision && <button type="button" className="krds-btn small secondary" onClick={loadSample}>가상 정보 불러오기</button>}>
+                action={!revision && <button type="button" className="krds-btn small secondary" onClick={loadSample}>{siteText('가상 정보 불러오기', '예시 정보 불러오기')}</button>}>
                 <div className="registration-fields">
                   <SelectField id="application-type" label="신청 유형" value={applicationType}
                     options={Object.entries(APPLICATION_TYPES).map(([value, label]) => ({ value, label }))}
@@ -419,7 +420,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
                   <TextField id="demo-id" label="가상 식별자" value={beneficiary.demoId} maxLength={26}
                     hint="DEMO-로 시작합니다. 예: DEMO-ID-0101" error={errors['demo-id']}
                     onChange={(event) => setBeneficiary({ ...beneficiary, demoId: event.target.value })} />
-                  <DateField id="birth-date" label="가상 생년월일" value={beneficiary.birthDate} max={todayKey()} yearsFrom={1900}
+                  <DateField id="birth-date" label={siteText('가상 생년월일', '생년월일')} value={beneficiary.birthDate} max={todayKey()} yearsFrom={1900}
                     hint="숫자만 입력해도 됩니다(예: 19450503 → 1945-05-03)" error={errors['birth-date']}
                     onChange={(value) => { setBeneficiary({ ...beneficiary, birthDate: value }); setDirty(true); }} />
                   <SelectField id="beneficiary-sex" label="성별" optional value={beneficiary.sex ?? ''} emptyOption="선택 안 함"
@@ -499,12 +500,12 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
               </section>
 
               <section className="registration-form-section" aria-labelledby="evidence-heading">
-                <h2 id="evidence-heading">가상 증빙</h2>
+                <h2 id="evidence-heading">{siteText('가상 증빙', '증빙 서류')}</h2>
                 {evidence.length > 0 && (
                   <fieldset className="registration-consent">
-                    <legend>필요한 가상 증빙</legend>
+                    <legend>{siteText('필요한 가상 증빙', '필요한 증빙')}</legend>
                     {evidence.map((item) => (
-                      <CheckboxField key={item} id={'evidence-' + item} label={EVIDENCE_LABELS[item] + ' 시연 자료를 준비했습니다'}
+                      <CheckboxField key={item} id={'evidence-' + item} label={EVIDENCE_LABELS[item] + siteText(' 시연 자료를 준비했습니다', ' 서류를 준비했습니다')}
                         checked={preparedEvidence.includes(item)} error={errors['evidence-' + item]}
                         onChange={(checked) => setPreparedEvidence(checked
                           ? [...preparedEvidence, item] : preparedEvidence.filter((value) => value !== item))} />
@@ -515,11 +516,11 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
                 {/* KRDS 파일 업로드: 안내 문구 + ‘파일 선택’ 버튼, 고른 파일은 목록으로 보여 주고 ‘삭제’로 뺀다. */}
                 <div className="krds-file-upload registration-photo-upload">
                   <div className="file-head">
-                    <h3 className="tit" id="evidence-photo-title">가상 증빙 사진 직접 첨부 <span className="field-optional">(선택)</span></h3>
+                    <h3 className="tit" id="evidence-photo-title">{siteText('가상 증빙 사진 직접 첨부', '증빙 사진 첨부')} <span className="field-optional">(선택)</span></h3>
                   </div>
                   <div className={photoError ? 'file-upload is-error' : 'file-upload'}>
                     <p className="txt" id="evidence-photo-hint">
-                      가상 정보가 담긴 JPG, PNG, WebP 사진 한 장(최대 8MB)을 골라 주세요.
+                      {siteText('가상 정보가 담긴 JPG, PNG, WebP 사진 한 장(최대 8MB)을 골라 주세요.', 'JPG, PNG, WebP 사진 한 장(최대 8MB)을 골라 주세요.')}
                       사진에 ‘성명’, ‘생년월일’, ‘가상 식별자’, ‘주소’를 값과 함께 적으면 담당자가 자동으로 대조할 수 있습니다.
                     </p>
                     <div className="file-upload-btn-wrap">
@@ -530,7 +531,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
                         aria-invalid={photoError ? true : undefined}
                         onClick={() => photoInput.current?.click()}>
                         <i className="svg-icon ico-upload" aria-hidden="true" />{photo ? '다른 사진 선택' : '사진 선택'}
-                        <span className="sr-only"> (가상 증빙 사진)</span>
+                        <span className="sr-only"> ({siteText('가상 증빙 사진', '증빙 사진')})</span>
                       </button>
                     </div>
                   </div>
@@ -549,14 +550,14 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
                           </div>
                         </li>
                       </ul>
-                      {photoUrl && <img className="registration-photo-preview" src={photoUrl} alt="첨부할 가상 증빙 사진" />}
+                      {photoUrl && <img className="registration-photo-preview" src={photoUrl} alt={siteText('첨부할 가상 증빙 사진', '첨부할 증빙 사진')} />}
                     </div>
                   )}
                 </div>
 
                 <div className="registration-fields">
                   <SelectField id="ocr-evidence" label="예시 확인서" optional value={evidenceSample ?? ''} emptyOption="예시 선택 안 함"
-                    hint="사진 대신 준비된 가상 확인서로 OCR 대조를 시연할 수 있습니다. 고르면 첨부한 사진은 빠집니다."
+                    hint={siteText('사진 대신 준비된 가상 확인서로 OCR 대조를 시연할 수 있습니다. 고르면 첨부한 사진은 빠집니다.', '사진 대신 준비된 예시 확인서로 자동 대조를 확인할 수 있습니다. 고르면 첨부한 사진은 빠집니다.')}
                     options={Object.entries(EVIDENCE_SAMPLES).map(([value, label]) => ({ value, label }))}
                     onChange={(event) => {
                       const value = event.target.value;
@@ -573,7 +574,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
               </section>
 
               <div className="registration-confirm">
-                <CheckboxField id="confirm-demo-submission" label="가상 정보와 제출 내용, 각 동의 선택을 확인했습니다"
+                <CheckboxField id="confirm-demo-submission" label={siteText('가상 정보와 제출 내용, 각 동의 선택을 확인했습니다', '입력한 정보와 제출 내용, 각 동의 선택을 확인했습니다')}
                   checked={confirmed} error={errors['confirm-demo-submission']} onChange={setConfirmed} />
               </div>
             </>
@@ -582,12 +583,12 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
           {step === 2 && prepared && (
             <section className="registration-form-section" aria-labelledby="review-heading">
               <h2 id="review-heading" ref={heading} tabIndex={-1}>최종 서류 확인</h2>
-              <p className="registration-section-lead">작성된 서류를 확인해 주세요. 제출한 서류는 가상 통합돌봄 접수처에서 확인할 수 있습니다.</p>
-              {prepared.form.evidenceSample && <p>가상 증빙 · {EVIDENCE_SAMPLES[prepared.form.evidenceSample]}</p>}
-              {prepared.retainEvidence && <p>가상 증빙 사진 · 기존 첨부 사진 유지</p>}
+              <p className="registration-section-lead">작성된 서류를 확인해 주세요. 제출한 서류는 {siteText('가상 통합돌봄 접수처', '통합돌봄 접수처')}에서 확인할 수 있습니다.</p>
+              {prepared.form.evidenceSample && <p>{siteText('가상 증빙', '증빙')} · {EVIDENCE_SAMPLES[prepared.form.evidenceSample]}</p>}
+              {prepared.retainEvidence && <p>{siteText('가상 증빙 사진', '증빙 사진')} · 기존 첨부 사진 유지</p>}
               {prepared.photo && <div className="registration-photo-field">
-                <p>가상 증빙 사진 · {prepared.photo.name}</p>
-                {photoUrl && <img className="registration-photo-preview" src={photoUrl} alt="제출할 가상 증빙 사진" />}
+                <p>{siteText('가상 증빙 사진', '증빙 사진')} · {prepared.photo.name}</p>
+                {photoUrl && <img className="registration-photo-preview" src={photoUrl} alt={siteText('제출할 가상 증빙 사진', '제출할 증빙 사진')} />}
               </div>}
               <FormReview previews={prepared.previews} />
             </section>
@@ -601,7 +602,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
                 onClick={() => { setError(null); setShown({ errors: {}, values: {} }); setStep(step - 1); }}>이전</button>
             )}
             <button type="submit" className="krds-btn large primary" disabled={busy}>
-              {busy ? '처리 중…' : step === 0 ? '동의와 증빙으로' : step === 1 ? '서류 미리보기' : revision ? '보완 내용 재제출' : '가상 접수처에 제출'}
+              {busy ? '처리 중…' : step === 0 ? '동의와 증빙으로' : step === 1 ? '서류 미리보기' : revision ? '보완 내용 재제출' : siteText('가상 접수처에 제출', '접수처에 제출')}
             </button>
           </div>
         </form>

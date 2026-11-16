@@ -1013,14 +1013,17 @@ fieldset.form-group {
   height: 3.6rem;
 }
 
-/* 서비스 이름은 운영기관 로고 글자와 굵기·색·크기를 맞춘다(로고 글자는 보통 굵기의 진회색). */
+/*
+ * 서비스 이름은 운영기관 로고 글자와 같은 색·굵기·크기로 나란히 쓴다(11/16).
+ * 로고 이미지 글자를 화면에서 재어 맞췄다: 색 #575756(이미지 글자색), 보통 굵기, 글자 높이가 같아지는 2.1rem.
+ */
 .app-logo-official .app-logo-service {
   padding-left: 1.2rem;
   border-left: 1px solid var(--krds-light-color-divider-gray-light);
-  color: #333;
+  color: #575756;
   font-size: 2.1rem;
-  font-weight: 500;
-  letter-spacing: -.02em;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 @media (max-width: 620px) {
