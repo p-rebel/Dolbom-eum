@@ -1,19 +1,32 @@
-"""D-04 세션과 접근 권한: POST·GET·DELETE /session, GET /demo-profiles."""
+"""가상 신청자 가입, 세션과 접근 권한."""
 
 from __future__ import annotations
 
 import sqlite3
-from typing import Literal
+from typing import Annotated, Literal
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Request, Response
-from pydantic import StrictStr
+from pydantic import ConfigDict, StrictStr, StringConstraints
 
-from ..auth import Account, CamelModel, authenticate, current_account, end_session, require_role, start_session
+from ..auth import Account, CamelModel, authenticate, current_account, end_session, hash_password, require_role, start_session
 from ..config import SESSION_COOKIE, SESSION_COOKIE_PATH, SESSION_TTL, cookie_secure
-from ..db import get_connection
+from ..db import get_connection, write_transaction
+from ..db.seed import DEMO_ACCOUNTS
 from ..errors import ApiError
 
 router = APIRouter()
+_SEEDED_USERNAMES = frozenset(account[0] for account in DEMO_ACCOUNTS)
+
+
+class SignupRequest(CamelModel):
+    model_config = ConfigDict(extra="forbid")
+
+    username: Annotated[
+        str, StringConstraints(strict=True, strip_whitespace=True, pattern=r"^[A-Za-z0-9_.-]{3,40}$")
+    ]
+    display_name: Annotated[str, StringConstraints(strict=True, strip_whitespace=True, min_length=1, max_length=60)]
+    password: Annotated[str, StringConstraints(strict=True, min_length=8, max_length=128)]
 
 
 class LoginRequest(CamelModel):
@@ -61,6 +74,28 @@ def _clear_session_cookie(response: Response) -> None:
         samesite="strict",
         secure=cookie_secure(),
     )
+
+
+@router.post("/signup", status_code=201, response_model=Account)
+def signup(body: SignupRequest, conn: sqlite3.Connection = Depends(get_connection)) -> Account:
+    duplicate_username = ApiError(409, "USERNAME_TAKEN", "이미 사용 중인 계정명입니다.", "username")
+    if body.username in _SEEDED_USERNAMES:
+        raise duplicate_username
+
+    account = Account(
+        id=str(uuid4()), display_name=body.display_name, role="APPLICANT", district_code=None, town_code=None
+    )
+    password_hash = hash_password(body.password)
+    with write_transaction(conn):
+        result = conn.execute(
+            """INSERT INTO demo_accounts (id, username, display_name, password_hash, role, district_code, town_code)
+               VALUES (?, ?, ?, ?, ?, NULL, NULL)
+               ON CONFLICT (username) DO NOTHING""",
+            (account.id, body.username, account.display_name, password_hash, account.role),
+        )
+        if result.rowcount == 0:
+            raise duplicate_username
+    return account
 
 
 @router.post("/session", response_model=Account)
