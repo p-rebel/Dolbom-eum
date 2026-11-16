@@ -1,4 +1,4 @@
-import { PSM, type Line, type Worker } from 'tesseract.js';
+import { PSM, type Bbox, type Line, type Worker } from 'tesseract.js';
 import type { Observations, VerificationField } from '../../api/registration';
 
 const LABELS: Record<VerificationField, RegExp> = {
@@ -11,6 +11,7 @@ const fields = Object.entries(LABELS) as [VerificationField, RegExp][];
 const missing = { value: null, confidence: 0 };
 const DEMO_ID = /^DEMO-[A-Z0-9]{2,12}(?:-[A-Z0-9]{1,8})?$/i;
 const RESCAN_BELOW = 80;
+const ISOLATED_JAMO = /^[\u1100-\u11ff]$/;
 
 interface Candidate {
   value: string;
@@ -70,6 +71,14 @@ function usable(candidate: Candidate | null | undefined, field: VerificationFiel
     && (field !== 'demoId' || DEMO_ID.test(candidate.value.replace(/\s/g, ''))));
 }
 
+function crop(canvas: HTMLCanvasElement, bbox: Bbox) {
+  const left = Math.max(0, bbox.x0 - 8);
+  const top = Math.max(0, bbox.y0 - 12);
+  const width = Math.min(canvas.width, bbox.x1 + 8) - left;
+  const height = Math.min(canvas.height, bbox.y1 + 12) - top;
+  return width > 0 && height > 0 ? { left, top, width, height } : null;
+}
+
 function valueRectangle(canvas: HTMLCanvasElement, candidate: Candidate) {
   const { words, bbox } = candidate.line;
   // Locate the value using words OCR found from the end of the line.
@@ -80,16 +89,39 @@ function valueRectangle(canvas: HTMLCanvasElement, candidate: Candidate) {
     characters += words[i].text.normalize('NFKC').replace(/\s/g, '').length;
     valueStart = words[i].bbox.x0;
   }
-  const left = Math.max(0, valueStart - 8);
-  const top = Math.max(0, bbox.y0 - 12);
-  const width = Math.min(canvas.width, bbox.x1 + 8) - left;
-  const height = Math.min(canvas.height, bbox.y1 + 12) - top;
-  return width > 0 && height > 0 ? { left, top, width, height } : null;
+  return crop(canvas, { ...bbox, x0: valueStart });
+}
+
+async function readIsolatedLetter(worker: Worker, canvas: HTMLCanvasElement, candidate: Candidate) {
+  // The Korean model can read a separate Latin initial as a single Hangul consonant.
+  const tokens = candidate.value.split(/\s+/);
+  const fragments = tokens.filter((token) => ISOLATED_JAMO.test(token));
+  if (fragments.length !== 1) return;
+  const words = candidate.line.words.filter((word) => word.text.trim().normalize('NFKC') === fragments[0]);
+  if (words.length !== 1) return;
+  const rectangle = crop(canvas, words[0].bbox);
+  if (!rectangle) return;
+  await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_CHAR, tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' });
+  try {
+    const { data } = await worker.recognize(canvas, { rectangle });
+    const letter = data.text.trim();
+    if (/^[A-Z]$/.test(letter) && data.confidence >= 90) {
+      return {
+        value: tokens.map((token) => token === fragments[0] ? letter : token).join(' '),
+        confidence: Math.min(data.confidence, candidate.confidence),
+      };
+    }
+  } finally {
+    await worker.setParameters({ tessedit_char_whitelist: '' });
+  }
 }
 
 async function readTextValue(worker: Worker, canvas: HTMLCanvasElement, candidate: Candidate | null | undefined) {
   // A label in a different script can affect recognition of the neighboring value.
-  if (!candidate || candidate.confidence >= 90) return observation(candidate);
+  if (!candidate) return observation(candidate);
+  const isolated = await readIsolatedLetter(worker, canvas, candidate);
+  if (isolated) return isolated;
+  if (candidate.confidence >= 90) return observation(candidate);
   const rectangle = valueRectangle(canvas, candidate);
   if (!rectangle) return observation(candidate);
   await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE });
