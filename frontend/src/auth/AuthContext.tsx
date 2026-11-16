@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { ApiError, apiRequest, setUnauthorizedHandler } from '../api/client';
 import type { Account } from '../api/types';
 import { navigate } from '../router';
+import { loginDestination, type LoginAudience } from './loginRoutes';
 
 type AuthState =
   | { status: 'loading' }
@@ -11,7 +12,7 @@ type AuthState =
 
 interface AuthContextValue {
   state: AuthState;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, audience: LoginAudience) => Promise<void>;
   logout: () => Promise<void>;
   retry: () => void;
 }
@@ -48,20 +49,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setUnauthorizedHandler(() => {
       setState({ status: 'anonymous', notice: '로그인이 만료되었습니다. 다시 로그인해 주세요.' });
-      // 세션이 끝나 입력을 저장할 수 없으므로 확인 없이 이동한다.
-      navigate('/login', { replace: true, force: true });
     });
     return () => setUnauthorizedHandler(null);
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string, audience: LoginAudience) => {
     const account = await apiRequest<Account>('/session', {
       method: 'POST',
-      body: { username, password },
+      body: { username, password, audience },
       skipUnauthorizedHandler: true,
     });
     setState({ status: 'authenticated', account });
-    navigate('/cases', { replace: true });
+    navigate(loginDestination(audience), { replace: true });
   }, []);
 
   const logout = useCallback(async () => {
@@ -70,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       // 서버 응답과 관계없이 화면에서는 로그아웃 상태로 전환한다.
       setState({ status: 'anonymous', notice: null });
-      navigate('/login', { replace: true, force: true });
+      navigate('/', { replace: true, force: true });
     }
   }, []);
 
@@ -100,4 +99,5 @@ export function useAccount(): Account {
 export const ROLE_LABEL: Record<Account['role'], string> = {
   TOWN: '읍면동 담당자',
   DISTRICT: '시군구 담당자',
+  APPLICANT: '신청자',
 };

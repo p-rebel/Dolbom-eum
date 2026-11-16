@@ -17,6 +17,7 @@ _HTTP_CODES = {
     403: ("FORBIDDEN", "처리 권한이 없습니다."),
     404: ("NOT_FOUND", "찾을 수 없습니다."),
     405: ("METHOD_NOT_ALLOWED", "허용되지 않은 요청 방식입니다."),
+    413: ("PAYLOAD_TOO_LARGE", "8MB 이하의 가상 증빙 사진을 첨부해 주세요."),
     415: ("UNSUPPORTED_MEDIA_TYPE", "JSON 형식으로 요청해야 합니다."),
 }
 

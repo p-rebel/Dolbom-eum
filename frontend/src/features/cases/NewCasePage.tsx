@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { getDemoProfiles, receiveCase, type ReceiveInput } from '../../api/cases';
-import { ApiError } from '../../api/client';
+import { ApiError, newRequestKey } from '../../api/client';
 import { NOTICE_METHOD_LABEL } from '../../api/labels';
 import type { NoticeMethod } from '../../api/types';
 import { useAccount } from '../../auth/AuthContext';
@@ -17,10 +17,6 @@ import { useFieldErrors } from './fieldErrors';
 const CRUMBS = [{ label: '신청 목록', to: '/cases' }];
 
 type Field = 'profileCode' | 'receivedOn' | 'noticeMethod' | 'evidenceChecked';
-
-function newRequestKey() {
-  return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `receive-${Date.now()}-${Math.random()}`;
-}
 
 /** UI-03 새 접수. 읍면동 담당자가 가상 프로필을 골라 신청을 접수한다. */
 export function NewCasePage() {

@@ -11,12 +11,13 @@ CREATE TABLE IF NOT EXISTS demo_accounts (
     username        TEXT NOT NULL UNIQUE,
     display_name    TEXT NOT NULL,
     password_hash   TEXT NOT NULL,
-    role            TEXT NOT NULL CHECK (role IN ('TOWN', 'DISTRICT')),
-    district_code   TEXT NOT NULL,
+    role            TEXT NOT NULL CHECK (role IN ('TOWN', 'DISTRICT', 'APPLICANT')),
+    district_code   TEXT,
     town_code       TEXT,
     CHECK (
-        (role = 'TOWN' AND town_code IS NOT NULL)
-        OR (role = 'DISTRICT' AND town_code IS NULL)
+        (role = 'TOWN' AND district_code IS NOT NULL AND town_code IS NOT NULL)
+        OR (role = 'DISTRICT' AND district_code IS NOT NULL AND town_code IS NULL)
+        OR (role = 'APPLICANT' AND district_code IS NULL AND town_code IS NULL)
     )
 ) STRICT;
 
@@ -42,6 +43,42 @@ CREATE TABLE IF NOT EXISTS demo_profiles (
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS ix_demo_profiles_town ON demo_profiles (town_code);
+
+-- 신청자가 제출한 모의 신청과 확정된 서류. 담당자 사례의 접수와 별도로 관리한다.
+CREATE TABLE IF NOT EXISTS mock_applications (
+    id                  TEXT PRIMARY KEY,
+    submission_number   TEXT NOT NULL UNIQUE,
+    owner_id            TEXT NOT NULL REFERENCES demo_accounts (id),
+    district_code       TEXT NOT NULL,
+    town_code           TEXT NOT NULL,
+    submitted_at        TEXT NOT NULL,
+    idempotency_key     TEXT NOT NULL,
+    request_hash        TEXT NOT NULL,
+    form_snapshot       TEXT NOT NULL CHECK (json_valid(form_snapshot)),
+    application_pdf     BLOB NOT NULL,
+    consent_pdf         BLOB NOT NULL,
+    UNIQUE (owner_id, idempotency_key)
+) STRICT;
+
+CREATE INDEX IF NOT EXISTS ix_mock_applications_owner ON mock_applications (owner_id, submitted_at DESC);
+CREATE INDEX IF NOT EXISTS ix_mock_applications_district ON mock_applications (district_code, town_code, submitted_at DESC);
+
+CREATE TABLE IF NOT EXISTS mock_application_evidence (
+    application_id TEXT PRIMARY KEY REFERENCES mock_applications (id) ON DELETE CASCADE,
+    image          BLOB NOT NULL,
+    media_type     TEXT NOT NULL DEFAULT 'image/png' CHECK (media_type IN ('image/png', 'image/jpeg', 'image/webp'))
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS mock_verification_attempts (
+    id              INTEGER PRIMARY KEY,
+    application_id  TEXT NOT NULL REFERENCES mock_applications (id) ON DELETE CASCADE,
+    compared_by     TEXT NOT NULL REFERENCES demo_accounts (id),
+    compared_at     TEXT NOT NULL,
+    comparison      TEXT NOT NULL CHECK (json_valid(comparison)),
+    review          TEXT CHECK (review IS NULL OR json_valid(review))
+) STRICT;
+
+CREATE INDEX IF NOT EXISTS ix_mock_verification_application ON mock_verification_attempts (application_id, id DESC);
 
 -- 공단 카탈로그 (v1.4 정제 CSV의 열을 그대로 보존) ---------------------------
 

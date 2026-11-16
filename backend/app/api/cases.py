@@ -12,7 +12,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import StrictBool, StrictStr, field_validator
 
-from ..auth import Account, CamelModel, current_account, require_role
+from ..auth import Account, CamelModel, require_role
 from ..cases import (
     CaseDetail, CaseStatus, CaseSummary, accessible_case, can_access, case_summary, case_timestamp,
     load_case_detail, validate_business_date,
@@ -123,7 +123,7 @@ def list_cases(
     status: CaseStatus | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=50, alias="pageSize"),
-    account: Account = Depends(current_account),
+    account: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> CasePage:
     # 읍면동은 소속 읍면동, 시군구는 소속 시군구 건만 (D-05 공통 전환 조건)
@@ -148,7 +148,7 @@ def list_cases(
 @router.get("/cases/{case_id}", response_model=CaseDetail)
 def read_case(
     case_id: str,
-    account: Account = Depends(current_account),
+    account: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> CaseDetail:
     # 여러 테이블에서 읽는 상세 응답은 하나의 SQLite 스냅샷을 사용한다.

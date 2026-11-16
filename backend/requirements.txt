@@ -12,3 +12,7 @@ starlette==1.10.0
 typing-extensions==4.16.0
 typing-inspection==0.4.5
 uvicorn==0.54.0
+charset-normalizer==3.5.2
+pillow==13.0.0
+pypdf==6.21.4
+reportlab==4.4.9

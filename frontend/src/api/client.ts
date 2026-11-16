@@ -16,6 +16,11 @@ const API_BASE_PATH = '/api/v1';
 
 type ApiPath = `/${string}`;
 
+export function newRequestKey() {
+  return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() :
+    Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 /** D-04 오류 응답을 담는다. 연결 실패는 status 0, code NETWORK_ERROR. */
 export class ApiError extends Error {
   constructor(

@@ -21,7 +21,7 @@ $env:DOLBOMEUM_DEMO_PASSWORD = "<팀 카톡방에서 받은 가상 계정 비밀
 
 `app.db init`은 SQLite 스키마를 만들고 기존 데이터는 유지합니다. 기본 경로는 저장소의 `var/dolbomeum.sqlite3`(git 제외)이고, `DOLBOMEUM_DB_PATH` 환경값으로 바꿀 수 있습니다. `init --reset`은 지정 경로의 DB를 지우고 새로 만들고, `backup <파일>`은 실행 중에도 일관된 사본을 만듭니다. 테스트는 `backend/requirements-dev.txt`를 설치한 뒤 `backend` 폴더에서 `python -m pytest`로 실행합니다.
 
-`app.db seed`는 C-01·C-06 예제의 가상 계정 4개(`demo-town-a`, `demo-town-a2`, `demo-district-a`, `demo-town-b`)와 프로필 `DEMO-ELDER-01`을 만듭니다. 네 계정은 `DOLBOMEUM_DEMO_PASSWORD`(8자 이상)를 같은 비밀번호로 사용하며, 비밀번호는 저장소에 두지 않습니다.
+`app.db seed`는 담당자 계정 4개(`demo-town-a`, `demo-town-a2`, `demo-district-a`, `demo-town-b`), 신청자 계정 2개(`demo-applicant-a`, `demo-applicant-b`), 프로필 `DEMO-ELDER-01`을 만듭니다. 모든 가상 계정은 `DOLBOMEUM_DEMO_PASSWORD`(8자 이상)를 같은 비밀번호로 사용하며, 비밀번호는 저장소에 두지 않습니다.
 
 `app.db load-nhis`는 공단 v1.4 `data/processed/nhis_services.csv`를 `nhis_catalog`에 적재합니다. 필수 헤더, 행 수 90,081, ID 고유성을 먼저 확인하고 하나라도 다르면 아무것도 저장하지 않습니다. 완료 시 DB 행 수와 조회 대상(N) 89,738행·숨김(Y) 343행을 출력합니다. 다시 실행하면 같은 행을 갱신합니다.
 
@@ -48,6 +48,19 @@ npm run dev
 화면은 실제 API에 연결되어 동작합니다(`frontend/.env`의 `VITE_USE_MOCK_API=false`). 로그인 계정은 `app.db seed`로 만든 가상 계정과 그때 정한 비밀번호를 씁니다. 백엔드 없이 화면만 보려면 `true`로 바꾸고 `npm run dev`를 다시 시작합니다. 이때 상단에 ‘목업 모드’가 표시되고 [예시 응답](frontend/src/api/mock.ts)을 사용하며, 목업 전용 비밀번호 `demo-password`로 로그인합니다. 목업은 접수부터 초안까지만 흉내 내므로 확정 이후 단계와 통합 확인·배포는 `false`로 확인합니다.
 
 폴더 구조, 담당자별 작업 경계, 첫 통합 통과 기준과 팀원 실행 절차는 [DEV-01 작업 기록](docs/development/DEV-01.md)에 있습니다.
+
+## 신청자 모의 제출 시연
+
+- 공통 홈페이지에서 ‘돌봄 신청하기’ 또는 ‘신청자 로그인’을 누릅니다. `demo-applicant-a`로 로그인해 ‘가상 정보 불러오기’를 선택하면 가족 대리 신청을 시작할 수 있습니다.
+- 동의와 가상 증빙을 확인하면 통합지원 신청서와 개인정보 수집·이용 동의서를 PDF로 미리 볼 수 있습니다. 가상 접수처에 제출하면 `SIM-` 번호가 생기고, ‘내 신청 현황’에서 두 PDF를 다시 열 수 있습니다.
+- 같은 홈페이지에서 ‘공무원·관리자 로그인’을 누른 뒤 `demo-town-a` 또는 `demo-district-a`로 로그인합니다. 관할 A의 시연 신청은 ‘가상 제출함’에 표시되며, 담당자가 신청 정보와 PDF를 함께 열 수 있습니다.
+- OCR을 시연하려면 신청서의 ‘동의와 증빙’ 단계에서 가상 확인서 한 장을 선택해 제출합니다. ‘가상 정보 불러오기’로 대상자 A를 입력한 뒤 기본 확인서, 주소가 다른 확인서, 식별자가 흐릿한 확인서를 각각 선택해 볼 수 있습니다.
+- 같은 단계의 ‘가상 증빙 사진 직접 첨부’에서 가상 정보만 적힌 JPG·PNG·WebP 한 장(최대 8MB)을 올릴 수도 있습니다. 자동 대조를 시연하려면 사진에 성명, 생년월일, 가상 식별자, 주소 라벨과 각 값을 넣습니다.
+- ‘가상 정보 불러오기’로 채운 신청값에 맞춰 직접 첨부할 JPG를 두 장 준비했습니다. [전체 일치 사진](docs/assets/registration/evidence-match.jpg)의 주소는 ‘가상 A시 돌봄로 10’입니다. [주소 불일치 사진](docs/assets/registration/evidence-address-mismatch.jpg)은 같은 정보에서 번지만 ‘30’으로 바꿨습니다.
+- 담당자는 모의 신청 상세에서 ‘OCR 자동 대조’를 실행합니다. 화면에서 증빙 원본, 신청값, OCR 판독값을 볼 수 있습니다. 예시 확인서는 별도의 가상 기준값도 표시합니다. ‘원본 확인’으로 확인값과 내용을 저장할 수 있습니다. OCR 엔진과 언어 모델은 프론트와 함께 제공되며 판독은 브라우저에서 실행됩니다.
+- 기존 DB를 사용하는 팀원은 `app.db init`으로 스키마를 갱신하고 `app.db seed`를 다시 실행해 신청자 계정을 추가합니다. 모의 제출을 시연하려면 실제 API 모드를 사용합니다.
+
+PDF는 [보건복지부 공식 신청 서식](https://www.mohw.go.kr/board.es?act=view&bid=0073&list_no=1489873&mid=a60401000000)에 가상 정보를 채웁니다. PDF 글꼴은 [Nanum Gothic](https://github.com/google/fonts/tree/cc39c4c2c304bc368c9b7c311ea2bcc6013299fe/ofl/nanumgothic)이며, 배포 허가문은 PDF 서식과 같은 폴더의 `OFL.txt`에 있습니다.
 
 ## 프로젝트 일정
 

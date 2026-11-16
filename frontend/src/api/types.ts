@@ -1,12 +1,12 @@
 // D-04 API 계약의 요청·응답 타입. 필드명과 값은 docs/design/D-04_api.md를 따른다.
 
-export type Role = 'TOWN' | 'DISTRICT';
+export type Role = 'TOWN' | 'DISTRICT' | 'APPLICANT';
 
 export interface Account {
   id: string;
   displayName: string;
   role: Role;
-  districtCode: string;
+  districtCode: string | null;
   townCode: string | null;
 }
 

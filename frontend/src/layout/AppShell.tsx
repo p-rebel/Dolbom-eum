@@ -1,12 +1,18 @@
 import { useState, type ReactNode } from 'react';
+import { MOCK_API_ENABLED } from '../api/mockFlag';
 import { ROLE_LABEL, useAccount, useAuth } from '../auth/AuthContext';
 import { confirmLeave, Link, usePath } from '../router';
 import { AppFooter } from './AppFooter';
 import { AppHeader } from './AppHeader';
 
-const MENU = [
+const STAFF_MENU = [
   { to: '/cases', label: '신청 목록', match: (path: string) => path.startsWith('/cases') },
   { to: '/catalog', label: '공단 서비스 조회', match: (path: string) => path === '/catalog' },
+  ...(MOCK_API_ENABLED ? [] : [{ to: '/intake', label: '가상 제출함', match: (path: string) => path.startsWith('/intake') }]),
+];
+const APPLICANT_MENU = [
+  { to: '/apply/new', label: '신청서 작성', match: (path: string) => path === '/apply/new' },
+  { to: '/my/applications', label: '내 신청 현황', match: (path: string) => path.startsWith('/my/applications') },
 ];
 
 /**
@@ -18,6 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [loggingOut, setLoggingOut] = useState(false);
   const path = usePath();
   const jurisdiction = account.townCode ?? account.districtCode;
+  const menu = account.role === 'APPLICANT' ? APPLICANT_MENU : STAFF_MENU;
 
   async function handleLogout() {
     // 저장하지 않은 입력이 있으면 로그아웃 전에 확인한다.
@@ -28,20 +35,20 @@ export function AppShell({ children }: { children: ReactNode }) {
     try {
       await logout();
     } catch {
-      // 서버 요청이 실패해도 화면은 이미 로그인 화면으로 바뀌었다(AuthContext logout).
+      // 로컬 세션 표시와 화면 이동은 AuthContext에서 처리한다.
     }
   }
 
   return (
     <>
       <AppHeader
-        logoTo="/cases"
+        logoTo="/"
         account={
           <div className="header-actions app-account">
             <p>
               <strong>{account.displayName}</strong>
               <span className="app-account-meta">
-                {ROLE_LABEL[account.role]} · 관할 {jurisdiction}
+                {ROLE_LABEL[account.role]}{jurisdiction ? ' · 관할 ' + jurisdiction : ''}
               </span>
             </p>
             <button type="button" className="krds-btn small tertiary" onClick={handleLogout} disabled={loggingOut}>
@@ -53,7 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="krds-main-menu" aria-label="주 메뉴">
             <div className="inner">
               <ul className="gnb-menu">
-                {MENU.map((item) => {
+                {menu.map((item) => {
                   const current = item.match(path);
                   return (
                     <li key={item.to}>
