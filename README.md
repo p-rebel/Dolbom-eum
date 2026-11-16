@@ -20,6 +20,8 @@ macOS·Linux에서 Python 명령이 `python3`인 경우 `python3 scripts/run_loc
 
 8080 포트를 사용 중이라면 `python scripts/run_local_demo.py --port 8081`로 실행하고 터미널에 표시된 주소를 엽니다.
 
+화면은 팀장이 확정한 공식 누리집 디자인(보건복지부 로고·하단, 전자정부 누리집 표시)으로 열립니다. ‘가상 사례 시연’ 표시로 보려면 `--demo-labels`를 붙입니다. 배포 빌드도 기본값이 공식 화면이며, `frontend/.env`에 `VITE_OFFICIAL_SITE=false`를 두면 ‘가상 사례 시연’ 표시로 바뀝니다.
+
 ### 회원가입 및 로그인
 
 1. 홈페이지 오른쪽 위 **로그인**을 누른 뒤 **신청자 회원가입**을 선택합니다.
