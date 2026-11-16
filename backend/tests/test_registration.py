@@ -1,12 +1,15 @@
+from base64 import b64encode
 from io import BytesIO
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 from pypdf import PdfReader
 
 from app.db import connect, init_db
 from app.db.seed import seed_demo_data
 from app.main import app
+from app.registration_photo import MAX_SUBMISSION_BYTES
 
 ORIGIN = {"Origin": "http://127.0.0.1:5173"}
 PASSWORD = "registration-test"
@@ -168,3 +171,65 @@ def test_staff_compare_and_review_attached_evidence_in_jurisdiction(db_file):
         assert rerun["id"] != attempt["id"]
         assert rerun["reviews"] == saved.json()["reviews"]
         assert staff.put(review_url, json=review, headers=ORIGIN).status_code == 409
+
+
+def test_uploaded_photo_is_saved_with_submission_and_compared_with_applicant_values(db_file):
+    photo = BytesIO()
+    Image.new("RGB", (72, 48), "white").save(photo, format="JPEG")
+    image = photo.getvalue()
+    encoded = b64encode(image).decode("ascii")
+    with TestClient(app) as applicant, TestClient(app) as staff, TestClient(app) as other:
+        assert login(applicant, "demo-applicant-a", "applicant").status_code == 200
+        headers = {**ORIGIN, "Idempotency-Key": "registration-upload"}
+        form = {**FORM, "evidencePhoto": encoded}
+        submission = applicant.post("/api/v1/applications", json=form, headers=headers)
+        assert submission.status_code == 201, submission.text
+        detail = submission.json()
+        assert detail["evidenceSource"] == "UPLOAD"
+        assert "evidencePhoto" not in detail["form"]
+        assert applicant.post("/api/v1/applications", json=form, headers=headers).status_code == 200
+        assert applicant.post("/api/v1/applications", json=FORM, headers=headers).status_code == 409
+        assert applicant.get("/api/v1/applications").json()["total"] == 1
+        application_id = detail["id"]
+        evidence_url = f"/api/v1/applications/{application_id}/evidence"
+        verification_url = f"/api/v1/intake/{application_id}/verification"
+        assert login(staff, "demo-town-a", "staff").status_code == 200
+        assert login(other, "demo-town-a2", "staff").status_code == 200
+        assert other.get(evidence_url).status_code == 404
+        assert login(other, "demo-applicant-b", "applicant").status_code == 200
+        assert other.get(evidence_url).status_code == 404
+        for viewer in (applicant, staff):
+            original = viewer.get(evidence_url)
+            assert original.status_code == 200
+            assert original.content == image
+            assert original.headers["content-type"] == "image/jpeg"
+            assert original.headers["cache-control"] == "private, no-store"
+
+        readings = {
+            "name": {"value": "가상 대상자 A", "confidence": 95},
+            "birthDate": {"value": "1945년 5월 3일", "confidence": 91},
+            "demoId": {"value": None, "confidence": 0},
+            "address": {"value": "가상 A시 돌봄로 30", "confidence": 92},
+        }
+        checked = staff.post(verification_url, json=readings, headers=ORIGIN)
+        assert checked.status_code == 201, checked.text
+        rows = checked.json()["rows"]
+        assert [row["evidenceResult"] for row in rows] == ["MATCH", "MATCH", "NEEDS_REVIEW", "DIFFERENT"]
+        assert all(row["reference"] is None and row["referenceResult"] is None for row in rows)
+
+
+def test_invalid_or_oversized_photo_leaves_no_submission(db_file):
+    with TestClient(app) as applicant:
+        assert login(applicant, "demo-applicant-a", "applicant").status_code == 200
+        headers = {**ORIGIN, "Idempotency-Key": "registration-upload-invalid"}
+        encoded = b64encode(b"<svg>not a photo</svg>").decode("ascii")
+        invalid = applicant.post("/api/v1/applications", json={**FORM, "evidencePhoto": encoded}, headers=headers)
+        assert invalid.status_code == 422
+        assert invalid.json()["error"]["field"] == "evidencePhoto"
+        too_large = applicant.post(
+            "/api/v1/applications",
+            content=b" " * (MAX_SUBMISSION_BYTES + 1),
+            headers={**headers, "Content-Type": "application/json"},
+        )
+        assert too_large.status_code == 413, too_large.text
+        assert applicant.get("/api/v1/applications").json()["total"] == 0

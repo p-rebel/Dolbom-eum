@@ -375,8 +375,34 @@
   display: block;
   width: 100%;
   height: auto;
+  max-height: 48rem;
+  object-fit: contain;
   border: 1px solid #d8e3ef;
   border-radius: .6rem;
+}
+
+.registration-photo-field {
+  margin-block: .8rem 1.6rem;
+  gap: .8rem;
+}
+
+.registration-photo-field input[type="file"] {
+  max-width: 100%;
+}
+
+.registration-photo-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 24rem;
+  border: 1px solid #d8e3ef;
+  border-radius: .6rem;
+}
+
+.registration-photo-selection {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .7rem 1.2rem;
 }
 
 .registration-verification figcaption,

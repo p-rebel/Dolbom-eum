@@ -18,6 +18,7 @@ from ..db import get_connection, write_transaction
 from ..errors import ApiError
 from ..registration import REGIONS, ApplicationForm, SubmissionRegion
 from ..registration_pdf import render_forms
+from ..registration_photo import ApplicationSubmission, uploaded_photo
 from ..registration_verification import (
     ManualReview, Observations, ReviewRequest, Verification, compare, compare_evidence, evidence_image,
 )
@@ -39,6 +40,7 @@ class SubmissionSummary(CamelModel):
 
 class Submission(SubmissionSummary):
     form: ApplicationForm
+    evidence_source: Literal["SAMPLE", "UPLOAD"] | None = None
 
 
 class SubmissionPage(CamelModel):
@@ -59,9 +61,13 @@ def _summary(row: sqlite3.Row, form: ApplicationForm) -> SubmissionSummary:
     )
 
 
-def _detail(row: sqlite3.Row) -> Submission:
+def _detail(conn: sqlite3.Connection, row: sqlite3.Row) -> Submission:
     form = ApplicationForm.model_validate_json(row["form_snapshot"])
-    return Submission(**_summary(row, form).model_dump(), form=form)
+    evidence = conn.execute(
+        "SELECT 1 FROM mock_application_evidence WHERE application_id = ?", (row["id"],),
+    ).fetchone()
+    source = ("SAMPLE" if form.evidence_sample else "UPLOAD") if evidence else None
+    return Submission(**_summary(row, form).model_dump(), form=form, evidence_source=source)
 
 
 def _scope(account: Account) -> tuple[str, tuple[str | None, ...]]:
@@ -102,7 +108,7 @@ def preview(
 
 @router.post("/applications", status_code=201, response_model=Submission)
 def submit(
-    body: ApplicationForm,
+    body: ApplicationSubmission,
     request: Request,
     response: Response,
     account: Account = Depends(require_role("APPLICANT")),
@@ -111,9 +117,18 @@ def submit(
     key = request.headers.get("idempotency-key")
     if key is None or not _REQUEST_KEY.fullmatch(key):
         raise ApiError(422, "VALIDATION_ERROR", "요청 키를 확인해 주세요.", "Idempotency-Key")
-    omitted = {"evidence_sample"} if body.evidence_sample is None else set()
+    if body.evidence_sample is not None and body.evidence_photo is not None:
+        raise ApiError(422, "VALIDATION_ERROR", "예시 확인서 또는 직접 첨부한 사진 중 하나를 선택해 주세요.", "evidencePhoto")
+    photo = uploaded_photo(body.evidence_photo) if body.evidence_photo is not None else None
+    omitted = {"evidence_photo"}
+    if body.evidence_sample is None:
+        omitted.add("evidence_sample")
     snapshot = body.model_dump_json(by_alias=True, exclude=omitted)
-    digest = hashlib.sha256(snapshot.encode("utf-8")).hexdigest()
+    request_hash = hashlib.sha256(snapshot.encode("utf-8"))
+    if photo:
+        request_hash.update(b"\0")
+        request_hash.update(photo[0])
+    digest = request_hash.hexdigest()
     with write_transaction(conn):
         existing = conn.execute(
             """SELECT id, submission_number, submitted_at, form_snapshot, town_code, request_hash
@@ -124,7 +139,7 @@ def submit(
             if existing["request_hash"] != digest:
                 raise ApiError(409, "IDEMPOTENCY_CONFLICT", "같은 요청 키로 다른 신청서를 제출했습니다.")
             response.status_code = 200
-            return _detail(existing)
+            return _detail(conn, existing)
 
         now = datetime.now(UTC)
         local_day = now.astimezone(_SEOUL).date()
@@ -149,11 +164,13 @@ def submit(
             ),
         ).fetchone()
         if body.evidence_sample is not None:
+            photo = (evidence_image(body.evidence_sample), "image/png")
+        if photo:
             conn.execute(
-                "INSERT INTO mock_application_evidence (application_id, image) VALUES (?, ?)",
-                (application_id, evidence_image(body.evidence_sample)),
+                "INSERT INTO mock_application_evidence (application_id, image, media_type) VALUES (?, ?, ?)",
+                (application_id, *photo),
             )
-        return _detail(row)
+        return _detail(conn, row)
 
 
 def _list(conn: sqlite3.Connection, account: Account, page: int, page_size: int) -> SubmissionPage:
@@ -198,7 +215,7 @@ def applicant_detail(
     account: Account = Depends(require_role("APPLICANT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> Submission:
-    return _detail(_find(conn, account, application_id))
+    return _detail(conn, _find(conn, account, application_id))
 
 
 @router.get("/intake/{application_id}", response_model=Submission)
@@ -207,7 +224,7 @@ def inbox_detail(
     account: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> Submission:
-    return _detail(_find(conn, account, application_id))
+    return _detail(conn, _find(conn, account, application_id))
 
 
 @router.get("/applications/{application_id}/documents/{kind}", response_class=Response)
@@ -234,11 +251,14 @@ def read_evidence(
 ) -> Response:
     _find(conn, account, application_id, "id")
     row = conn.execute(
-        "SELECT image FROM mock_application_evidence WHERE application_id = ?", (application_id,),
+        "SELECT image, media_type FROM mock_application_evidence WHERE application_id = ?", (application_id,),
     ).fetchone()
     if row is None:
         raise ApiError(404, "NOT_FOUND", "첨부된 가상 증빙이 없습니다.")
-    return Response(row["image"], media_type="image/png", headers={"Cache-Control": "private, no-store"})
+    return Response(
+        row["image"], media_type=row["media_type"],
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
+    )
 
 
 def _latest_attempt(conn: sqlite3.Connection, application_id: str) -> Verification | None:
@@ -279,7 +299,7 @@ def verify_submission(
     if exists is None:
         raise ApiError(404, "NOT_FOUND", "대조할 가상 증빙이 없습니다.")
     form = ApplicationForm.model_validate_json(application["form_snapshot"])
-    rows = compare_evidence(form.beneficiary, body)
+    rows = compare_evidence(form.beneficiary, body, sample=form.evidence_sample)
     now = datetime.now(UTC).isoformat(timespec="seconds")
     with write_transaction(conn):
         previous = _latest_attempt(conn, application_id)

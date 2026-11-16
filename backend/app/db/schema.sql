@@ -65,7 +65,8 @@ CREATE INDEX IF NOT EXISTS ix_mock_applications_district ON mock_applications (d
 
 CREATE TABLE IF NOT EXISTS mock_application_evidence (
     application_id TEXT PRIMARY KEY REFERENCES mock_applications (id) ON DELETE CASCADE,
-    image          BLOB NOT NULL
+    image          BLOB NOT NULL,
+    media_type     TEXT NOT NULL DEFAULT 'image/png' CHECK (media_type IN ('image/png', 'image/jpeg', 'image/webp'))
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS mock_verification_attempts (

@@ -1,7 +1,8 @@
 import { createWorker, OEM, PSM } from 'tesseract.js';
 import workerUrl from 'tesseract.js/dist/worker.min.js?url';
 import coreUrl from 'tesseract.js-core/tesseract-core-lstm.wasm.js?url';
-import type { Observations } from '../../api/registration';
+import { EVIDENCE_PHOTO_TYPES, type Observations } from '../../api/registration';
+import { readUploadedPhoto } from './evidencePhotoOcr';
 
 type Reading = Observations['name'];
 
@@ -12,9 +13,9 @@ function merge(parts: Reading[], separator = ' '): Reading {
   };
 }
 
-export async function readEvidence(imageUrl: string): Promise<Observations> {
+export async function readEvidence(imageUrl: string, sample: boolean): Promise<Observations> {
   const response = await fetch(imageUrl, { signal: AbortSignal.timeout(15_000) });
-  if (!response.ok || response.headers.get('content-type') !== 'image/png') {
+  if (!response.ok || !EVIDENCE_PHOTO_TYPES.includes(response.headers.get('content-type') ?? '')) {
     throw new Error('가상 증빙 이미지를 불러오지 못했습니다.');
   }
   const image = await response.blob();
@@ -32,6 +33,7 @@ export async function readEvidence(imageUrl: string): Promise<Observations> {
 
   async function recognize() {
     const worker = await starting;
+    if (!sample) return readUploadedPhoto(worker, image);
     // The supplied evidence samples share one layout. Only the value area in each row is read.
     async function readPart(row: number, left = 399, width = 655): Promise<Reading> {
       const rectangle = { left, top: 168 + row * 92, width, height: 73 };

@@ -21,7 +21,7 @@ function ComparisonResult({ result }: { result: ComparisonStatus }) {
 
 type ReviewDraft = { field: VerificationField; value: string; note: string };
 
-export function VerificationPanel({ id, sample }: { id: string; sample: EvidenceSample }) {
+export function VerificationPanel({ id, sample }: { id: string; sample: EvidenceSample | null }) {
   const result = useApiData((signal) => getVerification(id, signal), [id]);
   const [busy, setBusy] = useState<'ocr' | 'review' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function VerificationPanel({ id, sample }: { id: string; sample: Evidence
     setNotice(null);
     try {
       const { readEvidence } = await import('./evidenceOcr');
-      const observations = await readEvidence(image);
+      const observations = await readEvidence(image, sample !== null);
       result.setData(await recordVerification(id, observations));
       setNotice('OCR 대조 결과를 저장했습니다.');
     } catch (cause) {
@@ -88,11 +88,11 @@ export function VerificationPanel({ id, sample }: { id: string; sample: Evidence
       </div>
       <div className="registration-verification-body">
         <figure>
-          <img src={image} alt={EVIDENCE_SAMPLES[sample]} width={1120} height={650} />
+          <img src={image} alt={sample ? EVIDENCE_SAMPLES[sample] : '신청자가 제출한 가상 증빙 사진'} />
           <figcaption><a className="registration-text-link" href={image} target="_blank" rel="noreferrer">증빙 원본 열기 (새 창)</a></figcaption>
         </figure>
         <div className="registration-verification-details">
-          <p>신청값을 증빙 판독값 및 가상 기준값과 각각 대조합니다. 흐릿한 항목은 원본을 확인해 주세요.</p>
+          <p>{sample ? '신청값을 증빙 판독값 및 가상 기준값과 각각 대조합니다.' : '신청값을 제출된 사진의 판독값과 대조합니다.'} 흐릿하거나 찾기 어려운 항목은 원본을 확인해 주세요.</p>
           {result.loading && <LoadingBlock label="기존 대조 결과를 불러오는 중" />}
           {result.error && <ErrorBlock message={result.error.message} onRetry={result.reload} />}
           {error && <FormMessage tone="error">{error}</FormMessage>}
@@ -114,7 +114,7 @@ export function VerificationPanel({ id, sample }: { id: string; sample: Evidence
                       <dl className="registration-verification-values">
                         <div><dt>신청값</dt><dd>{row.submitted}</dd></div>
                         <div><dt>OCR 판독값</dt><dd>{row.scanned ?? '판독값 없음'} <ComparisonResult result={row.evidenceResult} /></dd></div>
-                        <div><dt>가상 기준값</dt><dd>{row.reference} <ComparisonResult result={row.referenceResult} /></dd></div>
+                        {row.referenceResult && <div><dt>가상 기준값</dt><dd>{row.reference} <ComparisonResult result={row.referenceResult} /></dd></div>}
                       </dl>
                       {review && <p className="registration-verification-review">
                         <strong>담당자 확인</strong> · {review.value ?? '판독 불가'} <ComparisonResult result={review.result} />

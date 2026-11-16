@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { ApiError, newRequestKey } from '../../api/client';
 import {
-  APPLICATION_TYPES, CARE_NEEDS, EVIDENCE_LABELS, EVIDENCE_SAMPLES, RELATIONSHIPS,
+  APPLICATION_TYPES, CARE_NEEDS, EVIDENCE_LABELS, EVIDENCE_PHOTO_MAX_BYTES, EVIDENCE_PHOTO_TYPES, EVIDENCE_SAMPLES, RELATIONSHIPS,
   getRegions, previewForms, submitApplication,
   type ApplicationForm, type ApplicationType, type Beneficiary, type CareNeed,
   type DocumentKind, type Evidence, type EvidenceSample, type FormPreviews, type Person, type RelatedPerson, type Relationship,
@@ -130,18 +130,28 @@ export function ApplicationPage() {
   const [consents, setConsents] = useState(EMPTY_CONSENTS);
   const [preparedEvidence, setPreparedEvidence] = useState<Evidence[]>([]);
   const [evidenceSample, setEvidenceSample] = useState<EvidenceSample | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
-  const [prepared, setPrepared] = useState<{ form: ApplicationForm; key: string; previews: FormPreviews } | null>(null);
+  const [prepared, setPrepared] = useState<{ form: ApplicationForm; photo: File | null; key: string; previews: FormPreviews } | null>(null);
   const [busy, setBusy] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
   useUnsavedChanges(dirty);
 
   useEffect(() => {
     if (step > 0) heading.current?.focus();
   }, [step]);
+
+  useEffect(() => {
+    const url = photo ? URL.createObjectURL(photo) : null;
+    setPhotoUrl(url);
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [photo]);
 
   const evidence = choiceRequired(applicationType, consents);
   const consentFields = (Object.keys(CONSENT_LABELS) as ConsentField[])
@@ -162,8 +172,27 @@ export function ApplicationPage() {
     setCaregiver(SAMPLE_CAREGIVER);
     setCareNeeds(['MEAL', 'DAILY']);
     setEvidenceSample('BENEFICIARY_A');
+    clearPhoto();
     setRegionCode(regions.data?.[0]?.code ?? '');
     setDirty(true);
+  }
+
+  function clearPhoto() {
+    if (photoInput.current) photoInput.current.value = '';
+    setPhoto(null);
+    setPhotoError(null);
+  }
+
+  function choosePhoto(file: File) {
+    if (!file.size || file.size > EVIDENCE_PHOTO_MAX_BYTES
+      || !(file.type ? EVIDENCE_PHOTO_TYPES.includes(file.type) : /\.(jpe?g|png|webp)$/i.test(file.name))) {
+      if (photoInput.current) photoInput.current.value = '';
+      setPhotoError('8MB 이하의 JPG, PNG, WebP 사진을 선택해 주세요.');
+      return;
+    }
+    setPhoto(file);
+    setEvidenceSample(null);
+    setPhotoError(null);
   }
 
   async function handleStep(event: FormEvent<HTMLFormElement>) {
@@ -181,6 +210,7 @@ export function ApplicationPage() {
     }
 
     if (step === 1) {
+      if (photoError) return;
       const { familyRecord, administrative, personal, sensitive, uniqueId } = consents;
       if (!confirmed || administrative === null || personal === null || sensitive === null || uniqueId === null
         || (applicationType === 'FAMILY' && familyRecord === null)
@@ -196,7 +226,7 @@ export function ApplicationPage() {
       setBusy(true);
       try {
         const previews = await previewForms(form);
-        setPrepared({ form, key: newRequestKey(), previews });
+        setPrepared({ form, photo, key: newRequestKey(), previews });
         setStep(2);
       } catch (cause) {
         setError(cause instanceof ApiError ? cause.message : '서류 미리보기를 만들지 못했습니다.');
@@ -209,7 +239,7 @@ export function ApplicationPage() {
     if (!prepared) return;
     setBusy(true);
     try {
-      const submission = await submitApplication(prepared.form, prepared.key);
+      const submission = await submitApplication(prepared.form, prepared.key, prepared.photo);
       navigate('/my/applications/' + submission.id, { force: true });
     } catch (cause) {
       const pending = !(cause instanceof ApiError) || cause.status === 0 || cause.status >= 500;
@@ -328,12 +358,28 @@ export function ApplicationPage() {
                 </fieldset>
               )}
               <div className="registration-consent">
-                <InputSelect id="ocr-evidence" label="OCR 대조용 가상 증빙 (선택)" value={evidenceSample ?? ''} required={false}
-                  onChange={(value) => setEvidenceSample(value ? value as EvidenceSample : null)}>
-                  <option value="">첨부하지 않음</option>
+                <div className="form-group registration-photo-field">
+                  <div className="form-tit"><label htmlFor="evidence-photo">가상 증빙 사진 직접 첨부 (선택)</label></div>
+                  <p id="evidence-photo-hint">가상 정보가 담긴 JPG, PNG, WebP 사진 한 장을 올려 주세요. 최대 8MB입니다.</p>
+                  <input ref={photoInput} id="evidence-photo" type="file" accept={EVIDENCE_PHOTO_TYPES.join(',')}
+                    aria-describedby="evidence-photo-hint" aria-invalid={Boolean(photoError)}
+                    onChange={(event) => { const file = event.target.files?.[0]; if (file) choosePhoto(file); }} />
+                  <p>사진에 ‘성명’, ‘생년월일’, ‘가상 식별자’, ‘주소’를 값과 함께 적으면 담당자가 자동으로 대조할 수 있습니다.</p>
+                  {photoError && <FormMessage tone="error">{photoError}</FormMessage>}
+                  {(photo || photoError) && <div className="registration-photo-selection">
+                    {photo && <span>{photo.name}</span>}
+                    <button type="button" className="krds-btn small secondary" onClick={clearPhoto}>{photo ? '사진 제거' : '선택 취소'}</button>
+                  </div>}
+                  {photoUrl && <img className="registration-photo-preview" src={photoUrl} alt="첨부할 가상 증빙 사진" />}
+                </div>
+                <InputSelect id="ocr-evidence" label="예시 확인서" value={evidenceSample ?? ''} required={false}
+                  onChange={(value) => {
+                    if (value) clearPhoto();
+                    setEvidenceSample(value ? value as EvidenceSample : null);
+                  }}>
+                  <option value="">예시 선택 안 함</option>
                   {Object.entries(EVIDENCE_SAMPLES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </InputSelect>
-                <p>선택한 가상 확인서를 제출하면 담당자가 신청 정보와 대조할 수 있습니다.</p>
               </div>
               <CheckboxField id="confirm-demo-submission" label="가상 정보와 제출 내용, 각 동의 선택을 확인했습니다"
                 checked={confirmed} onChange={setConfirmed} />
@@ -345,6 +391,10 @@ export function ApplicationPage() {
               <h2 ref={heading} tabIndex={-1}>최종 서류 확인</h2>
               <p>작성된 서류를 확인해 주세요. 제출한 서류는 가상 통합돌봄 접수처에서 확인할 수 있습니다.</p>
               {prepared.form.evidenceSample && <p>가상 증빙 · {EVIDENCE_SAMPLES[prepared.form.evidenceSample]}</p>}
+              {prepared.photo && <div className="registration-photo-field">
+                <p>가상 증빙 사진 · {prepared.photo.name}</p>
+                {photoUrl && <img className="registration-photo-preview" src={photoUrl} alt="제출할 가상 증빙 사진" />}
+              </div>}
               <FormReview previews={prepared.previews} />
             </section>
           )}

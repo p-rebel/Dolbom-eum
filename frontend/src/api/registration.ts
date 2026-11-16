@@ -1,4 +1,4 @@
-import { apiRequest } from './client';
+import { ApiError, apiRequest } from './client';
 import type { Page } from './types';
 
 export type ApplicationType = 'SELF' | 'FAMILY' | 'GUARDIAN';
@@ -52,6 +52,7 @@ export interface SubmissionSummary {
 }
 export interface Submission extends SubmissionSummary {
   form: ApplicationForm;
+  evidenceSource: 'SAMPLE' | 'UPLOAD' | null;
 }
 export interface FormPreviews {
   application: string;
@@ -69,10 +70,10 @@ export interface ComparisonRow {
   field: VerificationField;
   submitted: string;
   scanned: string | null;
-  reference: string;
+  reference: string | null;
   confidence: number;
   evidenceResult: ComparisonStatus;
-  referenceResult: ComparisonStatus;
+  referenceResult: ComparisonStatus | null;
 }
 
 export interface ReviewInput {
@@ -111,6 +112,8 @@ export const EVIDENCE_SAMPLES: Record<EvidenceSample, string> = {
   ADDRESS_DIFFERENT: '주소가 다른 가상 확인서',
   ID_BLURRY: '식별자가 흐릿한 가상 확인서',
 };
+export const EVIDENCE_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+export const EVIDENCE_PHOTO_MAX_BYTES = 8 * 1024 * 1024;
 export const DOCUMENTS: Record<DocumentKind, string> = {
   application: '통합지원 신청서', 'privacy-consent': '개인정보 수집·이용 동의서',
 };
@@ -121,9 +124,19 @@ export function getRegions(signal: AbortSignal) {
 export function previewForms(form: ApplicationForm) {
   return apiRequest<FormPreviews>('/applications/preview', { method: 'POST', body: form });
 }
-export function submitApplication(form: ApplicationForm, key: string) {
+function readPhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1]);
+    reader.onerror = () => reject(new ApiError(422, 'VALIDATION_ERROR', '가상 증빙 사진을 다시 선택해 주세요.', 'evidencePhoto'));
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function submitApplication(form: ApplicationForm, key: string, photo: File | null) {
   return apiRequest<Submission>('/applications', {
-    method: 'POST', body: form, headers: { 'Idempotency-Key': key },
+    method: 'POST', body: photo ? { ...form, evidencePhoto: await readPhoto(photo) } : form,
+    headers: { 'Idempotency-Key': key },
   });
 }
 export function getSubmissions(audience: SubmissionAudience, page: number, signal: AbortSignal) {

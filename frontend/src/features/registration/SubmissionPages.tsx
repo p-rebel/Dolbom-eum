@@ -90,13 +90,13 @@ export function SubmissionDetailPage({ id, audience }: { id: string; audience: S
             <div><p>수신처</p><strong>가상 통합돌봄 접수처 · {submission.region.name}</strong></div>
             <div><p>제출 시각</p><strong>{DATE_TIME.format(new Date(submission.submittedAt))}</strong></div>
           </section>
-          {staff && (submission.form.evidenceSample
-            ? <VerificationPanel key={submission.id} id={submission.id} sample={submission.form.evidenceSample} />
+          {staff && (submission.evidenceSource
+            ? <VerificationPanel key={submission.id} id={submission.id} sample={submission.form.evidenceSample ?? null} />
             : <p className="registration-verification-empty">첨부된 OCR 대조용 가상 증빙이 없습니다.</p>)}
-          {!staff && submission.form.evidenceSample && (
+          {!staff && submission.evidenceSource && (
             <p className="registration-verification-empty">제출한 가상 증빙 ·{' '}
               <a className="registration-text-link" href={evidenceUrl(submission.id)} target="_blank" rel="noreferrer">
-                {EVIDENCE_SAMPLES[submission.form.evidenceSample]} (새 창)
+                {submission.form.evidenceSample ? EVIDENCE_SAMPLES[submission.form.evidenceSample] : '첨부한 가상 증빙 사진'} (새 창)
               </a>
             </p>
           )}

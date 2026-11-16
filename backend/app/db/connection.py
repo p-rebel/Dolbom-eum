@@ -10,7 +10,7 @@ from importlib import resources
 from pathlib import Path
 
 DB_PATH_ENV = "DOLBOMEUM_DB_PATH"
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 BUSY_TIMEOUT_MS = 5000
 
 # 로컬 개발 기본 경로: 저장소 루트의 var/ (git 제외). 팀 서버는 환경값으로 저장소 밖 경로를 지정한다.
@@ -107,6 +107,12 @@ def init_db(path: Path | str | None = None, *, reset: bool = False) -> Path:
             # 참조하는 행을 유지하면서 계정 테이블의 역할 제약을 교체한다.
             conn.execute("PRAGMA foreign_keys = OFF")
             migration = resources.files(__package__).joinpath("migrate_v1.sql").read_text(encoding="utf-8") + "\n"
+        elif current == 3:
+            migration = """
+                ALTER TABLE mock_application_evidence
+                ADD COLUMN media_type TEXT NOT NULL DEFAULT 'image/png'
+                CHECK (media_type IN ('image/png', 'image/jpeg', 'image/webp'));
+            """
         conn.executescript("BEGIN IMMEDIATE;\n" + migration + _schema_sql())
         if migration and conn.execute("PRAGMA foreign_key_check").fetchone() is not None:
             raise RuntimeError("계정 마이그레이션 중 기존 DB 참조를 보존하지 못했습니다.")
