@@ -60,6 +60,8 @@ npm run dev
 - 담당자는 모의 신청 상세에서 ‘OCR 자동 대조’를 실행합니다. 화면에서 증빙 원본, 신청값, OCR 판독값을 볼 수 있습니다. 예시 확인서는 별도의 가상 기준값도 표시합니다. ‘원본 확인’으로 확인값과 내용을 저장할 수 있습니다. OCR 엔진과 언어 모델은 프론트와 함께 제공되며 판독은 브라우저에서 실행됩니다.
 - 기존 DB를 사용하는 팀원은 `app.db init`으로 스키마를 갱신하고 `app.db seed`를 다시 실행해 신청자 계정을 추가합니다. 모의 제출을 시연하려면 실제 API 모드를 사용합니다.
 
+공개 홈의 사진(`frontend/public/images/home-hero.jpg`)과 그림(`home-intro.png`)은 ChatGPT로 생성한 이미지이며 실존 인물을 쓰지 않았습니다. `mohw-logo.png`는 대체할 보건복지부 지역사회 통합돌봄 누리집의 운영기관 로고(정부 상징 포함)를 그 누리집에서 받은 파일로, `VITE_OFFICIAL_SITE=true`일 때만 상단·하단에 쓰입니다. 기관에 넘길 때 보건복지부가 제공하는 원본 파일로 바꿉니다.
+
 PDF는 [보건복지부 공식 신청 서식](https://www.mohw.go.kr/board.es?act=view&bid=0073&list_no=1489873&mid=a60401000000)에 가상 정보를 채웁니다. PDF 글꼴은 [Nanum Gothic](https://github.com/google/fonts/tree/cc39c4c2c304bc368c9b7c311ea2bcc6013299fe/ofl/nanumgothic)이며, 배포 허가문은 PDF 서식과 같은 폴더의 `OFL.txt`에 있습니다.
 
 ## 프로젝트 일정
