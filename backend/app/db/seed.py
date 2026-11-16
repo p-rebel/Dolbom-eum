@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 
@@ -27,6 +28,17 @@ DEMO_ACCOUNTS = (
 DEMO_PROFILES = (
     ("DEMO-ELDER-01", "가상 대상자 01", "가상 대리 신청인 01", "가상 대리 신청인 01",
      "DEMO-A", "DEMO-A-1", "충청북도", "음성군"),
+)
+
+APPLICANT_PROFILES = (
+    ("demo-applicant-a", "DEMO-A-1", {
+        "name": "가상 신청자 A", "address": "가상 A시 신청로 20", "mobile": "000-0000-0202",
+        "demoId": "DEMO-SELF-0101", "birthDate": "1945-05-03",
+    }),
+    ("demo-applicant-b", "DEMO-B-1", {
+        "name": "가상 신청자 B", "address": "가상 B시 신청로 20", "mobile": "000-0000-0203",
+        "demoId": "DEMO-SELF-0201", "birthDate": "1946-06-04",
+    }),
 )
 
 
@@ -54,6 +66,12 @@ def seed_demo_data(conn: sqlite3.Connection, password: str | None = None) -> Non
                        district_code = excluded.district_code, town_code = excluded.town_code""",
                 (account_id, account_id, display_name, hash_password(pw), role, district_code, town_code),
             )
+        conn.executemany(
+            """INSERT INTO applicant_profiles (account_id, region_code, beneficiary) VALUES (?, ?, ?)
+               ON CONFLICT (account_id) DO NOTHING""",
+            [(account, region, json.dumps(person, ensure_ascii=False))
+             for account, region, person in APPLICANT_PROFILES],
+        )
         for row in DEMO_PROFILES:
             conn.execute(
                 """INSERT INTO demo_profiles (code, beneficiary_name, applicant_name, notice_recipient_name,

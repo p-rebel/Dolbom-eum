@@ -181,6 +181,7 @@ function route(path: string, init?: RequestInit): Response {
       assessment: null,
       plan: null,
       monitoring: null,
+      monitorings: [],
       events: [],
       allowedActions: [],
     };
@@ -195,8 +196,11 @@ function route(path: string, init?: RequestInit): Response {
     return update(account, detail, { status: 'SCREENED', screening: { screenedOn, method: way, outcome } }, 'RECORD_SCREENING');
   }
   if (detail && pathname.endsWith('/assessment')) {
-    const { assessedOn, resultReceivedOn, outcome } = body(init);
-    return update(account, detail, { status: 'ASSESSED', assessment: { assessedOn, resultReceivedOn, outcome } }, 'RECORD_ASSESSMENT');
+    const { assessedOn, resultReceivedOn, outcome, route, reason } = body(init);
+    return update(account, detail, {
+      status: outcome === 'NOT_ELIGIBLE' ? 'NOT_ELIGIBLE' : 'ASSESSED',
+      assessment: { assessedOn, resultReceivedOn, outcome, route: route ?? 'NHIS', reason: reason ?? null },
+    }, 'RECORD_ASSESSMENT');
   }
   if (detail && pathname.endsWith('/plan')) {
     const { preparedOn, goal, serviceIds } = body(init);

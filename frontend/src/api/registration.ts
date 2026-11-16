@@ -49,10 +49,15 @@ export interface SubmissionSummary {
   beneficiaryName: string;
   applicationType: ApplicationType;
   region: SubmissionRegion;
+  revision: number;
+  status: 'SUBMITTED' | 'CHANGES_REQUESTED';
 }
 export interface Submission extends SubmissionSummary {
   form: ApplicationForm;
   evidenceSource: 'SAMPLE' | 'UPLOAD' | null;
+  correctionReason: string | null;
+  latest: boolean;
+  revisions: { revision: number; submittedAt: string }[];
 }
 export interface FormPreviews {
   application: string;
@@ -121,6 +126,10 @@ export const DOCUMENTS: Record<DocumentKind, string> = {
 export function getRegions(signal: AbortSignal) {
   return apiRequest<SubmissionRegion[]>('/application-regions', { signal });
 }
+export function getApplicantProfile(signal: AbortSignal) {
+  return apiRequest<{ region: SubmissionRegion; beneficiary: Beneficiary } | null>('/applicant-profile', { signal });
+}
+
 export function previewForms(form: ApplicationForm) {
   return apiRequest<FormPreviews>('/applications/preview', { method: 'POST', body: form });
 }
@@ -133,9 +142,17 @@ function readPhoto(file: File): Promise<string> {
   });
 }
 
-export async function submitApplication(form: ApplicationForm, key: string, photo: File | null) {
-  return apiRequest<Submission>('/applications', {
-    method: 'POST', body: photo ? { ...form, evidencePhoto: await readPhoto(photo) } : form,
+export async function submitApplication(
+  form: ApplicationForm, key: string, photo: File | null,
+  revision?: { id: string; revision: number; retainEvidence: boolean },
+) {
+  const endpoint = revision ? `/applications/${encodeURIComponent(revision.id)}/revisions` as const : '/applications';
+  const evidencePhoto = photo ? await readPhoto(photo) : undefined;
+  const body = revision
+    ? { ...form, revision: revision.revision, retainEvidence: revision.retainEvidence, evidencePhoto }
+    : { ...form, evidencePhoto };
+  return apiRequest<Submission>(endpoint, {
+    method: 'POST', body,
     headers: { 'Idempotency-Key': key },
   });
 }
@@ -143,24 +160,32 @@ export function getSubmissions(audience: SubmissionAudience, page: number, signa
   const endpoint = audience === 'staff' ? '/intake' : '/applications';
   return apiRequest<Page<SubmissionSummary>>(endpoint + '?page=' + page as `/${string}`, { signal });
 }
-export function getSubmission(audience: SubmissionAudience, id: string, signal: AbortSignal) {
+export function getSubmission(audience: SubmissionAudience, id: string, signal: AbortSignal, revision?: number) {
   const endpoint = audience === 'staff' ? '/intake/' : '/applications/';
-  return apiRequest<Submission>(endpoint + encodeURIComponent(id) as `/${string}`, { signal });
+  return apiRequest<Submission>(endpoint + encodeURIComponent(id) + revisionQuery(revision) as `/${string}`, { signal });
 }
-export function documentUrl(id: string, kind: DocumentKind) {
-  return '/api/v1/applications/' + encodeURIComponent(id) + '/documents/' + kind;
-}
-
-export function evidenceUrl(id: string) {
-  return '/api/v1/applications/' + encodeURIComponent(id) + '/evidence';
+export function requestCorrection(id: string, revision: number, reason: string) {
+  return apiRequest<Submission>(`/intake/${encodeURIComponent(id)}/corrections`, {
+    method: 'POST', body: { revision, reason },
+  });
 }
 
-export function getVerification(id: string, signal: AbortSignal) {
-  return apiRequest<Verification | null>(`/intake/${encodeURIComponent(id)}/verification`, { signal });
+const revisionQuery = (revision?: number) => revision ? `?revision=${revision}` : '';
+
+export function documentUrl(id: string, kind: DocumentKind, revision: number) {
+  return '/api/v1/applications/' + encodeURIComponent(id) + '/documents/' + kind + revisionQuery(revision);
 }
 
-export function recordVerification(id: string, readings: Observations) {
-  return apiRequest<Verification>(`/intake/${encodeURIComponent(id)}/verification`, { method: 'POST', body: readings });
+export function evidenceUrl(id: string, revision: number) {
+  return '/api/v1/applications/' + encodeURIComponent(id) + '/evidence' + revisionQuery(revision);
+}
+
+export function getVerification(id: string, revision: number, signal: AbortSignal) {
+  return apiRequest<Verification | null>(`/intake/${encodeURIComponent(id)}/verification${revisionQuery(revision)}`, { signal });
+}
+
+export function recordVerification(id: string, revision: number, readings: Observations) {
+  return apiRequest<Verification>(`/intake/${encodeURIComponent(id)}/verification${revisionQuery(revision)}`, { method: 'POST', body: readings });
 }
 
 export function saveVerificationReview(id: string, attempt: number, field: VerificationField, review: ReviewInput) {

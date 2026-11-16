@@ -281,7 +281,7 @@
         "expect": {
           "http": 200,
           "body": {
-            "status": "FIRST_MONITORING_RECORDED", "version": 13, "allowedActions": [],
+            "status": "FIRST_MONITORING_RECORDED", "version": 13, "allowedActions": [{ "action": "RECORD_MONITORING", "itemId": null }],
             "monitoring": {
               "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
               "reviewNeeded": false, "reviewReason": null,
@@ -389,7 +389,7 @@
         "expect": {
           "http": 200,
           "body": {
-            "status": "FIRST_MONITORING_RECORDED", "version": 13, "allowedActions": [],
+            "status": "FIRST_MONITORING_RECORDED", "version": 13, "allowedActions": [{ "action": "RECORD_MONITORING", "itemId": null }],
             "monitoring": {
               "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
               "reviewNeeded": true, "reviewReason": "가상 미개시 항목의 후속 확인",
@@ -444,7 +444,6 @@
           ]
         },
         "monitoring": "{{monitoringResult}}",
-        "allowedActions": [],
         "events": [
           { "version": 13, "action": "RECORD_MONITORING", "actorRole": "TOWN", "toStatus": "FIRST_MONITORING_RECORDED", "itemId": null },
           { "version": 12, "action": "RECORD_DELIVERY", "actorRole": "DISTRICT", "itemId": "{{itemB}}" },

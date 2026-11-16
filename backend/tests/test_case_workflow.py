@@ -101,6 +101,59 @@ def test_workflow_examples(clients, scenario):
         run_step(clients, step, captures)
 
 
+def test_local_assessment_reasons_and_ineligible_status(clients):
+    captures = {}
+    run_step(clients, EXAMPLES["commonSteps"][0], captures)
+    path = f"/api/v1/cases/{captures['caseId']}"
+    town, district = clients["town"], clients["district"]
+    screening = {"version": 1, "screenedOn": "2026-11-02", "method": "VISIT", "outcome": "LOCAL_ASSESSMENT_REQUIRED"}
+    assert town.put(f"{path}/screening", json=screening).status_code == 200
+    assessment = {
+        "version": 2, "assessedOn": "2026-11-03", "resultReceivedOn": "2026-11-03",
+        "route": "LOCAL", "outcome": "NOT_ELIGIBLE", "reason": "가상 자체조사 결과",
+    }
+    assert district.put(f"{path}/assessment", json={**assessment, "reason": " "}).status_code == 422
+    assert district.put(f"{path}/assessment", json={**assessment, "route": "NHIS"}).status_code == 422
+    assert district.put(f"{path}/assessment", json=assessment).status_code == 200
+    saved = town.get(path).json()
+    assert saved["status"] == "NOT_ELIGIBLE" and saved["allowedActions"] == []
+    assert saved["assessment"]["route"] == "LOCAL"
+    assert saved["assessment"]["reason"] == assessment["reason"]
+    response = town.put(f"{path}/plan", json={
+        "version": 3, "preparedOn": "2026-11-04", "goal": "가상 목표", "serviceIds": ["nhis_20260630_r00001"],
+    })
+    assert response.status_code == 409
+
+
+def test_repeat_monitoring_and_round_specific_district_review(clients):
+    captures = {}
+    for step in [*EXAMPLES["commonSteps"], *EXAMPLES["scenarios"]["C-06"]]:
+        run_step(clients, step, captures)
+    path = f"/api/v1/cases/{captures['caseId']}"
+    town, district = clients["town"], clients["district"]
+    first = town.get(path).json()["monitoring"]
+    body = {
+        "version": 13, "monitoredOn": "2026-11-10", "method": "PHONE", "condition": "IMPROVED", "reviewNeeded": False,
+    }
+    assert town.put(f"{path}/monitoring", json={**body, "monitoredOn": "2026-11-08"}).status_code == 422
+    saved = town.put(f"{path}/monitoring", json=body)
+    assert saved.status_code == 200, saved.text
+    rounds = saved.json()["monitorings"]
+    assert [entry["sequence"] for entry in rounds] == [2, 1]
+    assert rounds[1] == first and rounds[0]["observations"] == first["observations"]
+    assert town.put(f"{path}/monitoring", json=body).status_code == 409
+
+    review = {"version": 14, "reviewedOn": "2026-11-11", "decision": "FOLLOW_UP_NEEDED", "reason": "추가 방문 일정 확인"}
+    assert town.put(f"{path}/monitoring/1/review", json=review).status_code == 403
+    assert district.put(f"{path}/monitoring/2/review", json=review).status_code == 409
+    assert district.put(f"{path}/monitoring/1/review", json=review).status_code == 200
+    latest = town.get(path).json()
+    assert latest["version"] == 15
+    assert latest["monitorings"][0] == rounds[0]
+    assert latest["monitorings"][1]["review"]["reason"] == review["reason"]
+    assert latest["events"][0]["action"] == "RECORD_MONITORING_REVIEW"
+
+
 def test_draft_concurrency_and_replacement(clients):
     captures = {}
     for step in EXAMPLES["commonSteps"]:
@@ -272,7 +325,7 @@ def test_workflow_openapi_documents_error_shape_and_dates():
         for path, methods in document["paths"].items()
         if path.startswith("/api/v1/cases/") and "put" in methods
     ]
-    assert len(routes) == 8
+    assert len(routes) == 9
     for route in routes:
         for code in ("401", "403", "404", "409", "415", "422", "500"):
             schema = route["responses"][code]["content"]["application/json"]["schema"]

@@ -2,15 +2,15 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { ApiError, newRequestKey } from '../../api/client';
 import {
   APPLICATION_TYPES, CARE_NEEDS, EVIDENCE_LABELS, EVIDENCE_PHOTO_MAX_BYTES, EVIDENCE_PHOTO_TYPES, EVIDENCE_SAMPLES, RELATIONSHIPS,
-  getRegions, previewForms, submitApplication,
+  evidenceUrl, getApplicantProfile, getRegions, getSubmission, previewForms, submitApplication,
   type ApplicationForm, type ApplicationType, type Beneficiary, type CareNeed,
-  type DocumentKind, type Evidence, type EvidenceSample, type FormPreviews, type Person, type RelatedPerson, type Relationship,
+  type DocumentKind, type Evidence, type EvidenceSample, type FormPreviews, type Person, type RelatedPerson, type Relationship, type Submission,
 } from '../../api/registration';
 import { ErrorBlock, FormMessage, LoadingBlock } from '../../components/Feedback';
 import { CheckboxField, RadioGroup } from '../../components/FormFields';
 import { TextField } from '../../components/TextField';
 import { useApiData } from '../../hooks/useApiData';
-import { navigate, PageTitle, useUnsavedChanges } from '../../router';
+import { Link, navigate, PageTitle, useUnsavedChanges } from '../../router';
 import { DocumentViewer } from './DocumentViewer';
 
 const EMPTY_PERSON: Person = { name: '', address: '', mobile: '' };
@@ -45,14 +45,14 @@ const CONSENT_CHOICES = [
   { value: 'yes', label: '동의함' }, { value: 'no', label: '동의하지 않음' },
 ];
 
-function InputSelect({ id, label, children, value, onChange, required = true }: {
-  id: string; label: string; children: ReactNode; value: string; onChange: (value: string) => void; required?: boolean;
+function InputSelect({ id, label, children, value, onChange, required = true, disabled = false }: {
+  id: string; label: string; children: ReactNode; value: string; onChange: (value: string) => void; required?: boolean; disabled?: boolean;
 }) {
   return (
     <div className="form-group">
       <div className="form-tit"><label htmlFor={id}>{label}</label></div>
       <div className="form-conts">
-        <select id={id} className="krds-form-select medium" value={value} required={required} onChange={(event) => onChange(event.target.value)}>
+        <select id={id} className="krds-form-select medium" value={value} required={required} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
           {children}
         </select>
       </div>
@@ -116,25 +116,43 @@ function FormReview({ previews }: { previews: FormPreviews }) {
   return urls ? <DocumentViewer urls={urls} /> : <LoadingBlock label="서류를 여는 중" />;
 }
 
-export function ApplicationPage() {
+export function ApplicantCorrectionPage({ id }: { id: string }) {
+  const result = useApiData((signal) => getSubmission('applicant', id, signal), [id]);
+  if (result.loading) return <LoadingBlock label="보완할 신청서를 불러오는 중" />;
+  if (result.error) return <ErrorBlock message={result.error.message} onRetry={result.reload} />;
+  if (result.data?.status !== 'CHANGES_REQUESTED') {
+    return <div className="inner page">
+      <PageTitle>보완 요청 내역</PageTitle>
+      <p>현재 보완 요청이 없습니다.</p>
+      <Link to={'/my/applications/' + id}>신청 상세로 돌아가기</Link>
+    </div>;
+  }
+  return <ApplicationPage key={result.data.revision} revision={result.data} />;
+}
+
+export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
+  const previous = revision?.form;
   const regions = useApiData(getRegions, []);
+  const profile = useApiData(getApplicantProfile, []);
   const [step, setStep] = useState(0);
-  const [applicationType, setApplicationType] = useState<ApplicationType>('SELF');
-  const [regionCode, setRegionCode] = useState('');
-  const [beneficiary, setBeneficiary] = useState<Beneficiary>(EMPTY_BENEFICIARY);
-  const [applicant, setApplicant] = useState<RelatedPerson>(EMPTY_APPLICANT);
-  const [caregiver, setCaregiver] = useState<RelatedPerson | null>(null);
-  const [noticeRecipient, setNoticeRecipient] = useState<ApplicationForm['noticeRecipient']>('BENEFICIARY');
-  const [noticeMethod, setNoticeMethod] = useState<ApplicationForm['noticeMethod']>('SMS');
-  const [careNeeds, setCareNeeds] = useState<CareNeed[]>([]);
-  const [consents, setConsents] = useState(EMPTY_CONSENTS);
-  const [preparedEvidence, setPreparedEvidence] = useState<Evidence[]>([]);
-  const [evidenceSample, setEvidenceSample] = useState<EvidenceSample | null>(null);
+  const [applicationType, setApplicationType] = useState<ApplicationType>(previous?.applicationType ?? 'SELF');
+  const [regionCode, setRegionCode] = useState(previous?.regionCode ?? '');
+  const [beneficiary, setBeneficiary] = useState<Beneficiary>(previous?.beneficiary ?? EMPTY_BENEFICIARY);
+  const [applicant, setApplicant] = useState<RelatedPerson>(previous?.applicant ?? EMPTY_APPLICANT);
+  const [caregiver, setCaregiver] = useState<RelatedPerson | null>(previous?.caregiver ?? null);
+  const [noticeRecipient, setNoticeRecipient] = useState<ApplicationForm['noticeRecipient']>(previous?.noticeRecipient ?? 'BENEFICIARY');
+  const [noticeMethod, setNoticeMethod] = useState<ApplicationForm['noticeMethod']>(previous?.noticeMethod ?? 'SMS');
+  const [careNeeds, setCareNeeds] = useState<CareNeed[]>(previous?.careNeeds ?? []);
+  const [consents, setConsents] = useState<Record<ConsentField, boolean | null>>(previous?.consents ?? EMPTY_CONSENTS);
+  const [preparedEvidence, setPreparedEvidence] = useState<Evidence[]>(previous?.evidence ?? []);
+  const [evidenceSample, setEvidenceSample] = useState<EvidenceSample | null>(previous?.evidenceSample ?? null);
+  const hasPriorUpload = revision?.evidenceSource === 'UPLOAD';
+  const [retainEvidence, setRetainEvidence] = useState(hasPriorUpload);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
-  const [prepared, setPrepared] = useState<{ form: ApplicationForm; photo: File | null; key: string; previews: FormPreviews } | null>(null);
+  const [prepared, setPrepared] = useState<{ form: ApplicationForm; photo: File | null; retainEvidence: boolean; key: string; previews: FormPreviews } | null>(null);
   const [busy, setBusy] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,6 +195,13 @@ export function ApplicationPage() {
     setDirty(true);
   }
 
+  function loadOwnProfile() {
+    if (applicationType !== 'SELF' || !profile.data) return;
+    setBeneficiary(profile.data.beneficiary);
+    setRegionCode(profile.data.region.code);
+    setDirty(true);
+  }
+
   function clearPhoto() {
     if (photoInput.current) photoInput.current.value = '';
     setPhoto(null);
@@ -191,6 +216,7 @@ export function ApplicationPage() {
       return;
     }
     setPhoto(file);
+    setRetainEvidence(false);
     setEvidenceSample(null);
     setPhotoError(null);
   }
@@ -226,7 +252,7 @@ export function ApplicationPage() {
       setBusy(true);
       try {
         const previews = await previewForms(form);
-        setPrepared({ form, photo, key: newRequestKey(), previews });
+        setPrepared({ form, photo, retainEvidence, key: newRequestKey(), previews });
         setStep(2);
       } catch (cause) {
         setError(cause instanceof ApiError ? cause.message : '서류 미리보기를 만들지 못했습니다.');
@@ -239,7 +265,10 @@ export function ApplicationPage() {
     if (!prepared) return;
     setBusy(true);
     try {
-      const submission = await submitApplication(prepared.form, prepared.key, prepared.photo);
+      const submission = await submitApplication(
+        prepared.form, prepared.key, prepared.photo,
+        revision && { id: revision.id, revision: revision.revision, retainEvidence: prepared.retainEvidence },
+      );
       navigate('/my/applications/' + submission.id, { force: true });
     } catch (cause) {
       const pending = !(cause instanceof ApiError) || cause.status === 0 || cause.status >= 500;
@@ -254,7 +283,8 @@ export function ApplicationPage() {
 
   return (
     <div className="inner page registration-form-page">
-      <PageTitle>돌봄 신청서 작성</PageTitle>
+      <PageTitle>{revision ? '보완 신청서 작성' : '돌봄 신청서 작성'}</PageTitle>
+      {revision && <p className="registration-lead">{revision.submissionNumber} · 보완 요청 사유 {revision.correctionReason}</p>}
       <p className="registration-lead">가상 정보를 한 번 입력하면 공식 양식의 신청서와 동의서에 반영됩니다.</p>
       <ol className="registration-stepper" aria-label="신청 단계">
         {STEP_NAMES.map((name, index) => <li key={name} aria-current={index === step ? 'step' : undefined}>
@@ -272,13 +302,13 @@ export function ApplicationPage() {
               <section className="registration-form-section">
                 <div className="registration-section-title">
                   <h2>신청 대상과 유형</h2>
-                  <button type="button" className="krds-btn small secondary" onClick={loadSample}>가상 정보 불러오기</button>
+                  {!revision && <button type="button" className="krds-btn small secondary" onClick={loadSample}>가상 정보 불러오기</button>}
                 </div>
                 <div className="registration-fields">
                   <InputSelect id="application-type" label="신청 유형" value={applicationType} onChange={(value) => changeType(value as ApplicationType)}>
                     {Object.entries(APPLICATION_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </InputSelect>
-                  <InputSelect id="application-region" label="주소지 관할" value={regionCode} onChange={setRegionCode}>
+                  <InputSelect id="application-region" label="주소지 관할" value={regionCode} onChange={setRegionCode} disabled={Boolean(revision)}>
                     <option value="">관할 지역을 선택해 주세요</option>
                     {regions.data.map(({ code, name }) => <option key={code} value={code}>{name}</option>)}
                   </InputSelect>
@@ -286,6 +316,9 @@ export function ApplicationPage() {
               </section>
               <fieldset className="registration-form-section">
                 <legend>돌봄을 받는 분</legend>
+                {!revision && applicationType === 'SELF' && profile.data && (
+                  <button type="button" className="krds-btn small secondary" onClick={loadOwnProfile}>내정보로 채워넣기</button>
+                )}
                 <PersonFields group="대상자" person={beneficiary} onChange={(person) => setBeneficiary({ ...beneficiary, ...person })} />
                 <div className="registration-fields">
                   <TextField id="demo-id" label="가상 식별자" value={beneficiary.demoId} placeholder="DEMO-ID-0101" required maxLength={26}
@@ -374,12 +407,18 @@ export function ApplicationPage() {
                 </div>
                 <InputSelect id="ocr-evidence" label="예시 확인서" value={evidenceSample ?? ''} required={false}
                   onChange={(value) => {
-                    if (value) clearPhoto();
+                    if (value) { clearPhoto(); setRetainEvidence(false); }
                     setEvidenceSample(value ? value as EvidenceSample : null);
                   }}>
                   <option value="">예시 선택 안 함</option>
                   {Object.entries(EVIDENCE_SAMPLES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </InputSelect>
+                {revision && hasPriorUpload && !photo && !evidenceSample && (
+                  <>
+                    <a className="registration-text-link" href={evidenceUrl(revision.id, revision.revision)} target="_blank" rel="noreferrer">이전 증빙 사진 열기 (새 창)</a>
+                    <CheckboxField id="retain-evidence" label="기존 첨부 사진 유지" checked={retainEvidence} onChange={setRetainEvidence} />
+                  </>
+                )}
               </div>
               <CheckboxField id="confirm-demo-submission" label="가상 정보와 제출 내용, 각 동의 선택을 확인했습니다"
                 checked={confirmed} onChange={setConfirmed} />
@@ -391,6 +430,7 @@ export function ApplicationPage() {
               <h2 ref={heading} tabIndex={-1}>최종 서류 확인</h2>
               <p>작성된 서류를 확인해 주세요. 제출한 서류는 가상 통합돌봄 접수처에서 확인할 수 있습니다.</p>
               {prepared.form.evidenceSample && <p>가상 증빙 · {EVIDENCE_SAMPLES[prepared.form.evidenceSample]}</p>}
+              {prepared.retainEvidence && <p>가상 증빙 사진 · 기존 첨부 사진 유지</p>}
               {prepared.photo && <div className="registration-photo-field">
                 <p>가상 증빙 사진 · {prepared.photo.name}</p>
                 {photoUrl && <img className="registration-photo-preview" src={photoUrl} alt="제출할 가상 증빙 사진" />}
@@ -407,7 +447,7 @@ export function ApplicationPage() {
                 onClick={() => { setError(null); setStep(step - 1); }}>이전</button>
             )}
             <button type="submit" className="krds-btn large primary" disabled={busy}>
-              {busy ? '처리 중…' : step === 0 ? '동의와 증빙으로' : step === 1 ? '서류 미리보기' : '가상 접수처에 제출'}
+              {busy ? '처리 중…' : step === 0 ? '동의와 증빙으로' : step === 1 ? '서류 미리보기' : revision ? '보완 내용 재제출' : '가상 접수처에 제출'}
             </button>
           </div>
         </form>

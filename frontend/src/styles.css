@@ -161,6 +161,14 @@ code {
 }
 
 /* 영역: 상자 없이 제목과 위쪽 구분선으로 나눈다. */
+.monitoring-record + .monitoring-record {
+  margin-top: var(--krds-gap-7);
+}
+
+.monitoring-record .record-form {
+  margin-top: var(--krds-gap-5);
+}
+
 .page-section {
   display: grid;
   gap: var(--krds-gap-5);

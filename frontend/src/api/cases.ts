@@ -2,6 +2,7 @@
 
 import { apiRequest } from './client';
 import type {
+  Assessment,
   CaseDetail,
   CaseStatus,
   CaseSummary,
@@ -12,6 +13,8 @@ import type {
   LinkageMethod,
   NoticeMethod,
   Page,
+  ReviewDecision,
+  Screening,
 } from './types';
 
 export function getDemoProfiles(signal?: AbortSignal) {
@@ -50,14 +53,14 @@ export function receiveCase(input: ReceiveInput, idempotencyKey: string) {
 
 export function recordScreening(
   caseId: string,
-  input: { version: number; screenedOn: string; method: ContactMethod; outcome: 'NHIS_ASSESSMENT_REQUIRED' },
+  input: { version: number; screenedOn: string; method: ContactMethod; outcome: Screening['outcome'] },
 ) {
   return apiRequest<CaseDetail>(`/cases/${encodeURIComponent(caseId)}/screening`, { method: 'PUT', body: input });
 }
 
 export function recordAssessment(
   caseId: string,
-  input: { version: number; assessedOn: string; resultReceivedOn: string; outcome: 'SUPPORT_PLAN_REQUIRED' },
+  input: Assessment & { version: number },
 ) {
   return apiRequest<CaseDetail>(`/cases/${encodeURIComponent(caseId)}/assessment`, { method: 'PUT', body: input });
 }
@@ -112,4 +115,13 @@ export function recordMonitoring(
   },
 ) {
   return apiRequest<CaseDetail>(`/cases/${encodeURIComponent(caseId)}/monitoring`, { method: 'PUT', body: input });
+}
+
+export function recordMonitoringReview(
+  caseId: string, sequence: number,
+  input: { version: number; reviewedOn: string; decision: ReviewDecision; reason: string },
+) {
+  return apiRequest<CaseDetail>(`/cases/${encodeURIComponent(caseId)}/monitoring/${sequence}/review`, {
+    method: 'PUT', body: input,
+  });
 }

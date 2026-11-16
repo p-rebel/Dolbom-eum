@@ -9,14 +9,15 @@ import re
 import sqlite3
 import uuid
 from datetime import UTC, datetime, timedelta, timezone
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from pydantic import Field, StrictBool, StrictInt, StringConstraints
 
 from ..auth import Account, CamelModel, current_account, require_role
 from ..db import get_connection, write_transaction
 from ..errors import ApiError
-from ..registration import REGIONS, ApplicationForm, SubmissionRegion
+from ..registration import REGIONS, ApplicationForm, Beneficiary, SubmissionRegion
 from ..registration_pdf import render_forms
 from ..registration_photo import ApplicationSubmission, uploaded_photo
 from ..registration_verification import (
@@ -27,6 +28,10 @@ router = APIRouter()
 DocumentKind = Literal["application", "privacy-consent"]
 _SEOUL = timezone(timedelta(hours=9))
 _REQUEST_KEY = re.compile(r"\S{1,128}")
+_MAX_REVISION = (1 << 63) - 1
+RevisionNumber = Annotated[StrictInt, Field(ge=1, le=_MAX_REVISION)]
+_LATEST = """coalesce((SELECT max(r.supersedes) + 1
+                        FROM mock_application_resubmissions r WHERE r.application_id = a.id), 1)"""
 
 
 class SubmissionSummary(CamelModel):
@@ -36,11 +41,36 @@ class SubmissionSummary(CamelModel):
     beneficiary_name: str
     application_type: Literal["SELF", "FAMILY", "GUARDIAN"]
     region: SubmissionRegion
+    revision: int
+    status: Literal["SUBMITTED", "CHANGES_REQUESTED"]
+
+
+class Revision(CamelModel):
+    revision: int
+    submitted_at: str
+
+
+class CorrectionRequest(CamelModel):
+    revision: RevisionNumber
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+
+
+class Resubmission(ApplicationSubmission):
+    revision: RevisionNumber
+    retain_evidence: StrictBool = False
+
+
+class ApplicantProfile(CamelModel):
+    region: SubmissionRegion
+    beneficiary: Beneficiary
 
 
 class Submission(SubmissionSummary):
     form: ApplicationForm
     evidence_source: Literal["SAMPLE", "UPLOAD"] | None = None
+    correction_reason: str | None
+    latest: bool
+    revisions: list[Revision]
 
 
 class SubmissionPage(CamelModel):
@@ -58,35 +88,104 @@ def _summary(row: sqlite3.Row, form: ApplicationForm) -> SubmissionSummary:
         beneficiary_name=form.beneficiary.name,
         application_type=form.application_type,
         region=REGIONS[row["town_code"]],
+        revision=row["revision"],
+        status="CHANGES_REQUESTED" if row["revision"] == row["latest_revision"] and row["reason"] else "SUBMITTED",
     )
 
 
 def _detail(conn: sqlite3.Connection, row: sqlite3.Row) -> Submission:
     form = ApplicationForm.model_validate_json(row["form_snapshot"])
-    evidence = conn.execute(
-        "SELECT 1 FROM mock_application_evidence WHERE application_id = ?", (row["id"],),
-    ).fetchone()
-    source = ("SAMPLE" if form.evidence_sample else "UPLOAD") if evidence else None
-    return Submission(**_summary(row, form).model_dump(), form=form, evidence_source=source)
+    source = ("SAMPLE" if form.evidence_sample else "UPLOAD") if row["has_evidence"] else None
+    revisions = conn.execute(
+        """SELECT revision, submitted_at FROM mock_application_versions
+           WHERE id = ? ORDER BY revision DESC""", (row["id"],),
+    ).fetchall()
+    return Submission(
+        **_summary(row, form).model_dump(), form=form, evidence_source=source,
+        correction_reason=row["reason"], latest=row["revision"] == row["latest_revision"],
+        revisions=[Revision(**dict(revision)) for revision in revisions],
+    )
 
 
 def _scope(account: Account) -> tuple[str, tuple[str | None, ...]]:
     if account.role == "APPLICANT":
-        return "owner_id = ?", (account.id,)
+        return "a.owner_id = ?", (account.id,)
     if account.role == "TOWN":
-        return "district_code = ? AND town_code = ?", (account.district_code, account.town_code)
-    return "district_code = ?", (account.district_code,)
+        return "a.district_code = ? AND a.town_code = ?", (account.district_code, account.town_code)
+    return "a.district_code = ?", (account.district_code,)
 
 
-def _find(conn: sqlite3.Connection, account: Account, application_id: str, *columns: str) -> sqlite3.Row:
+_SUBMISSIONS = f"""SELECT a.id, a.submission_number, a.town_code, v.revision, v.submitted_at,
+                          v.form_snapshot, v.image IS NOT NULL AS has_evidence,
+                          c.reason, {_LATEST} AS latest_revision
+                   FROM mock_applications a JOIN mock_application_versions v ON v.id = a.id
+                   LEFT JOIN mock_application_corrections c ON c.application_id = a.id AND c.revision = v.revision"""
+
+
+def _find(conn: sqlite3.Connection, account: Account, application_id: str, revision: int | None = None) -> sqlite3.Row:
     where, params = _scope(account)
-    projection = ", ".join(columns) if columns else "id, submission_number, submitted_at, form_snapshot, town_code"
     row = conn.execute(
-        f"SELECT {projection} FROM mock_applications WHERE id = ? AND {where}", (application_id, *params),
+        f"{_SUBMISSIONS} WHERE a.id = ? AND {where} AND v.revision = coalesce(?, {_LATEST})",
+        (application_id, *params, revision),
     ).fetchone()
     if row is None:
         raise ApiError(404, "NOT_FOUND", "모의 신청을 찾을 수 없습니다.")
     return row
+
+
+def _request_key(request: Request) -> str:
+    key = request.headers.get("idempotency-key")
+    if key is None or not _REQUEST_KEY.fullmatch(key):
+        raise ApiError(422, "VALIDATION_ERROR", "요청 키를 확인해 주세요.", "Idempotency-Key")
+    return key
+
+
+def _evidence(conn: sqlite3.Connection, application_id: str, revision: int) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT image, media_type FROM mock_application_versions WHERE id = ? AND revision = ? AND image IS NOT NULL",
+        (application_id, revision),
+    ).fetchone()
+
+
+def _submission_content(
+    body: ApplicationSubmission, retained: sqlite3.Row | None = None,
+) -> tuple[str, str, tuple[bytes, str] | None]:
+    if body.evidence_sample is not None and (body.evidence_photo is not None or retained is not None):
+        raise ApiError(422, "VALIDATION_ERROR", "예시 확인서 또는 직접 첨부한 사진 중 하나를 선택해 주세요.", "evidencePhoto")
+    photo = uploaded_photo(body.evidence_photo) if body.evidence_photo is not None else None
+    if retained is not None:
+        photo = (retained["image"], retained["media_type"])
+    excluded = {"evidence_photo", "revision", "retain_evidence"}
+    if body.evidence_sample is None:
+        excluded.add("evidence_sample")
+    snapshot = body.model_dump_json(by_alias=True, exclude=excluded)
+    digest = hashlib.sha256(snapshot.encode("utf-8"))
+    if photo:
+        digest.update(b"\0")
+        digest.update(photo[0])
+    if body.evidence_sample is not None:
+        photo = (evidence_image(body.evidence_sample), "image/png")
+    return snapshot, digest.hexdigest(), photo
+
+
+def _check_retry(previous: sqlite3.Row, digest: str) -> None:
+    if previous["request_hash"] != digest:
+        raise ApiError(409, "IDEMPOTENCY_CONFLICT", "같은 요청 키로 다른 신청서를 제출했습니다.")
+
+
+@router.get("/applicant-profile", response_model=ApplicantProfile | None)
+def own_profile(
+    account: Account = Depends(require_role("APPLICANT")),
+    conn: sqlite3.Connection = Depends(get_connection),
+) -> ApplicantProfile | None:
+    row = conn.execute(
+        "SELECT region_code, beneficiary FROM applicant_profiles WHERE account_id = ?", (account.id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return ApplicantProfile(
+        region=REGIONS[row["region_code"]], beneficiary=Beneficiary.model_validate_json(row["beneficiary"]),
+    )
 
 
 @router.get("/application-regions", response_model=list[SubmissionRegion])
@@ -114,21 +213,8 @@ def submit(
     account: Account = Depends(require_role("APPLICANT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> Submission:
-    key = request.headers.get("idempotency-key")
-    if key is None or not _REQUEST_KEY.fullmatch(key):
-        raise ApiError(422, "VALIDATION_ERROR", "요청 키를 확인해 주세요.", "Idempotency-Key")
-    if body.evidence_sample is not None and body.evidence_photo is not None:
-        raise ApiError(422, "VALIDATION_ERROR", "예시 확인서 또는 직접 첨부한 사진 중 하나를 선택해 주세요.", "evidencePhoto")
-    photo = uploaded_photo(body.evidence_photo) if body.evidence_photo is not None else None
-    omitted = {"evidence_photo"}
-    if body.evidence_sample is None:
-        omitted.add("evidence_sample")
-    snapshot = body.model_dump_json(by_alias=True, exclude=omitted)
-    request_hash = hashlib.sha256(snapshot.encode("utf-8"))
-    if photo:
-        request_hash.update(b"\0")
-        request_hash.update(photo[0])
-    digest = request_hash.hexdigest()
+    key = _request_key(request)
+    snapshot, digest, photo = _submission_content(body)
     with write_transaction(conn):
         existing = conn.execute(
             """SELECT id, submission_number, submitted_at, form_snapshot, town_code, request_hash
@@ -136,10 +222,9 @@ def submit(
             (account.id, key),
         ).fetchone()
         if existing is not None:
-            if existing["request_hash"] != digest:
-                raise ApiError(409, "IDEMPOTENCY_CONFLICT", "같은 요청 키로 다른 신청서를 제출했습니다.")
+            _check_retry(existing, digest)
             response.status_code = 200
-            return _detail(conn, existing)
+            return _detail(conn, _find(conn, account, existing["id"], 1))
 
         now = datetime.now(UTC)
         local_day = now.astimezone(_SEOUL).date()
@@ -152,35 +237,97 @@ def submit(
         application, consent = render_forms(body, local_day.isoformat())
         region = REGIONS[body.region_code]
         application_id = str(uuid.uuid4())
-        row = conn.execute(
+        conn.execute(
             """INSERT INTO mock_applications (
                    id, submission_number, owner_id, district_code, town_code, submitted_at,
                    idempotency_key, request_hash, form_snapshot, application_pdf, consent_pdf
-               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-               RETURNING id, submission_number, submitted_at, form_snapshot, town_code""",
+               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 application_id, f"{prefix}{sequence:04d}", account.id, region.district_code, region.code,
                 now.isoformat(timespec="seconds"), key, digest, snapshot, application, consent,
             ),
-        ).fetchone()
-        if body.evidence_sample is not None:
-            photo = (evidence_image(body.evidence_sample), "image/png")
+        )
         if photo:
             conn.execute(
                 "INSERT INTO mock_application_evidence (application_id, image, media_type) VALUES (?, ?, ?)",
                 (application_id, *photo),
             )
-        return _detail(conn, row)
+        return _detail(conn, _find(conn, account, application_id))
+
+
+@router.post("/intake/{application_id}/corrections", response_model=Submission)
+def request_correction(
+    application_id: str,
+    body: CorrectionRequest,
+    account: Account = Depends(require_role("TOWN", "DISTRICT")),
+    conn: sqlite3.Connection = Depends(get_connection),
+) -> Submission:
+    with write_transaction(conn):
+        current = _find(conn, account, application_id)
+        if current["revision"] != body.revision or (current["reason"] and current["reason"] != body.reason):
+            raise ApiError(409, "VERSION_CONFLICT", "신청이 변경되었습니다. 최신 제출본을 확인해 주세요.")
+        if not current["reason"]:
+            conn.execute(
+                """INSERT INTO mock_application_corrections
+                   (application_id, revision, reason, requested_by, requested_at) VALUES (?, ?, ?, ?, ?)""",
+                (application_id, body.revision, body.reason, account.id, datetime.now(UTC).isoformat(timespec="seconds")),
+            )
+        return _detail(conn, _find(conn, account, application_id))
+
+
+@router.post("/applications/{application_id}/revisions", status_code=201, response_model=Submission)
+def resubmit(
+    application_id: str,
+    body: Resubmission,
+    request: Request,
+    response: Response,
+    account: Account = Depends(require_role("APPLICANT")),
+    conn: sqlite3.Connection = Depends(get_connection),
+) -> Submission:
+    key = _request_key(request)
+    with write_transaction(conn):
+        original = _find(conn, account, application_id, body.revision)
+        if body.region_code != original["town_code"]:
+            raise ApiError(422, "VALIDATION_ERROR", "보완 제출 시 기존 관할을 유지해 주세요.", "regionCode")
+        retained = None
+        if body.retain_evidence:
+            prior = ApplicationForm.model_validate_json(original["form_snapshot"])
+            retained = _evidence(conn, application_id, body.revision)
+            if retained is None or prior.evidence_sample is not None or body.evidence_photo is not None:
+                raise ApiError(422, "VALIDATION_ERROR", "기존 첨부와 새 증빙 중 하나를 선택해 주세요.", "evidencePhoto")
+        snapshot, digest, photo = _submission_content(body, retained)
+        existing = conn.execute(
+            """SELECT supersedes, request_hash FROM mock_application_resubmissions
+               WHERE application_id = ? AND idempotency_key = ?""", (application_id, key),
+        ).fetchone()
+        if existing is not None:
+            if existing["supersedes"] != body.revision:
+                raise ApiError(409, "IDEMPOTENCY_CONFLICT", "같은 요청 키로 다른 제출본을 수정했습니다.")
+            _check_retry(existing, digest)
+            response.status_code = 200
+            return _detail(conn, _find(conn, account, application_id, body.revision + 1))
+        if original["latest_revision"] != body.revision or not original["reason"]:
+            raise ApiError(409, "INVALID_TRANSITION", "최신 제출본에 보완 요청이 있을 때 다시 제출할 수 있습니다.")
+        now = datetime.now(UTC)
+        application, consent = render_forms(body, now.astimezone(_SEOUL).date().isoformat())
+        conn.execute(
+            """INSERT INTO mock_application_resubmissions
+               (application_id, supersedes, submitted_at, idempotency_key, request_hash,
+                form_snapshot, application_pdf, consent_pdf, image, media_type)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (application_id, body.revision, now.isoformat(timespec="seconds"), key, digest,
+             snapshot, application, consent, *(photo or (None, None))),
+        )
+        return _detail(conn, _find(conn, account, application_id))
 
 
 def _list(conn: sqlite3.Connection, account: Account, page: int, page_size: int) -> SubmissionPage:
     where, params = _scope(account)
-    total = conn.execute(f"SELECT count(*) FROM mock_applications WHERE {where}", params).fetchone()[0]
+    total = conn.execute(f"SELECT count(*) FROM mock_applications a WHERE {where}", params).fetchone()[0]
     offset = (page - 1) * page_size
     rows = [] if offset >= total else conn.execute(
-        f"""SELECT id, submission_number, submitted_at, form_snapshot, town_code
-            FROM mock_applications WHERE {where}
-            ORDER BY submitted_at DESC, submission_number DESC LIMIT ? OFFSET ?""",
+        f"""{_SUBMISSIONS} WHERE {where} AND v.revision = {_LATEST}
+            ORDER BY v.submitted_at DESC, a.submission_number DESC LIMIT ? OFFSET ?""",
         (*params, page_size, offset),
     )
     return SubmissionPage(
@@ -212,33 +359,45 @@ def inbox(
 @router.get("/applications/{application_id}", response_model=Submission)
 def applicant_detail(
     application_id: str,
+    revision: int | None = Query(default=None, ge=1, le=_MAX_REVISION),
     account: Account = Depends(require_role("APPLICANT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> Submission:
-    return _detail(conn, _find(conn, account, application_id))
+    with conn:
+        conn.execute("BEGIN")
+        return _detail(conn, _find(conn, account, application_id, revision))
 
 
 @router.get("/intake/{application_id}", response_model=Submission)
 def inbox_detail(
     application_id: str,
+    revision: int | None = Query(default=None, ge=1, le=_MAX_REVISION),
     account: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> Submission:
-    return _detail(conn, _find(conn, account, application_id))
+    with conn:
+        conn.execute("BEGIN")
+        return _detail(conn, _find(conn, account, application_id, revision))
 
 
 @router.get("/applications/{application_id}/documents/{kind}", response_class=Response)
 def document(
     application_id: str,
     kind: DocumentKind,
+    revision: int | None = Query(default=None, ge=1, le=_MAX_REVISION),
     account: Account = Depends(current_account),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> Response:
     column = "application_pdf" if kind == "application" else "consent_pdf"
-    row = _find(conn, account, application_id, "submission_number", column)
-    filename = f"{row['submission_number']}-{kind}.pdf"
+    row = _find(conn, account, application_id, revision)
+    pdf = conn.execute(
+        f"SELECT {column} FROM mock_application_versions WHERE id = ? AND revision = ?",
+        (application_id, row["revision"]),
+    ).fetchone()[0]
+    version_suffix = f"-r{row['revision']}" if row["revision"] > 1 else ""
+    filename = f"{row['submission_number']}{version_suffix}-{kind}.pdf"
     return Response(
-        row[column], media_type="application/pdf",
+        pdf, media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{filename}"', "Cache-Control": "private, no-store"},
     )
 
@@ -246,13 +405,12 @@ def document(
 @router.get("/applications/{application_id}/evidence", response_class=Response)
 def read_evidence(
     application_id: str,
+    revision: int | None = Query(default=None, ge=1, le=_MAX_REVISION),
     account: Account = Depends(current_account),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> Response:
-    _find(conn, account, application_id, "id")
-    row = conn.execute(
-        "SELECT image, media_type FROM mock_application_evidence WHERE application_id = ?", (application_id,),
-    ).fetchone()
+    application = _find(conn, account, application_id, revision)
+    row = _evidence(conn, application_id, application["revision"])
     if row is None:
         raise ApiError(404, "NOT_FOUND", "첨부된 가상 증빙이 없습니다.")
     return Response(
@@ -261,11 +419,11 @@ def read_evidence(
     )
 
 
-def _latest_attempt(conn: sqlite3.Connection, application_id: str) -> Verification | None:
+def _latest_attempt(conn: sqlite3.Connection, application_id: str, revision: int) -> Verification | None:
     row = conn.execute(
         """SELECT id, compared_at, comparison, review
-           FROM mock_verification_attempts WHERE application_id = ? ORDER BY id DESC LIMIT 1""",
-        (application_id,),
+           FROM mock_verification_attempts WHERE application_id = ? AND revision = ? ORDER BY id DESC LIMIT 1""",
+        (application_id, revision),
     ).fetchone()
     if row is None:
         return None
@@ -278,37 +436,39 @@ def _latest_attempt(conn: sqlite3.Connection, application_id: str) -> Verificati
 @router.get("/intake/{application_id}/verification", response_model=Verification | None)
 def current_verification(
     application_id: str,
+    revision: int | None = Query(default=None, ge=1, le=_MAX_REVISION),
     account: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> Verification | None:
-    _find(conn, account, application_id, "id")
-    return _latest_attempt(conn, application_id)
+    application = _find(conn, account, application_id, revision)
+    return _latest_attempt(conn, application_id, application["revision"])
 
 
 @router.post("/intake/{application_id}/verification", status_code=201, response_model=Verification)
 def verify_submission(
     application_id: str,
     body: Observations,
+    revision: int | None = Query(default=None, ge=1, le=_MAX_REVISION),
     account: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> Verification:
-    application = _find(conn, account, application_id, "form_snapshot")
-    exists = conn.execute(
-        "SELECT 1 FROM mock_application_evidence WHERE application_id = ?", (application_id,),
-    ).fetchone()
-    if exists is None:
-        raise ApiError(404, "NOT_FOUND", "대조할 가상 증빙이 없습니다.")
-    form = ApplicationForm.model_validate_json(application["form_snapshot"])
-    rows = compare_evidence(form.beneficiary, body, sample=form.evidence_sample)
-    now = datetime.now(UTC).isoformat(timespec="seconds")
     with write_transaction(conn):
-        previous = _latest_attempt(conn, application_id)
+        application = _find(conn, account, application_id)
+        if revision is not None and revision != application["revision"]:
+            raise ApiError(409, "VERSION_CONFLICT", "최신 제출본을 확인해 주세요.")
+        if not application["has_evidence"]:
+            raise ApiError(404, "NOT_FOUND", "대조할 가상 증빙이 없습니다.")
+        form = ApplicationForm.model_validate_json(application["form_snapshot"])
+        rows = compare_evidence(form.beneficiary, body, sample=form.evidence_sample)
+        now = datetime.now(UTC).isoformat(timespec="seconds")
+        previous = _latest_attempt(conn, application_id, application["revision"])
         reviews = previous.reviews if previous else {}
         cursor = conn.execute(
-            """INSERT INTO mock_verification_attempts (application_id, compared_by, compared_at, comparison, review)
-               VALUES (?, ?, ?, ?, ?)""",
+            """INSERT INTO mock_verification_attempts
+               (application_id, revision, compared_by, compared_at, comparison, review)
+               VALUES (?, ?, ?, ?, ?, ?)""",
             (
-                application_id, account.id, now,
+                application_id, application["revision"], account.id, now,
                 json.dumps([row.model_dump(by_alias=True) for row in rows], ensure_ascii=False),
                 json.dumps({field: review.model_dump(by_alias=True) for field, review in reviews.items()}, ensure_ascii=False),
             ),
@@ -324,9 +484,9 @@ def save_evidence_review(
     account: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> Verification:
-    _find(conn, account, application_id, "id")
     with write_transaction(conn):
-        verification = _latest_attempt(conn, application_id)
+        application = _find(conn, account, application_id)
+        verification = _latest_attempt(conn, application_id, application["revision"])
         if verification is None or verification.id != attempt_id:
             raise ApiError(409, "VERSION_CONFLICT", "더 최근 대조 결과가 있습니다. 새로 불러온 뒤 확인해 주세요.")
         row = next(item for item in verification.rows if item.field == body.field)

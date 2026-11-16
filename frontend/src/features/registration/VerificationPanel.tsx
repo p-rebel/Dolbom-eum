@@ -21,14 +21,16 @@ function ComparisonResult({ result }: { result: ComparisonStatus }) {
 
 type ReviewDraft = { field: VerificationField; value: string; note: string };
 
-export function VerificationPanel({ id, sample }: { id: string; sample: EvidenceSample | null }) {
-  const result = useApiData((signal) => getVerification(id, signal), [id]);
+export function VerificationPanel({ id, sample, revision, latest }: {
+  id: string; sample: EvidenceSample | null; revision: number; latest: boolean;
+}) {
+  const result = useApiData((signal) => getVerification(id, revision, signal), [id, revision]);
   const [busy, setBusy] = useState<'ocr' | 'review' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [draft, setDraft] = useState<ReviewDraft | null>(null);
   const verification = result.data;
-  const image = evidenceUrl(id);
+  const image = evidenceUrl(id, revision);
 
   async function runVerification() {
     if (busy) return;
@@ -38,7 +40,7 @@ export function VerificationPanel({ id, sample }: { id: string; sample: Evidence
     try {
       const { readEvidence } = await import('./evidenceOcr');
       const observations = await readEvidence(image, sample !== null);
-      result.setData(await recordVerification(id, observations));
+      result.setData(await recordVerification(id, revision, observations));
       setNotice('OCR 대조 결과를 저장했습니다.');
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : '증빙을 판독하지 못했습니다. 잠시 후 다시 시도해 주세요.');
@@ -83,8 +85,8 @@ export function VerificationPanel({ id, sample }: { id: string; sample: Evidence
     <section className="registration-verification" aria-labelledby="verification-heading">
       <div className="registration-section-title">
         <h2 id="verification-heading">가상 증빙 대조</h2>
-        <button type="button" className="krds-btn medium primary" disabled={Boolean(busy || draft || result.loading || result.error)}
-          onClick={runVerification}>{busy === 'ocr' ? '증빙을 판독하는 중…' : verification ? 'OCR 다시 대조' : 'OCR 자동 대조'}</button>
+        {latest && <button type="button" className="krds-btn medium primary" disabled={Boolean(busy || draft || result.loading || result.error)}
+          onClick={runVerification}>{busy === 'ocr' ? '증빙을 판독하는 중…' : verification ? 'OCR 다시 대조' : 'OCR 자동 대조'}</button>}
       </div>
       <div className="registration-verification-body">
         <figure>
@@ -108,8 +110,8 @@ export function VerificationPanel({ id, sample }: { id: string; sample: Evidence
                     <li key={row.field} aria-label={label}>
                       <div className="registration-section-title">
                         <h3>{label}</h3>
-                        <button type="button" className="krds-btn small secondary" disabled={Boolean(busy || draft)}
-                          aria-label={label + ' 원본 확인'} onClick={() => openReview(row)}>원본 확인</button>
+                        {latest && <button type="button" className="krds-btn small secondary" disabled={Boolean(busy || draft)}
+                          aria-label={label + ' 원본 확인'} onClick={() => openReview(row)}>원본 확인</button>}
                       </div>
                       <dl className="registration-verification-values">
                         <div><dt>신청값</dt><dd>{row.submitted}</dd></div>

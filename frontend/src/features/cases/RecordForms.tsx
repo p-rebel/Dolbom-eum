@@ -1,10 +1,10 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { recordAssessment, recordScreening } from '../../api/cases';
-import { ASSESSMENT_OUTCOME_LABEL, CONTACT_METHOD_LABEL, SCREENING_OUTCOME_LABEL } from '../../api/labels';
-import type { CaseDetail, ContactMethod } from '../../api/types';
+import { ASSESSMENT_OUTCOME_LABEL, ASSESSMENT_ROUTE_LABEL, CONTACT_METHOD_LABEL, SCREENING_OUTCOME_LABEL } from '../../api/labels';
+import type { Assessment, AssessmentRoute, CaseDetail, ContactMethod, Screening } from '../../api/types';
 import { useConfirm } from '../../components/ConfirmDialog';
 import { FormMessage } from '../../components/Feedback';
-import { RadioGroup, RequiredNotice } from '../../components/FormFields';
+import { RadioGroup, RequiredNotice, TextAreaField } from '../../components/FormFields';
 import { DateField } from '../../components/DateField';
 import { checkDate, minDate } from '../../dates';
 import { useUnsavedChanges } from '../../router';
@@ -14,16 +14,17 @@ import { interpretSaveError } from './saveErrors';
 
 type Props = { detail: CaseDetail } & SaveHandlers;
 
-/** 읍면동 사전조사 기록(RECORD_SCREENING). C-01의 결과는 ‘통합판정조사군’ 하나다. */
+/** 읍면동에서 사전조사와 이후 판정 경로를 기록한다. */
 export function ScreeningForm({ detail, onSaved, onReload }: Props) {
   const [screenedOn, setScreenedOn] = useState('');
   const [method, setMethod] = useState<ContactMethod | ''>('');
+  const [outcome, setOutcome] = useState<Screening['outcome']>('NHIS_ASSESSMENT_REQUIRED');
   const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<'screenedOn' | 'method'>();
   const [saving, setSaving] = useState(false);
   const dateRef = useRef<HTMLInputElement>(null);
   const methodRef = useRef<HTMLInputElement>(null);
   const confirm = useConfirm();
-  useUnsavedChanges(screenedOn !== '' || method !== '');
+  useUnsavedChanges(screenedOn !== '' || method !== '' || outcome !== 'NHIS_ASSESSMENT_REQUIRED');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,7 +46,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
       rows: [
         ['조사일', screenedOn],
         ['조사 방법', CONTACT_METHOD_LABEL[method as ContactMethod]],
-        ['조사 결과', SCREENING_OUTCOME_LABEL.NHIS_ASSESSMENT_REQUIRED],
+        ['조사 결과', SCREENING_OUTCOME_LABEL[outcome]],
       ],
       confirmLabel: '사전조사 저장',
     });
@@ -57,7 +58,7 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
         version: detail.version,
         screenedOn,
         method: method as ContactMethod,
-        outcome: 'NHIS_ASSESSMENT_REQUIRED',
+        outcome,
       });
       onSaved(saved, '사전조사를 저장했습니다.');
     } catch (error) {
@@ -98,12 +99,15 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
         error={errors.method}
         firstInputRef={methodRef}
       />
-      <dl className="info-list">
-        <div>
-          <dt>조사 결과</dt>
-          <dd>{SCREENING_OUTCOME_LABEL.NHIS_ASSESSMENT_REQUIRED}</dd>
-        </div>
-      </dl>
+      <RadioGroup
+        name="screening-outcome"
+        legend="판정 경로"
+        value={outcome}
+        options={(['NHIS_ASSESSMENT_REQUIRED', 'LOCAL_ASSESSMENT_REQUIRED'] as const).map(
+          (value) => ({ value, label: SCREENING_OUTCOME_LABEL[value] }),
+        )}
+        onChange={setOutcome}
+      />
       <div className="form-actions">
         <button type="submit" className="krds-btn xlarge primary" disabled={saving}>
           {saving ? '저장 중…' : '사전조사 저장'}
@@ -117,12 +121,17 @@ export function ScreeningForm({ detail, onSaved, onReload }: Props) {
 export function AssessmentForm({ detail, onSaved, onReload }: Props) {
   const [assessedOn, setAssessedOn] = useState('');
   const [resultReceivedOn, setResultReceivedOn] = useState('');
-  const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<'assessedOn' | 'resultReceivedOn'>();
+  const [outcome, setOutcome] = useState<Assessment['outcome']>('SUPPORT_PLAN_REQUIRED');
+  const [reason, setReason] = useState('');
+  const route: AssessmentRoute = detail.screening?.outcome === 'LOCAL_ASSESSMENT_REQUIRED' ? 'LOCAL' : 'NHIS';
+  const receivedLabel = route === 'NHIS' ? '판정 수신일' : '결과 확인일';
+  const { errors, setErrors, clearError, message, setMessage } = useFieldErrors<'assessedOn' | 'resultReceivedOn' | 'reason'>();
   const [saving, setSaving] = useState(false);
   const assessedRef = useRef<HTMLInputElement>(null);
   const receivedRef = useRef<HTMLInputElement>(null);
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
   const confirm = useConfirm();
-  useUnsavedChanges(assessedOn !== '' || resultReceivedOn !== '');
+  useUnsavedChanges(assessedOn !== '' || resultReceivedOn !== '' || reason !== '' || outcome !== 'SUPPORT_PLAN_REQUIRED');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -133,21 +142,24 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
       notBefore: { date: detail.screening?.screenedOn, label: '조사일' },
     });
     next.resultReceivedOn = checkDate(resultReceivedOn, {
-      required: '판정 수신일을 입력해 주세요.',
+      required: `${receivedLabel}을 입력해 주세요.`,
       notBefore: { date: assessedOn, label: '판정일' },
     });
+    if (!reason.trim()) next.reason = '판정 사유를 입력해 주세요.';
     setErrors(next);
-    if (next.assessedOn || next.resultReceivedOn) {
+    if (next.assessedOn || next.resultReceivedOn || next.reason) {
       setMessage('입력값을 확인해 주세요.', true);
-      (next.assessedOn ? assessedRef : receivedRef).current?.focus();
+      (next.assessedOn ? assessedRef : next.resultReceivedOn ? receivedRef : reasonRef).current?.focus();
       return;
     }
     const ok = await confirm.ask({
       title: '판정 결과를 저장할까요?',
       rows: [
         ['가상 판정일', assessedOn],
-        ['판정 수신일', resultReceivedOn],
-        ['판정 결과', ASSESSMENT_OUTCOME_LABEL.SUPPORT_PLAN_REQUIRED],
+        [receivedLabel, resultReceivedOn],
+        ['판정 경로', ASSESSMENT_ROUTE_LABEL[route]],
+        ['판정 결과', ASSESSMENT_OUTCOME_LABEL[outcome]],
+        ['판정 사유', reason.trim()],
       ],
       confirmLabel: '판정 결과 저장',
     });
@@ -159,15 +171,15 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
         version: detail.version,
         assessedOn,
         resultReceivedOn,
-        outcome: 'SUPPORT_PLAN_REQUIRED',
+        route, outcome, reason: reason.trim(),
       });
       onSaved(saved, '판정 결과를 저장했습니다.');
     } catch (error) {
       setSaving(false);
       const result = interpretSaveError(error);
-      if (result.field?.root === 'assessedOn' || result.field?.root === 'resultReceivedOn') {
+      if (result.field?.root === 'assessedOn' || result.field?.root === 'resultReceivedOn' || result.field?.root === 'reason') {
         setErrors({ [result.field.root]: result.field.message });
-        (result.field.root === 'assessedOn' ? assessedRef : receivedRef).current?.focus();
+        (result.field.root === 'assessedOn' ? assessedRef : result.field.root === 'resultReceivedOn' ? receivedRef : reasonRef).current?.focus();
         setMessage(result.message, true);
       } else {
         setMessage(result.message);
@@ -193,7 +205,7 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
       />
       <DateField
         id="result-received-on"
-        label="판정 수신일"
+        label={receivedLabel}
         hint="판정일과 같거나 이후 날짜"
         min={minDate(detail.screening?.screenedOn, assessedOn)}
         value={resultReceivedOn}
@@ -203,10 +215,19 @@ export function AssessmentForm({ detail, onSaved, onReload }: Props) {
       />
       <dl className="info-list">
         <div>
-          <dt>판정 결과</dt>
-          <dd>{ASSESSMENT_OUTCOME_LABEL.SUPPORT_PLAN_REQUIRED}</dd>
+          <dt>판정 경로</dt>
+          <dd>{ASSESSMENT_ROUTE_LABEL[route]}</dd>
         </div>
       </dl>
+      <RadioGroup
+        name="assessment-outcome" legend="판정 결과" value={outcome} onChange={setOutcome}
+        options={(['SUPPORT_PLAN_REQUIRED', 'NOT_ELIGIBLE'] as const).map(
+          (value) => ({ value, label: ASSESSMENT_OUTCOME_LABEL[value] }),
+        )}
+      />
+      <TextAreaField id="assessment-reason" label="판정 사유" value={reason} maxLength={200} required
+        textareaRef={reasonRef} error={errors.reason}
+        onChange={(event) => { setReason(event.target.value); clearError('reason'); }} />
       <div className="form-actions">
         <button type="submit" className="krds-btn xlarge primary" disabled={saving}>
           {saving ? '저장 중…' : '판정 결과 저장'}

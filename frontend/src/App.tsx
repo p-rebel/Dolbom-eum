@@ -8,7 +8,7 @@ import { CaseDetailPage } from './features/cases/CaseDetailPage';
 import { CaseListPage } from './features/cases/CaseListPage';
 import { NewCasePage } from './features/cases/NewCasePage';
 import { PublicHome } from './features/registration/PublicHome';
-import { ApplicationPage } from './features/registration/ApplicationPage';
+import { ApplicantCorrectionPage, ApplicationPage } from './features/registration/ApplicationPage';
 import { SubmissionDetailPage, SubmissionListPage } from './features/registration/SubmissionPages';
 import { NotFoundPage } from './features/placeholder/PlaceholderPage';
 import { AppFooter } from './layout/AppFooter';
@@ -90,6 +90,8 @@ function renderAuthenticatedPage(path: string, applicant: boolean) {
   if (applicant) {
     if (path === '/apply/new') return <ApplicationPage />;
     if (path === '/my/applications') return <SubmissionListPage audience="applicant" />;
+    const correction = matchPath('/my/applications/:id/revise', path);
+    if (correction) return <ApplicantCorrectionPage key={correction.id} id={correction.id} />;
     const match = matchPath('/my/applications/:id', path);
     if (match) return <SubmissionDetailPage key={match.id} id={match.id} audience="applicant" />;
     return <NotFoundPage home="/my/applications" />;

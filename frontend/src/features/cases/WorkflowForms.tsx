@@ -1,7 +1,7 @@
 // 작업 30~34: 계획 확정·안내(시군구), 항목별 연계·제공 현황(시군구), 최초 모니터링(읍면동) 입력.
 // 규칙: D-02 신청 상세, D-04 업무 기록 API·필드 검증, D-05 날짜 순서, expected-results 표시 값.
 import { useRef, useState, type FormEvent } from 'react';
-import { confirmPlan, recordDelivery, recordLinkage, recordMonitoring, recordNotice } from '../../api/cases';
+import { confirmPlan, recordDelivery, recordLinkage, recordMonitoring, recordMonitoringReview, recordNotice } from '../../api/cases';
 import {
   CONDITION_LABEL,
   CONTACT_METHOD_LABEL,
@@ -9,9 +9,10 @@ import {
   LINKAGE_METHOD_LABEL,
   MEETING_OUTCOME_LABEL,
   NOTICE_METHOD_LABEL,
+  REVIEW_DECISION_LABEL,
   orMissing,
 } from '../../api/labels';
-import type { CaseDetail, Condition, ContactMethod, DeliveryStatus, LinkageMethod, PlanItem } from '../../api/types';
+import type { CaseDetail, Condition, ContactMethod, DeliveryStatus, LinkageMethod, Monitoring, PlanItem, ReviewDecision } from '../../api/types';
 import { useConfirm, type ConfirmRequest } from '../../components/ConfirmDialog';
 import { FormMessage } from '../../components/Feedback';
 import { RadioGroup, RequiredNotice, SelectField, TextAreaField } from '../../components/FormFields';
@@ -434,7 +435,7 @@ export function DeliveryForm({ detail, item, ...handlers }: ItemProps) {
 type ObservationInput = { status: DeliveryStatus | ''; reason: string };
 
 /**
- * 작업 34. 읍면동 최초 모니터링(RECORD_MONITORING). 기존 제공 현황을 보면서 새로 확인한 항목만 상태·사유를 입력한다.
+ * 읍면동 모니터링. 제공 현황 또는 직전 모니터링을 기준으로 새로 확인한 항목을 기록한다.
  * ‘후속 검토 필요’를 고르면 바로 아래에 사유 입력란을 필수로 표시한다(D-02).
  */
 export function MonitoringForm({ detail, ...handlers }: Props) {
@@ -446,7 +447,9 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
   const [reviewReason, setReviewReason] = useState('');
   const [observations, setObservations] = useState<Record<string, ObservationInput>>({});
   const form = useSaveForm(handlers);
-  const lastObserved = minDate(...items.map((item) => item.delivery?.observedOn));
+  const title = detail.monitoring ? `${detail.monitoring.sequence + 1}차 모니터링` : '최초 모니터링';
+  const lastObserved = minDate(detail.monitoring?.monitoredOn, ...items.map((item) => item.delivery?.observedOn));
+  const previousDateLabel = detail.monitoring ? '직전 모니터링 기록일' : '마지막 제공 확인일';
   useUnsavedChanges(
     monitoredOn !== '' || method !== '' || condition !== '' || review !== '' || reviewReason !== '' ||
       Object.values(observations).some((value) => value.status !== ''),
@@ -466,7 +469,7 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
     const errors: Errors = {
       monitoredOn: checkDate(monitoredOn, {
         required: '모니터링 기록일을 입력해 주세요.',
-        notBefore: { date: lastObserved, label: '마지막 제공 확인일' },
+        notBefore: { date: lastObserved, label: previousDateLabel },
       }),
       method: method ? undefined : '확인 방법을 선택해 주세요.',
       condition: condition ? undefined : '상태 변화를 선택해 주세요.',
@@ -493,18 +496,18 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
           reviewReason: review === 'yes' ? reviewReason.trim() : null,
           observations: sent.map((entry) => ({ ...entry, reason: entry.reason === '' ? null : entry.reason })),
         }),
-      success: '최초 모니터링을 기록했습니다.',
+      success: `${title}을 기록했습니다.`,
       confirm: {
-        title: '최초 모니터링을 기록할까요?',
+        title: `${title}을 기록할까요?`,
         rows: [
           ['기록일', monitoredOn],
           ['확인 방법', method ? CONTACT_METHOD_LABEL[method] : ''],
           ['상태 변화', condition ? CONDITION_LABEL[condition] : ''],
-          ['새로 확인한 항목', sent.length ? `${sent.length}개` : '없음(기존 제공 현황 그대로)'],
+          ['새로 확인한 항목', sent.length ? `${sent.length}개` : (detail.monitoring ? '없음(직전 관찰 유지)' : '없음(기존 제공 현황 유지)')],
           ['후속 검토', review === 'yes' ? `필요 · ${reviewReason.trim()}` : '불필요'],
         ],
-        confirmLabel: '최초 모니터링 저장',
-        note: '저장하면 이번 시연 경로가 끝나며, 기록과 제공 현황을 더 고칠 수 없습니다.',
+        confirmLabel: `${title} 저장`,
+        note: '이번 관찰은 새 기록으로 추가됩니다.',
       },
       // 서버의 observations.0.reason은 보낸 배열의 순번이므로 해당 항목 칸으로 바꾼다.
       mapField: (name) => {
@@ -516,14 +519,14 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
   }
 
   return (
-    <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label="최초 모니터링 기록">
+    <form className="form-stack record-form" onSubmit={handleSubmit} noValidate aria-label={`${title} 기록`}>
       {/* 선택 칸이 있어 ‘모든 항목은 필수’ 안내를 두지 않는다. 선택 칸에는 (선택)을 붙인다. */}
       {form.message && <FormMessage tone="error">{form.message}</FormMessage>}
       {form.dialog}
       <DateField
         id="monitored-on"
         label="모니터링 기록일"
-        hint={lastObserved ? `마지막 제공 확인일(${lastObserved})과 같거나 이후 날짜` : undefined}
+        hint={lastObserved ? `${previousDateLabel}(${lastObserved})과 같거나 이후 날짜` : undefined}
         min={minDate(lastObserved)}
         value={monitoredOn}
         onChange={(value) => { setMonitoredOn(value); form.clear('monitoredOn'); }}
@@ -621,8 +624,66 @@ export function MonitoringForm({ detail, ...handlers }: Props) {
       {form.info && <FormMessage tone="info">{form.info}</FormMessage>}
       <div className="form-actions">
         <button type="submit" className="krds-btn xlarge primary" disabled={form.saving}>
-          {form.saving ? '저장 중…' : '최초 모니터링 저장'}
+          {form.saving ? '저장 중…' : `${title} 저장`}
         </button>
+      </div>
+    </form>
+  );
+}
+
+export function MonitoringReviewForm({ detail, monitoring, ...handlers }: Props & { monitoring: Monitoring }) {
+  const [reviewedOn, setReviewedOn] = useState('');
+  const [decision, setDecision] = useState<ReviewDecision | ''>('');
+  const [reason, setReason] = useState('');
+  const form = useSaveForm(handlers);
+  const prefix = `monitoring-review-${monitoring.sequence}`;
+  useUnsavedChanges(Boolean(reviewedOn || decision || reason));
+
+  function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void form.submit({
+      errors: {
+        reviewedOn: checkDate(reviewedOn, {
+          required: '검토일을 입력해 주세요.',
+          notBefore: { date: monitoring.monitoredOn, label: '모니터링 기록일' },
+        }),
+        decision: decision ? undefined : '검토 결과를 선택해 주세요.',
+        reason: reason.trim() ? undefined : '검토 의견을 입력해 주세요.',
+      },
+      order: ['reviewedOn', 'decision', 'reason'],
+      send: () => recordMonitoringReview(detail.id, monitoring.sequence, {
+        version: detail.version, reviewedOn, decision: decision as ReviewDecision, reason: reason.trim(),
+      }),
+      success: `${monitoring.sequence}차 모니터링의 후속 검토를 저장했습니다.`,
+      confirm: {
+        title: '후속 검토 결과를 저장할까요?',
+        rows: [
+          ['검토일', reviewedOn], ['검토 결과', decision ? REVIEW_DECISION_LABEL[decision] : ''],
+          ['검토 의견', reason.trim()],
+        ],
+        confirmLabel: '후속 검토 저장',
+      },
+    });
+  }
+
+  return (
+    <form className="form-stack record-form" onSubmit={save} noValidate aria-label={`${monitoring.sequence}차 후속 검토 기록`}>
+      {form.message && <FormMessage tone="error">{form.message}</FormMessage>}
+      {form.dialog}
+      <DateField id={prefix + '-date'} label="검토일" value={reviewedOn} min={minDate(monitoring.monitoredOn)}
+        onChange={(value) => { setReviewedOn(value); form.clear('reviewedOn'); }}
+        inputRef={form.bind('reviewedOn')} error={form.errors.reviewedOn} />
+      <SelectField id={prefix + '-decision'} label="검토 결과" value={decision} emptyOption="선택"
+        options={(Object.keys(REVIEW_DECISION_LABEL) as ReviewDecision[]).map(
+          (value) => ({ value, label: REVIEW_DECISION_LABEL[value] }),
+        )}
+        onChange={(event) => { setDecision(event.target.value as ReviewDecision | ''); form.clear('decision'); }}
+        selectRef={form.bind('decision')} error={form.errors.decision} />
+      <TextAreaField id={prefix + '-reason'} label="검토 의견" value={reason} maxLength={REASON_MAX}
+        onChange={(event) => { setReason(event.target.value); form.clear('reason'); }}
+        textareaRef={form.bind('reason')} error={form.errors.reason} />
+      <div className="form-actions">
+        <button type="submit" className="krds-btn large primary" disabled={form.saving}>후속 검토 저장</button>
       </div>
     </form>
   );

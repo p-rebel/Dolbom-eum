@@ -12,9 +12,9 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import AfterValidator, Field, StrictBool, StrictStr, WithJsonSchema
 
 from ..auth import Account, CamelModel, require_role
-from ..cases import CaseDetail, Observation, validate_business_date
+from ..cases import AssessmentRoute, CaseDetail, CaseStatus, Observation, ReviewDecision, validate_business_date
 from ..db import get_connection
-from ..errors import ErrorResponse
+from ..errors import ApiError, ErrorResponse
 from ..workflow import (
     VersionedRequest, WorkflowRequest, case_item, invalid_field, invalid_transition, record_change,
 )
@@ -45,13 +45,15 @@ DeliveryStatus = Literal["UNKNOWN", "IN_USE", "NOT_STARTED", "DECLINED"]
 class ScreeningRequest(VersionedRequest):
     screened_on: BusinessDate
     method: ContactMethod
-    outcome: Literal["NHIS_ASSESSMENT_REQUIRED"]
+    outcome: Literal["NHIS_ASSESSMENT_REQUIRED", "LOCAL_ASSESSMENT_REQUIRED"]
 
 
 class AssessmentRequest(VersionedRequest):
     assessed_on: BusinessDate
     result_received_on: BusinessDate
-    outcome: Literal["SUPPORT_PLAN_REQUIRED"]
+    outcome: Literal["SUPPORT_PLAN_REQUIRED", "NOT_ELIGIBLE"]
+    route: AssessmentRoute | None = None
+    reason: StrictStr | None = None
 
 
 class DraftRequest(VersionedRequest):
@@ -94,6 +96,12 @@ class MonitoringRequest(VersionedRequest):
     review_needed: StrictBool
     review_reason: StrictStr | None = None
     observations: list[ObservationRequest] = Field(default_factory=list)
+
+
+class MonitoringReviewRequest(VersionedRequest):
+    reviewed_on: BusinessDate
+    decision: ReviewDecision
+    reason: StrictStr
 
 
 async def _workflow_request(
@@ -148,15 +156,24 @@ def record_screening(case_id: str, request: WorkflowInput) -> CaseDetail:
 
 @_put("/{case_id}/assessment", AssessmentRequest)
 def record_assessment(case_id: str, request: WorkflowInput) -> CaseDetail:
-    def save(case: CaseDetail, body: AssessmentRequest) -> None:
+    def save(case: CaseDetail, body: AssessmentRequest) -> CaseStatus:
         if case.screening is None:
             raise invalid_transition()
         _date_after(body.assessed_on, case.screening.screened_on, "assessedOn")
         _date_after(body.result_received_on, body.assessed_on, "resultReceivedOn")
-        request.conn.execute(
-            "INSERT INTO assessments (case_id, assessed_on, result_received_on, outcome) VALUES (?, ?, ?, ?)",
-            (case.id, body.assessed_on, body.result_received_on, body.outcome),
+        route = "LOCAL" if case.screening.outcome == "LOCAL_ASSESSMENT_REQUIRED" else "NHIS"
+        if body.route is not None and body.route != route:
+            raise invalid_field("route", "사전조사에서 기록한 판정 경로를 확인해 주세요.")
+        reason = _text(
+            body.reason, "reason",
+            required=body.route is not None or route == "LOCAL" or body.outcome == "NOT_ELIGIBLE",
         )
+        request.conn.execute(
+            """INSERT INTO assessments (case_id, assessed_on, result_received_on, outcome, assessment_route, reason)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (case.id, body.assessed_on, body.result_received_on, body.outcome, route, reason),
+        )
+        return "NOT_ELIGIBLE" if body.outcome == "NOT_ELIGIBLE" else "ASSESSED"
 
     return record_change(request, case_id, "RECORD_ASSESSMENT", AssessmentRequest, save)
 
@@ -265,6 +282,10 @@ def record_delivery(case_id: str, item_id: str, request: WorkflowInput) -> CaseD
 def record_monitoring(case_id: str, request: WorkflowInput) -> CaseDetail:
     def save(case: CaseDetail, body: MonitoringRequest) -> None:
         assert case.plan is not None
+        sequence = 1
+        if case.monitoring is not None:
+            _date_after(body.monitored_on, case.monitoring.monitored_on, "monitoredOn")
+            sequence = case.monitoring.sequence + 1
         review_reason = _text(body.review_reason, "reviewReason", required=body.review_needed)
         observations = {}
         for item in case.plan.items:
@@ -273,6 +294,9 @@ def record_monitoring(case_id: str, request: WorkflowInput) -> CaseDetail:
             observations[item.id] = Observation(
                 item_id=item.id, status=item.delivery.status, reason=item.delivery.reason,
             )
+
+        if case.monitoring is not None:
+            observations.update({entry.item_id: entry for entry in case.monitoring.observations if entry.item_id in observations})
 
         seen = set()
         for index, observed in enumerate(body.observations):
@@ -285,12 +309,33 @@ def record_monitoring(case_id: str, request: WorkflowInput) -> CaseDetail:
         data = [observation.model_dump(by_alias=True) for observation in observations.values()]
         request.conn.execute(
             """INSERT INTO monitorings
-                   (case_id, monitored_on, method, condition, review_needed, review_reason, observations)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                   (case_id, monitored_on, method, condition, review_needed, review_reason, observations, sequence)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 case.id, body.monitored_on, body.method, body.condition, body.review_needed,
-                review_reason, json.dumps(data, ensure_ascii=False),
+                review_reason, json.dumps(data, ensure_ascii=False), sequence,
             ),
         )
 
     return record_change(request, case_id, "RECORD_MONITORING", MonitoringRequest, save)
+
+
+@_put("/{case_id}/monitoring/{sequence}/review", MonitoringReviewRequest)
+def record_monitoring_review(case_id: str, sequence: int, request: WorkflowInput) -> CaseDetail:
+    def save(case: CaseDetail, body: MonitoringReviewRequest) -> None:
+        record = next((record for record in case.monitorings if record.sequence == sequence), None)
+        if record is None:
+            raise ApiError(404, "NOT_FOUND", "모니터링 기록을 찾을 수 없습니다.")
+        if not record.review_needed or record.review is not None:
+            raise invalid_transition()
+        _date_after(body.reviewed_on, record.monitored_on, "reviewedOn")
+        reason = _text(body.reason, "reason", required=True)
+        request.conn.execute(
+            """INSERT INTO monitoring_reviews (case_id, sequence, reviewed_on, decision, reason, reviewed_by)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (case.id, sequence, body.reviewed_on, body.decision, reason, request.account.id),
+        )
+
+    return record_change(
+        request, case_id, "RECORD_MONITORING_REVIEW", MonitoringReviewRequest, save, monitoring_sequence=sequence,
+    )

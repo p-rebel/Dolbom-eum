@@ -10,7 +10,7 @@ from importlib import resources
 from pathlib import Path
 
 DB_PATH_ENV = "DOLBOMEUM_DB_PATH"
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 BUSY_TIMEOUT_MS = 5000
 
 # 로컬 개발 기본 경로: 저장소 루트의 var/ (git 제외). 팀 서버는 환경값으로 저장소 밖 경로를 지정한다.
@@ -21,9 +21,12 @@ EXPECTED_TABLES = frozenset(
         "demo_accounts",
         "demo_sessions",
         "demo_profiles",
+        "applicant_profiles",
         "mock_applications",
         "mock_application_evidence",
         "mock_verification_attempts",
+        "mock_application_corrections",
+        "mock_application_resubmissions",
         "nhis_catalog",
         "cases",
         "screenings",
@@ -33,6 +36,7 @@ EXPECTED_TABLES = frozenset(
         "service_linkages",
         "service_deliveries",
         "monitorings",
+        "monitoring_reviews",
         "case_events",
     }
 )
@@ -113,9 +117,37 @@ def init_db(path: Path | str | None = None, *, reset: bool = False) -> Path:
                 ADD COLUMN media_type TEXT NOT NULL DEFAULT 'image/png'
                 CHECK (media_type IN ('image/png', 'image/jpeg', 'image/webp'));
             """
-        conn.executescript("BEGIN IMMEDIATE;\n" + migration + _schema_sql())
+        restore = ""
+        if 1 <= current < 5:
+            # Keep foreign-key names pointing to the replacement tables during the rebuild.
+            conn.execute("PRAGMA foreign_keys = OFF")
+            conn.execute("PRAGMA legacy_alter_table = ON")
+            tables = ("cases", "screenings", "assessments", "monitorings", "case_events")
+            for table in tables:
+                migration += f"ALTER TABLE {table} RENAME TO {table}_previous;\n"
+            if current >= 3:
+                migration += """
+                    ALTER TABLE mock_verification_attempts ADD COLUMN revision
+                        INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1);
+                """
+            restore = """
+                INSERT INTO cases SELECT * FROM cases_previous;
+                INSERT INTO screenings SELECT * FROM screenings_previous;
+                INSERT INTO assessments (case_id, assessed_on, result_received_on, outcome)
+                    SELECT * FROM assessments_previous;
+                INSERT INTO monitorings
+                    (case_id, monitored_on, method, condition, review_needed, review_reason, observations)
+                    SELECT * FROM monitorings_previous;
+                INSERT INTO case_events SELECT * FROM case_events_previous;
+            """
+            restore += "".join(f"DROP TABLE {table}_previous;\n" for table in reversed(tables))
+            restore += """
+                CREATE INDEX IF NOT EXISTS ix_cases_town_list ON cases (town_code, received_on DESC, id);
+                CREATE INDEX IF NOT EXISTS ix_cases_district_list ON cases (district_code, received_on DESC, id);
+            """
+        conn.executescript("BEGIN IMMEDIATE;\n" + migration + _schema_sql() + restore)
         if migration and conn.execute("PRAGMA foreign_key_check").fetchone() is not None:
-            raise RuntimeError("계정 마이그레이션 중 기존 DB 참조를 보존하지 못했습니다.")
+            raise RuntimeError("마이그레이션 중 기존 DB 참조를 보존하지 못했습니다.")
         conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
         conn.execute("COMMIT")
     finally:

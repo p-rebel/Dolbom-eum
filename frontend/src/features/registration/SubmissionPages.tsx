@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+import { ApiError } from '../../api/client';
+import { TextField } from '../../components/TextField';
 import {
   APPLICATION_TYPES, CARE_NEEDS, EVIDENCE_LABELS, EVIDENCE_SAMPLES, RELATIONSHIPS,
-  documentUrl, evidenceUrl, getSubmission, getSubmissions,
-  type ApplicationForm, type SubmissionAudience,
+  documentUrl, evidenceUrl, getSubmission, getSubmissions, requestCorrection,
+  type ApplicationForm, type Submission, type SubmissionAudience,
 } from '../../api/registration';
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../components/Feedback';
+import { EmptyBlock, ErrorBlock, FormMessage, LoadingBlock } from '../../components/Feedback';
 import { Pagination } from '../../components/Pagination';
 import { useApiData } from '../../hooks/useApiData';
 import { PageHead } from '../../layout/PageHead';
@@ -42,6 +44,7 @@ export function SubmissionListPage({ audience }: { audience: SubmissionAudience 
                   <span>{item.submissionNumber}</span>
                 </Link>
                 <p>{APPLICATION_TYPES[item.applicationType]} · {item.region.name} · {DATE_TIME.format(new Date(item.submittedAt))}</p>
+                <p>{item.revision}차 제출 · {item.status === 'CHANGES_REQUESTED' ? '보완 요청' : '제출 완료'}</p>
               </li>
             ))}
           </ul>
@@ -72,8 +75,40 @@ function SubmittedValues({ form }: { form: ApplicationForm }) {
   );
 }
 
+function CorrectionForm({ submission, onSaved }: { submission: Submission; onSaved: (value: Submission) => void }) {
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (saving || !reason.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      onSaved(await requestCorrection(submission.id, submission.revision, reason.trim()));
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : '보완 요청을 저장하지 못했습니다.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form className="registration-form-section" onSubmit={save}>
+      <TextField id="correction-reason" label="보완 요청 사유" value={reason} maxLength={500} required disabled={saving}
+        onChange={(event) => setReason(event.target.value)} />
+      {error && <FormMessage tone="error">{error}</FormMessage>}
+      <button type="submit" className="krds-btn medium primary" disabled={saving || !reason.trim()}>보완 요청</button>
+    </form>
+  );
+}
+
 export function SubmissionDetailPage({ id, audience }: { id: string; audience: SubmissionAudience }) {
-  const result = useApiData((signal) => getSubmission(audience, id, signal), [audience, id]);
+  const [selectedRevision, setSelectedRevision] = useState<number>();
+  const result = useApiData(
+    (signal) => getSubmission(audience, id, signal, selectedRevision), [audience, id, selectedRevision],
+  );
   const staff = audience === 'staff';
   const listPath = staff ? '/intake' : '/my/applications';
   const listTitle = staff ? '가상 제출함' : '내 신청 현황';
@@ -90,22 +125,49 @@ export function SubmissionDetailPage({ id, audience }: { id: string; audience: S
             <div><p>수신처</p><strong>가상 통합돌봄 접수처 · {submission.region.name}</strong></div>
             <div><p>제출 시각</p><strong>{DATE_TIME.format(new Date(submission.submittedAt))}</strong></div>
           </section>
+          <div className="registration-form-section">
+            <div className="form-group">
+              <div className="form-tit"><label htmlFor="submission-revision">제출본</label></div>
+              <div className="form-conts">
+                <select id="submission-revision" className="krds-form-select medium"
+                  value={submission.revision} disabled={result.loading}
+                  onChange={(event) => {
+                    const selected = Number(event.target.value);
+                    setSelectedRevision(selected === submission.revisions[0].revision ? undefined : selected);
+                  }}>
+                  {submission.revisions.map((entry, index) => <option key={entry.revision} value={entry.revision}>
+                    {entry.revision}차 제출본{index === 0 ? ' (최신)' : ''} · {DATE_TIME.format(new Date(entry.submittedAt))}
+                  </option>)}
+                </select>
+              </div>
+            </div>
+            {submission.correctionReason && (
+              <p>{submission.latest ? '보완 요청 사유' : '당시 보완 요청 사유'} · {submission.correctionReason}</p>
+            )}
+            {!staff && submission.status === 'CHANGES_REQUESTED' && (
+              <Link className="krds-btn medium primary" to={listPath + '/' + id + '/revise'}>보완 신청서 작성</Link>
+            )}
+            {staff && submission.latest && submission.status === 'SUBMITTED' && (
+              <CorrectionForm key={submission.revision} submission={submission} onSaved={result.setData} />
+            )}
+          </div>
           {staff && (submission.evidenceSource
-            ? <VerificationPanel key={submission.id} id={submission.id} sample={submission.form.evidenceSample ?? null} />
+            ? <VerificationPanel key={submission.revision} id={submission.id} revision={submission.revision}
+                latest={submission.latest} sample={submission.form.evidenceSample ?? null} />
             : <p className="registration-verification-empty">첨부된 OCR 대조용 가상 증빙이 없습니다.</p>)}
           {!staff && submission.evidenceSource && (
             <p className="registration-verification-empty">제출한 가상 증빙 ·{' '}
-              <a className="registration-text-link" href={evidenceUrl(submission.id)} target="_blank" rel="noreferrer">
+              <a className="registration-text-link" href={evidenceUrl(submission.id, submission.revision)} target="_blank" rel="noreferrer">
                 {submission.form.evidenceSample ? EVIDENCE_SAMPLES[submission.form.evidenceSample] : '첨부한 가상 증빙 사진'} (새 창)
               </a>
             </p>
           )}
           <div className={'registration-detail' + (staff ? ' registration-detail-staff' : '')}>
-            <DocumentViewer urls={{
-              application: documentUrl(submission.id, 'application'),
-              'privacy-consent': documentUrl(submission.id, 'privacy-consent'),
+            <DocumentViewer key={submission.revision} urls={{
+              application: documentUrl(submission.id, 'application', submission.revision),
+              'privacy-consent': documentUrl(submission.id, 'privacy-consent', submission.revision),
             }} />
-            {staff && <SubmittedValues form={submission.form} />}
+            <SubmittedValues form={submission.form} />
           </div>
           <div className="registration-actions">
             <Link className="krds-btn medium secondary" to={listPath}>{listTitle}으로</Link>

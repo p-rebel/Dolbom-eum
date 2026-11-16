@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+from collections.abc import Sequence
 from datetime import UTC, date, datetime
 from typing import Any, Literal
 
@@ -19,8 +20,10 @@ _BUSINESS_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 CaseStatus = Literal[
     "RECEIVED", "SCREENED", "ASSESSED", "PLAN_DRAFTED",
-    "PLAN_CONFIRMED", "SERVICE_TRACKING", "FIRST_MONITORING_RECORDED",
+    "PLAN_CONFIRMED", "SERVICE_TRACKING", "FIRST_MONITORING_RECORDED", "NOT_ELIGIBLE",
 ]
+AssessmentRoute = Literal["NHIS", "LOCAL"]
+ReviewDecision = Literal["KEEP_PLAN", "FOLLOW_UP_NEEDED", "PLAN_CHANGE_RECOMMENDED"]
 
 
 class Screening(CamelModel):
@@ -33,6 +36,8 @@ class Assessment(CamelModel):
     assessed_on: str
     result_received_on: str
     outcome: str
+    route: AssessmentRoute
+    reason: str | None
 
 
 class Confirmation(CamelModel):
@@ -77,13 +82,22 @@ class Observation(CamelModel):
     reason: str | None
 
 
+class MonitoringReview(CamelModel):
+    reviewed_on: str
+    decision: ReviewDecision
+    reason: str
+    reviewer: str
+
+
 class Monitoring(CamelModel):
+    sequence: int
     monitored_on: str
     method: str
     condition: str
     review_needed: bool
     review_reason: str | None
     observations: list[Observation]
+    review: MonitoringReview | None
 
 
 class CaseEvent(CamelModel):
@@ -122,6 +136,7 @@ class CaseDetail(CaseSummary):
     assessment: Assessment | None
     plan: Plan | None
     monitoring: Monitoring | None
+    monitorings: list[Monitoring]
     events: list[CaseEvent]
     allowed_actions: list[AllowedAction]
 
@@ -199,7 +214,9 @@ def _load_plan(conn: sqlite3.Connection, case_id: str) -> Plan | None:
                 confirmation=confirmation, notice=notice)
 
 
-def allowed_actions(account: Account, status: str, plan: Plan | None) -> list[AllowedAction]:
+def allowed_actions(
+    account: Account, status: str, plan: Plan | None, monitorings: Sequence[Monitoring] = (),
+) -> list[AllowedAction]:
     """D-05 전환 조건으로 현재 계정이 실행할 수 있는 동작. 관할 확인은 호출 전에 끝낸다."""
     town = account.role == "TOWN"
     if status == "RECEIVED":
@@ -208,16 +225,22 @@ def allowed_actions(account: Account, status: str, plan: Plan | None) -> list[Al
         return [] if town else [AllowedAction(action="RECORD_ASSESSMENT")]
     if status == "ASSESSED":
         return [AllowedAction(action="SAVE_DRAFT")] if town else []
+    if town and status in ("SERVICE_TRACKING", "FIRST_MONITORING_RECORDED"):
+        ready = plan is not None and plan.notice is not None and bool(plan.items) and all(
+            item.linkage is not None and item.delivery is not None for item in plan.items
+        )
+        return [AllowedAction(action="RECORD_MONITORING")] if ready else []
+    if status == "FIRST_MONITORING_RECORDED":
+        if any(record.review_needed and record.review is None for record in monitorings):
+            return [AllowedAction(action="RECORD_MONITORING_REVIEW")]
+        return []
     if status == "PLAN_DRAFTED" and plan is not None and plan.confirmation is None:
         if town:
             return [AllowedAction(action="SAVE_DRAFT")]
         return [AllowedAction(action="CONFIRM_PLAN")] if plan.items else []
     if status in ("PLAN_CONFIRMED", "SERVICE_TRACKING") and plan is not None:
         if town:
-            done = status == "SERVICE_TRACKING" and plan.notice is not None and bool(plan.items) and all(
-                item.linkage is not None and item.delivery is not None for item in plan.items
-            )
-            return [AllowedAction(action="RECORD_MONITORING")] if done else []
+            return []
         if plan.notice is None:
             return [AllowedAction(action="RECORD_NOTICE")] if status == "PLAN_CONFIRMED" else []
         # 항목별로 연계 전이면 연계, 연계 후면 제공 현황(최초 모니터링 전까지 갱신 가능)
@@ -234,9 +257,27 @@ def load_case_detail(conn: sqlite3.Connection, case_row: sqlite3.Row, account: A
         "SELECT screened_on, method, outcome FROM screenings WHERE case_id = ?", (case_id,)
     ).fetchone()
     assessment = conn.execute(
-        "SELECT assessed_on, result_received_on, outcome FROM assessments WHERE case_id = ?", (case_id,)
+        "SELECT assessed_on, result_received_on, outcome, assessment_route AS route, reason FROM assessments WHERE case_id = ?",
+        (case_id,),
     ).fetchone()
-    monitoring = conn.execute("SELECT * FROM monitorings WHERE case_id = ?", (case_id,)).fetchone()
+    monitoring_rows = conn.execute(
+        """SELECT m.*, r.reviewed_on, r.decision, r.reason AS decision_reason, a.display_name AS reviewer
+           FROM monitorings m
+           LEFT JOIN monitoring_reviews r ON r.case_id = m.case_id AND r.sequence = m.sequence
+           LEFT JOIN demo_accounts a ON a.id = r.reviewed_by
+           WHERE m.case_id = ? ORDER BY m.sequence DESC""", (case_id,),
+    ).fetchall()
+    monitorings = [
+        Monitoring(
+            sequence=m["sequence"], monitored_on=m["monitored_on"], method=m["method"], condition=m["condition"],
+            review_needed=bool(m["review_needed"]), review_reason=m["review_reason"],
+            observations=json.loads(m["observations"]),
+            review=MonitoringReview(
+                reviewed_on=m["reviewed_on"], decision=m["decision"], reason=m["decision_reason"], reviewer=m["reviewer"],
+            ) if m["reviewed_on"] else None,
+        )
+        for m in monitoring_rows
+    ]
     events = conn.execute(
         "SELECT * FROM case_events WHERE case_id = ? ORDER BY version DESC", (case_id,)
     ).fetchall()
@@ -250,14 +291,8 @@ def load_case_detail(conn: sqlite3.Connection, case_row: sqlite3.Row, account: A
         screening=Screening(**dict(screening)) if screening else None,
         assessment=Assessment(**dict(assessment)) if assessment else None,
         plan=plan,
-        monitoring=Monitoring(
-            monitored_on=monitoring["monitored_on"],
-            method=monitoring["method"],
-            condition=monitoring["condition"],
-            review_needed=bool(monitoring["review_needed"]),
-            review_reason=monitoring["review_reason"],
-            observations=json.loads(monitoring["observations"]),
-        ) if monitoring else None,
+        monitoring=monitorings[0] if monitorings else None,
+        monitorings=monitorings,
         events=[
             CaseEvent(
                 id=e["id"], action=e["action"], from_status=e["from_status"], to_status=e["to_status"],
@@ -267,5 +302,5 @@ def load_case_detail(conn: sqlite3.Connection, case_row: sqlite3.Row, account: A
             )
             for e in events
         ],
-        allowed_actions=allowed_actions(account, case_row["status"], plan),
+        allowed_actions=allowed_actions(account, case_row["status"], plan, monitorings),
     )

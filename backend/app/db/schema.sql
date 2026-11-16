@@ -31,6 +31,12 @@ CREATE TABLE IF NOT EXISTS demo_sessions (
 
 CREATE INDEX IF NOT EXISTS ix_demo_sessions_account ON demo_sessions (account_id);
 
+CREATE TABLE IF NOT EXISTS applicant_profiles (
+    account_id  TEXT PRIMARY KEY REFERENCES demo_accounts (id) ON DELETE CASCADE,
+    region_code TEXT NOT NULL,
+    beneficiary TEXT NOT NULL CHECK (json_valid(beneficiary))
+) STRICT;
+
 CREATE TABLE IF NOT EXISTS demo_profiles (
     code                    TEXT PRIMARY KEY,
     beneficiary_name        TEXT NOT NULL,
@@ -74,11 +80,48 @@ CREATE TABLE IF NOT EXISTS mock_verification_attempts (
     application_id  TEXT NOT NULL REFERENCES mock_applications (id) ON DELETE CASCADE,
     compared_by     TEXT NOT NULL REFERENCES demo_accounts (id),
     compared_at     TEXT NOT NULL,
+    revision        INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
     comparison      TEXT NOT NULL CHECK (json_valid(comparison)),
     review          TEXT CHECK (review IS NULL OR json_valid(review))
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS ix_mock_verification_application ON mock_verification_attempts (application_id, id DESC);
+
+CREATE TABLE IF NOT EXISTS mock_application_corrections (
+    application_id TEXT NOT NULL REFERENCES mock_applications (id) ON DELETE CASCADE,
+    revision       INTEGER NOT NULL CHECK (revision >= 1),
+    reason         TEXT NOT NULL CHECK (length(trim(reason)) BETWEEN 1 AND 500),
+    requested_by   TEXT NOT NULL REFERENCES demo_accounts (id),
+    requested_at   TEXT NOT NULL,
+    PRIMARY KEY (application_id, revision)
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS mock_application_resubmissions (
+    application_id  TEXT NOT NULL,
+    supersedes      INTEGER NOT NULL CHECK (supersedes >= 1),
+    submitted_at    TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    request_hash    TEXT NOT NULL,
+    form_snapshot   TEXT NOT NULL CHECK (json_valid(form_snapshot)),
+    application_pdf BLOB NOT NULL,
+    consent_pdf     BLOB NOT NULL,
+    image           BLOB,
+    media_type      TEXT CHECK (media_type IN ('image/png', 'image/jpeg', 'image/webp')),
+    PRIMARY KEY (application_id, supersedes),
+    UNIQUE (application_id, idempotency_key),
+    CHECK ((image IS NULL) = (media_type IS NULL)),
+    FOREIGN KEY (application_id, supersedes)
+        REFERENCES mock_application_corrections (application_id, revision) ON DELETE CASCADE
+) STRICT;
+
+CREATE VIEW IF NOT EXISTS mock_application_versions AS
+    SELECT a.id, 1 AS revision, a.submitted_at, a.form_snapshot,
+           a.application_pdf, a.consent_pdf, e.image, e.media_type
+    FROM mock_applications a LEFT JOIN mock_application_evidence e ON e.application_id = a.id
+    UNION ALL
+    SELECT application_id, supersedes + 1, submitted_at, form_snapshot,
+           application_pdf, consent_pdf, image, media_type
+    FROM mock_application_resubmissions;
 
 -- 공단 카탈로그 (v1.4 정제 CSV의 열을 그대로 보존) ---------------------------
 
@@ -137,7 +180,7 @@ CREATE TABLE IF NOT EXISTS cases (
     evidence_checked    INTEGER NOT NULL CHECK (evidence_checked = 1),
     status              TEXT NOT NULL CHECK (status IN (
                             'RECEIVED', 'SCREENED', 'ASSESSED', 'PLAN_DRAFTED',
-                            'PLAN_CONFIRMED', 'SERVICE_TRACKING', 'FIRST_MONITORING_RECORDED'
+                            'PLAN_CONFIRMED', 'SERVICE_TRACKING', 'FIRST_MONITORING_RECORDED', 'NOT_ELIGIBLE'
                         )),
     version             INTEGER NOT NULL CHECK (version >= 1),
     created_at          TEXT NOT NULL,
@@ -155,14 +198,17 @@ CREATE TABLE IF NOT EXISTS screenings (
     case_id         TEXT PRIMARY KEY REFERENCES cases (id),
     screened_on     TEXT NOT NULL CHECK (date(screened_on) IS screened_on),
     method          TEXT NOT NULL CHECK (method IN ('PHONE', 'VISIT')),
-    outcome         TEXT NOT NULL CHECK (outcome IN ('NHIS_ASSESSMENT_REQUIRED'))
+    outcome         TEXT NOT NULL CHECK (outcome IN ('NHIS_ASSESSMENT_REQUIRED', 'LOCAL_ASSESSMENT_REQUIRED'))
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS assessments (
     case_id             TEXT PRIMARY KEY REFERENCES cases (id),
     assessed_on         TEXT NOT NULL CHECK (date(assessed_on) IS assessed_on),
     result_received_on  TEXT NOT NULL CHECK (date(result_received_on) IS result_received_on),
-    outcome             TEXT NOT NULL CHECK (outcome IN ('SUPPORT_PLAN_REQUIRED'))
+    outcome             TEXT NOT NULL CHECK (outcome IN ('SUPPORT_PLAN_REQUIRED', 'NOT_ELIGIBLE')),
+    assessment_route    TEXT NOT NULL DEFAULT 'NHIS' CHECK (assessment_route IN ('NHIS', 'LOCAL')),
+    reason              TEXT CHECK (reason IS NULL OR length(trim(reason)) BETWEEN 1 AND 200),
+    CHECK ((outcome <> 'NOT_ELIGIBLE' AND assessment_route <> 'LOCAL') OR reason IS NOT NULL)
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS plans (
@@ -220,7 +266,7 @@ CREATE TABLE IF NOT EXISTS service_deliveries (
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS monitorings (
-    case_id         TEXT PRIMARY KEY REFERENCES cases (id),
+    case_id         TEXT NOT NULL REFERENCES cases (id),
     monitored_on    TEXT NOT NULL CHECK (date(monitored_on) IS monitored_on),
     method          TEXT NOT NULL CHECK (method IN ('PHONE', 'VISIT')),
     condition       TEXT NOT NULL CHECK (condition IN ('UNCHANGED', 'IMPROVED', 'WORSENED')),
@@ -228,7 +274,20 @@ CREATE TABLE IF NOT EXISTS monitorings (
     review_reason   TEXT CHECK (review_reason IS NULL OR length(review_reason) <= 200),
     -- 기존 제공 현황에 새 관찰을 반영한 전체 결과, 계획 항목 순서 [{itemId, status, reason}]
     observations    TEXT NOT NULL CHECK (json_valid(observations) AND json_type(observations) = 'array'),
+    sequence        INTEGER NOT NULL DEFAULT 1 CHECK (sequence >= 1),
+    PRIMARY KEY (case_id, sequence),
     CHECK (review_needed = 0 OR coalesce(length(trim(review_reason)), 0) >= 1)
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS monitoring_reviews (
+    case_id     TEXT NOT NULL,
+    sequence    INTEGER NOT NULL,
+    reviewed_on TEXT NOT NULL CHECK (date(reviewed_on) IS reviewed_on),
+    decision    TEXT NOT NULL CHECK (decision IN ('KEEP_PLAN', 'FOLLOW_UP_NEEDED', 'PLAN_CHANGE_RECOMMENDED')),
+    reason      TEXT NOT NULL CHECK (length(trim(reason)) BETWEEN 1 AND 200),
+    reviewed_by TEXT NOT NULL REFERENCES demo_accounts (id),
+    PRIMARY KEY (case_id, sequence),
+    FOREIGN KEY (case_id, sequence) REFERENCES monitorings (case_id, sequence)
 ) STRICT;
 
 -- 처리 이력 --------------------------------------------------------------
@@ -239,7 +298,7 @@ CREATE TABLE IF NOT EXISTS case_events (
     action              TEXT NOT NULL CHECK (action IN (
                             'RECEIVE', 'RECORD_SCREENING', 'RECORD_ASSESSMENT', 'SAVE_DRAFT',
                             'CONFIRM_PLAN', 'RECORD_NOTICE', 'RECORD_LINKAGE', 'RECORD_DELIVERY',
-                            'RECORD_MONITORING'
+                            'RECORD_MONITORING', 'RECORD_MONITORING_REVIEW'
                         )),
     from_status         TEXT,
     to_status           TEXT NOT NULL,

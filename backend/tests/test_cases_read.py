@@ -209,7 +209,7 @@ def test_detail_with_later_stages_saved(client, db_file):
         )
     conn.execute("UPDATE cases SET status = 'FIRST_MONITORING_RECORDED', version = 13 WHERE id = ?", (cid,))
     conn.execute("INSERT INTO screenings VALUES (?, '2026-11-02', 'PHONE', 'NHIS_ASSESSMENT_REQUIRED')", (cid,))
-    conn.execute("INSERT INTO assessments VALUES (?, '2026-11-03', '2026-11-03', 'SUPPORT_PLAN_REQUIRED')", (cid,))
+    conn.execute("INSERT INTO assessments (case_id, assessed_on, result_received_on, outcome) VALUES (?, '2026-11-03', '2026-11-03', 'SUPPORT_PLAN_REQUIRED')", (cid,))
     conn.execute(
         "INSERT INTO plans VALUES (?, '2026-11-04', '가상 목표', '2026-11-05', 'APPROVED', 'demo-district-a', '2026-11-05')",
         (cid,),
@@ -230,7 +230,7 @@ def test_detail_with_later_stages_saved(client, db_file):
         {"itemId": "item-c", "status": "UNKNOWN", "reason": "검토 중"},
     ]
     conn.execute(
-        "INSERT INTO monitorings VALUES (?, '2026-11-09', 'VISIT', 'UNCHANGED', 1, '후속 검토', ?)",
+        "INSERT INTO monitorings (case_id, monitored_on, method, condition, review_needed, review_reason, observations) VALUES (?, '2026-11-09', 'VISIT', 'UNCHANGED', 1, '후속 검토', ?)",
         (cid, json.dumps(observations, ensure_ascii=False)),
     )
     conn.execute(
@@ -247,6 +247,7 @@ def test_detail_with_later_stages_saved(client, db_file):
     assert body["screening"] == {"screenedOn": "2026-11-02", "method": "PHONE", "outcome": "NHIS_ASSESSMENT_REQUIRED"}
     assert body["assessment"] == {
         "assessedOn": "2026-11-03", "resultReceivedOn": "2026-11-03", "outcome": "SUPPORT_PLAN_REQUIRED",
+        "route": "NHIS", "reason": None,
     }
     plan = body["plan"]
     assert (plan["preparedOn"], plan["goal"]) == ("2026-11-04", "가상 목표")
@@ -264,6 +265,7 @@ def test_detail_with_later_stages_saved(client, db_file):
     assert body["monitoring"] == {
         "monitoredOn": "2026-11-09", "method": "VISIT", "condition": "UNCHANGED",
         "reviewNeeded": True, "reviewReason": "후속 검토", "observations": observations,
+        "sequence": 1, "review": None,
     }
     assert [(e["version"], e["action"], e["itemId"]) for e in body["events"]] == [
         (2, "RECORD_LINKAGE", "item-a"), (1, "RECEIVE", None),

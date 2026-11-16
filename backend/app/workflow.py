@@ -28,7 +28,7 @@ class VersionedRequest(CamelModel):
 Body = TypeVar("Body", bound=VersionedRequest)
 Action = Literal[
     "RECORD_SCREENING", "RECORD_ASSESSMENT", "SAVE_DRAFT", "CONFIRM_PLAN",
-    "RECORD_NOTICE", "RECORD_LINKAGE", "RECORD_DELIVERY", "RECORD_MONITORING",
+    "RECORD_NOTICE", "RECORD_LINKAGE", "RECORD_DELIVERY", "RECORD_MONITORING", "RECORD_MONITORING_REVIEW",
 ]
 
 
@@ -56,7 +56,10 @@ _ACTIONS: dict[Action, ActionSpec] = {
     "RECORD_NOTICE": ActionSpec("DISTRICT", "PLAN_CONFIRMED", "계획 안내 기록", ("plan", "notice")),
     "RECORD_LINKAGE": ActionSpec("DISTRICT", "SERVICE_TRACKING", "서비스 연계 기록", ("linkage",)),
     "RECORD_DELIVERY": ActionSpec("DISTRICT", "SERVICE_TRACKING", "제공 현황 기록", ("delivery",), replace=True),
-    "RECORD_MONITORING": ActionSpec("TOWN", "FIRST_MONITORING_RECORDED", "최초 모니터링 기록", ("monitoring",)),
+    "RECORD_MONITORING": ActionSpec("TOWN", "FIRST_MONITORING_RECORDED", "최초 모니터링 기록", ("monitoring",), replace=True),
+    "RECORD_MONITORING_REVIEW": ActionSpec(
+        "DISTRICT", "FIRST_MONITORING_RECORDED", "모니터링 후속 검토 기록", ("review",),
+    ),
 }
 
 
@@ -89,9 +92,15 @@ def case_item(case: CaseDetail, item_id: str) -> PlanItem:
     raise ApiError(404, "NOT_FOUND", "계획 항목을 찾을 수 없습니다.")
 
 
-def _snapshot(case: CaseDetail, path: tuple[str, ...], item_id: str | None) -> dict | None:
+def _snapshot(
+    case: CaseDetail, path: tuple[str, ...], item_id: str | None, monitoring_sequence: int | None,
+) -> dict | None:
     record = case if item_id is None else case_item(case, item_id)
+    if monitoring_sequence is not None:
+        record = next((entry for entry in case.monitorings if entry.sequence == monitoring_sequence), None)
     for field in path:
+        if record is None:
+            return None
         record = getattr(record, field)
         if record is None:
             return None
@@ -103,9 +112,10 @@ def record_change(
     case_id: str,
     action: Action,
     body_type: type[Body],
-    save: Callable[[CaseDetail, Body], None],
+    save: Callable[[CaseDetail, Body], CaseStatus | None],
     *,
     item_id: str | None = None,
+    monitoring_sequence: int | None = None,
 ) -> CaseDetail:
     conn, account = request.conn, request.account
     spec = _ACTIONS[action]
@@ -124,27 +134,32 @@ def record_change(
         current = load_case_detail(conn, row, account)
         if AllowedAction(action=action, item_id=item_id) not in current.allowed_actions:
             raise invalid_transition()
-        before = _snapshot(current, spec.record_path, item_id)
+        before = _snapshot(current, spec.record_path, item_id, monitoring_sequence)
         if before is not None and not spec.replace:
             raise invalid_transition()
 
-        save(current, body)
+        status = save(current, body) or spec.status
         now = case_timestamp()
         updated = conn.execute(
             """UPDATE cases SET status = ?, version = version + 1, updated_at = ?
                WHERE id = ? AND version = ? RETURNING *""",
-            (spec.status, now, case_id, body.version),
+            (status, now, case_id, body.version),
         ).fetchone()
         if updated is None:
             raise _version_conflict()
         result = load_case_detail(conn, updated, account)
+        summary = spec.summary
+        if action == "RECORD_MONITORING" and current.monitoring is not None:
+            summary = f"{current.monitoring.sequence + 1}차 모니터링 기록"
+        elif monitoring_sequence is not None:
+            summary = f"{monitoring_sequence}차 모니터링 후속 검토 기록"
         event = CaseEvent(
             id=str(uuid4()), action=action, from_status=current.status, to_status=result.status,
             actor_display_name=account.display_name, actor_role=account.role, recorded_at=now,
-            version=result.version, item_id=item_id, summary=spec.summary,
+            version=result.version, item_id=item_id, summary=summary,
         )
         details = json.dumps(
-            {"before": before, "after": _snapshot(result, spec.record_path, item_id)}, ensure_ascii=False
+            {"before": before, "after": _snapshot(result, spec.record_path, item_id, monitoring_sequence)}, ensure_ascii=False
         )
         conn.execute(
             """INSERT INTO case_events

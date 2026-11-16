@@ -3,6 +3,8 @@ import { getCase } from '../../api/cases';
 import {
   ACTION_LABEL,
   ASSESSMENT_OUTCOME_LABEL,
+  ASSESSMENT_ROUTE_LABEL,
+  REVIEW_DECISION_LABEL,
   CONDITION_LABEL,
   CONTACT_METHOD_LABEL,
   DELIVERY_STATUS_LABEL,
@@ -15,7 +17,7 @@ import {
   SCREENING_OUTCOME_LABEL,
   STATUS_LABEL,
 } from '../../api/labels';
-import type { ActionCode, CaseDetail } from '../../api/types';
+import type { ActionCode, CaseDetail, Monitoring } from '../../api/types';
 import { ROLE_LABEL } from '../../auth/AuthContext';
 import { EmptyBlock, ErrorBlock, FormMessage, LoadingBlock, StatusBadge } from '../../components/Feedback';
 import { takeFlash } from '../../flash';
@@ -24,7 +26,7 @@ import { PageHead } from '../../layout/PageHead';
 import { Link } from '../../router';
 import { AssessmentForm, ScreeningForm } from './RecordForms';
 import { PlanDraftForm } from './PlanDraftForm';
-import { ConfirmPlanForm, DeliveryForm, LinkageForm, MonitoringForm, NoticeForm } from './WorkflowForms';
+import { ConfirmPlanForm, DeliveryForm, LinkageForm, MonitoringForm, MonitoringReviewForm, NoticeForm } from './WorkflowForms';
 
 const SECTIONS = [
   { id: 'section-receipt', title: '접수·조사' },
@@ -191,13 +193,15 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               <dd>{detail.assessment.assessedOn}</dd>
             </div>
             <div>
-              <dt>판정 수신일</dt>
+              <dt>{detail.assessment.route === 'LOCAL' ? '결과 확인일' : '판정 수신일'}</dt>
               <dd>{detail.assessment.resultReceivedOn}</dd>
             </div>
             <div>
               <dt>결과</dt>
               <dd>{ASSESSMENT_OUTCOME_LABEL[detail.assessment.outcome]}</dd>
             </div>
+            <div><dt>판정 경로</dt><dd>{ASSESSMENT_ROUTE_LABEL[detail.assessment.route]}</dd></div>
+            {detail.assessment.reason && <div><dt>판정 사유</dt><dd>{detail.assessment.reason}</dd></div>}
           </dl>
         ) : can('RECORD_ASSESSMENT') ? (
           <AssessmentForm detail={detail} {...handlers} />
@@ -227,8 +231,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         ) : (
           <EmptyBlock
             message={
-              detail.assessment
-                ? '읍면동에서 지원계획 초안을 작성합니다.'
+              detail.status === 'NOT_ELIGIBLE' ? '지원 비해당 판정이 기록되었습니다.'
+                : detail.assessment ? '읍면동에서 지원계획 초안을 작성합니다.'
                 : '판정 결과가 기록되면 읍면동에서 지원계획 초안을 작성합니다.'
             }
           />
@@ -262,8 +266,16 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         <h2 id="section-monitoring-title" className="section-title">
           모니터링
         </h2>
-        {detail.monitoring ? (
-          <MonitoringView detail={detail} />
+        {detail.monitorings.length > 0 ? (
+          detail.monitorings.map((record) => (
+            <section key={record.sequence} className="monitoring-record" aria-labelledby={`monitoring-${record.sequence}`}>
+              <h3 className="sub-title" id={`monitoring-${record.sequence}`}>{record.sequence}차 모니터링</h3>
+              <MonitoringView detail={detail} monitoring={record} />
+              {record.reviewNeeded && !record.review && can('RECORD_MONITORING_REVIEW') && (
+                <MonitoringReviewForm detail={detail} monitoring={record} {...handlers} />
+              )}
+            </section>
+          ))
         ) : (
           <>
             <EmptyBlock message="모든 서비스의 연계·제공 현황이 기록되면 읍면동에서 최초 모니터링을 기록합니다." />
@@ -272,8 +284,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         )}
         {can('RECORD_MONITORING') && (
           <>
-            <h3 className="sub-title">{ACTION_LABEL.RECORD_MONITORING}</h3>
-            <MonitoringForm detail={detail} {...handlers} />
+            <h3 className="sub-title">{detail.monitoring ? `${detail.monitoring.sequence + 1}차 모니터링 기록` : '최초 모니터링 기록'}</h3>
+            <MonitoringForm key={detail.monitoring?.sequence ?? 0} detail={detail} {...handlers} />
           </>
         )}
       </section>
@@ -553,8 +565,7 @@ function PlanView({ detail }: { detail: CaseDetail }) {
   );
 }
 
-function MonitoringView({ detail }: { detail: CaseDetail }) {
-  const monitoring = detail.monitoring!;
+function MonitoringView({ detail, monitoring }: { detail: CaseDetail; monitoring: Monitoring }) {
   const items = detail.plan?.items ?? [];
   return (
     <>
@@ -579,6 +590,13 @@ function MonitoringView({ detail }: { detail: CaseDetail }) {
             <dt>후속 검토 사유</dt>
             <dd>{monitoring.reviewReason}</dd>
           </div>
+        )}
+        {monitoring.review && (
+          <>
+            <div><dt>후속 검토 결과</dt><dd>{REVIEW_DECISION_LABEL[monitoring.review.decision]}</dd></div>
+            <div><dt>후속 검토 의견</dt><dd>{monitoring.review.reason}</dd></div>
+            <div><dt>검토일·담당자</dt><dd>{monitoring.review.reviewedOn} · {monitoring.review.reviewer}</dd></div>
+          </>
         )}
       </dl>
       <ul className="plan-item-list">

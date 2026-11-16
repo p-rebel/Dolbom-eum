@@ -2,6 +2,8 @@
 
 import type {
   ActionCode,
+  AssessmentRoute,
+  ReviewDecision,
   CaseDetail,
   CaseStatus,
   Condition,
@@ -19,7 +21,8 @@ export const STATUS_LABEL: Record<CaseStatus, string> = {
   PLAN_DRAFTED: '지원계획 초안 저장 완료',
   PLAN_CONFIRMED: '지원계획 확정',
   SERVICE_TRACKING: '연계·제공 기록 중',
-  FIRST_MONITORING_RECORDED: '최초 모니터링 기록 완료',
+  FIRST_MONITORING_RECORDED: '모니터링 진행 중',
+  NOT_ELIGIBLE: '지원 비해당',
 };
 
 /** 상태 배지 색. 상태는 색과 텍스트를 함께 표시한다(D-02). */
@@ -31,6 +34,7 @@ export const STATUS_BADGE: Record<CaseStatus, string> = {
   PLAN_CONFIRMED: 'bg-light-primary',
   SERVICE_TRACKING: 'bg-light-primary',
   FIRST_MONITORING_RECORDED: 'bg-light-success',
+  NOT_ELIGIBLE: 'bg-light-gray',
 };
 
 export const STATUS_ORDER: CaseStatus[] = [
@@ -41,6 +45,7 @@ export const STATUS_ORDER: CaseStatus[] = [
   'PLAN_CONFIRMED',
   'SERVICE_TRACKING',
   'FIRST_MONITORING_RECORDED',
+  'NOT_ELIGIBLE',
 ];
 
 export const NOTICE_METHOD_LABEL: Record<NoticeMethod, string> = {
@@ -53,8 +58,17 @@ export const CONTACT_METHOD_LABEL: Record<ContactMethod, string> = {
   VISIT: '방문',
 };
 
-export const SCREENING_OUTCOME_LABEL = { NHIS_ASSESSMENT_REQUIRED: '통합판정조사군' } as const;
-export const ASSESSMENT_OUTCOME_LABEL = { SUPPORT_PLAN_REQUIRED: '지원계획 수립 대상' } as const;
+export const SCREENING_OUTCOME_LABEL = {
+  NHIS_ASSESSMENT_REQUIRED: '통합판정조사군 · 공단 판정',
+  LOCAL_ASSESSMENT_REQUIRED: '자체조사',
+} as const;
+export const ASSESSMENT_ROUTE_LABEL: Record<AssessmentRoute, string> = { NHIS: '공단 판정', LOCAL: '자체조사' };
+export const ASSESSMENT_OUTCOME_LABEL = { SUPPORT_PLAN_REQUIRED: '지원계획 수립 대상', NOT_ELIGIBLE: '지원 비해당' } as const;
+export const REVIEW_DECISION_LABEL: Record<ReviewDecision, string> = {
+  KEEP_PLAN: '현 계획 유지',
+  FOLLOW_UP_NEEDED: '추가 확인 필요',
+  PLAN_CHANGE_RECOMMENDED: '계획 변경 검토',
+};
 export const MEETING_OUTCOME_LABEL = { APPROVED: '승인' } as const;
 
 export const LINKAGE_METHOD_LABEL: Record<LinkageMethod, string> = {
@@ -85,7 +99,8 @@ export const ACTION_LABEL: Record<ActionCode, string> = {
   RECORD_NOTICE: '계획 안내 기록',
   RECORD_LINKAGE: '연계 기록',
   RECORD_DELIVERY: '제공 현황 기록',
-  RECORD_MONITORING: '최초 모니터링 기록',
+  RECORD_MONITORING: '모니터링 기록',
+  RECORD_MONITORING_REVIEW: '후속 검토 결과 기록',
 };
 
 /** 다음 작업 문구. 동작할 수 있으면 동작 이름, 아니면 다음 담당 역할의 대기 문구를 표시한다(D-02). */
@@ -118,7 +133,9 @@ export function nextStepLabel(detail: CaseDetail): string {
     case 'SERVICE_TRACKING':
       return '시군구 연계·제공 현황 기록 대기';
     case 'FIRST_MONITORING_RECORDED':
-      return '최초 모니터링 기록 완료';
+      return '읍면동 모니터링 기록 대기';
+    case 'NOT_ELIGIBLE':
+      return '비해당 판정 기록 완료';
   }
 }
 

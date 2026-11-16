@@ -108,6 +108,52 @@ def test_submitted_forms_are_visible_only_to_owner_and_jurisdiction(db_file):
             assert other.get(url).status_code == 404
 
 
+def test_correction_reuses_number_and_preserves_both_pdf_versions(db_file):
+    with TestClient(app) as owner, TestClient(app) as staff, TestClient(app) as other:
+        assert login(owner, "demo-applicant-a", "applicant").status_code == 200
+        assert login(staff, "demo-town-a", "staff").status_code == 200
+        assert login(other, "demo-applicant-b", "applicant").status_code == 200
+        assert owner.get("/api/v1/applicant-profile").json()["beneficiary"]["demoId"] == "DEMO-SELF-0101"
+        assert other.get("/api/v1/applicant-profile").json()["beneficiary"]["demoId"] == "DEMO-SELF-0201"
+        assert staff.get("/api/v1/applicant-profile").status_code == 403
+
+        first = owner.post("/api/v1/applications", json=FORM, headers={**ORIGIN, "Idempotency-Key": "first"}).json()
+        path = f"/api/v1/applications/{first['id']}"
+        correction = f"/api/v1/intake/{first['id']}/corrections"
+        revised = {**FORM, "revision": 1, "beneficiary": {**FORM["beneficiary"], "address": "가상 A시 돌봄로 30"}}
+        headers = {**ORIGIN, "Idempotency-Key": "revised"}
+        kinds = ("application", "privacy-consent")
+        original_pdfs = {kind: owner.get(f"{path}/documents/{kind}").content for kind in kinds}
+        assert owner.post(f"{path}/revisions", json=revised, headers=headers).status_code == 409
+        assert other.post(f"{path}/revisions", json=revised, headers=headers).status_code == 404
+
+        request = {"revision": 1, "reason": "주소를 확인해 주세요."}
+        assert staff.post(correction, json={**request, "reason": " "}, headers=ORIGIN).status_code == 422
+        assert staff.post(correction, json=request, headers=ORIGIN).status_code == 200
+        pending = owner.get(path).json()
+        assert pending["status"] == "CHANGES_REQUESTED" and pending["form"] == first["form"]
+        assert owner.post(
+            f"{path}/revisions", json={**revised, "regionCode": "DEMO-B-1"}, headers=headers,
+        ).status_code == 422
+
+        response = owner.post(f"{path}/revisions", json=revised, headers=headers)
+        assert response.status_code == 201, response.text
+        second = response.json()
+        assert second["submissionNumber"] == first["submissionNumber"] and second["revision"] == 2
+        assert [entry["revision"] for entry in second["revisions"]] == [2, 1]
+        assert owner.post(f"{path}/revisions", json=revised, headers=headers).status_code == 200
+        assert owner.post(
+            f"{path}/revisions", json=revised, headers={**ORIGIN, "Idempotency-Key": "different"},
+        ).status_code == 409
+        assert owner.get("/api/v1/applications").json()["total"] == 1
+        assert owner.get(f"{path}?revision=1").json()["form"] == first["form"]
+        for kind in kinds:
+            assert other.get(f"{path}/documents/{kind}?revision=1").status_code == 404
+            assert owner.get(f"{path}/documents/{kind}?revision=1").content == original_pdfs[kind]
+            new_pdf = owner.get(f"{path}/documents/{kind}?revision=2").content
+            assert "가상 A시 돌봄로 30" in PdfReader(BytesIO(new_pdf)).pages[0].extract_text()
+
+
 def test_login_audience_and_evidence_are_checked_before_submission(db_file):
     with TestClient(app) as client:
         assert login(client, "demo-applicant-a", "staff").status_code == 403

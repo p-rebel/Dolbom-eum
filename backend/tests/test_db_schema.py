@@ -193,15 +193,15 @@ def test_monitoring_review_reason_required(conn):
     _insert_case(conn)
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute(
-            "INSERT INTO monitorings VALUES ('case-1', '2026-11-09', 'VISIT', 'UNCHANGED', 1, '  ', '[]')"
+            "INSERT INTO monitorings (case_id, monitored_on, method, condition, review_needed, review_reason, observations) VALUES ('case-1', '2026-11-09', 'VISIT', 'UNCHANGED', 1, '  ', '[]')"
         )
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute(
-            "INSERT INTO monitorings VALUES ('case-1', '2026-11-09', 'VISIT', 'UNCHANGED', 1, NULL, '[]')"
+            "INSERT INTO monitorings (case_id, monitored_on, method, condition, review_needed, review_reason, observations) VALUES ('case-1', '2026-11-09', 'VISIT', 'UNCHANGED', 1, NULL, '[]')"
         )
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute(
-            "INSERT INTO monitorings VALUES ('case-1', '2026-11-09', 'VISIT', 'UNCHANGED', 0, NULL, '{}')"
+            "INSERT INTO monitorings (case_id, monitored_on, method, condition, review_needed, review_reason, observations) VALUES ('case-1', '2026-11-09', 'VISIT', 'UNCHANGED', 0, NULL, '{}')"
         )
 
 
@@ -235,7 +235,7 @@ def _build_through_draft(c):
         c.execute("UPDATE cases SET status = 'SCREENED', version = 2 WHERE id = 'case-1' AND version = 1")
         _event(c, "case-1", 2, "RECORD_SCREENING", "RECEIVED", "SCREENED")
     with write_transaction(c):
-        c.execute("INSERT INTO assessments VALUES ('case-1', '2026-11-03', '2026-11-03', 'SUPPORT_PLAN_REQUIRED')")
+        c.execute("INSERT INTO assessments (case_id, assessed_on, result_received_on, outcome) VALUES ('case-1', '2026-11-03', '2026-11-03', 'SUPPORT_PLAN_REQUIRED')")
         c.execute("UPDATE cases SET status = 'ASSESSED', version = 3 WHERE id = 'case-1' AND version = 2")
         _event(c, "case-1", 3, "RECORD_ASSESSMENT", "SCREENED", "ASSESSED", actor="acc-district", role="DISTRICT")
     with write_transaction(c):

@@ -39,7 +39,8 @@ export type CaseStatus =
   | 'PLAN_DRAFTED'
   | 'PLAN_CONFIRMED'
   | 'SERVICE_TRACKING'
-  | 'FIRST_MONITORING_RECORDED';
+  | 'FIRST_MONITORING_RECORDED'
+  | 'NOT_ELIGIBLE';
 
 export type NoticeMethod = 'SMS' | 'MAIL';
 export type ContactMethod = 'PHONE' | 'VISIT';
@@ -56,7 +57,8 @@ export type ActionCode =
   | 'RECORD_NOTICE'
   | 'RECORD_LINKAGE'
   | 'RECORD_DELIVERY'
-  | 'RECORD_MONITORING';
+  | 'RECORD_MONITORING'
+  | 'RECORD_MONITORING_REVIEW';
 
 export interface CaseSummary {
   id: string;
@@ -94,13 +96,18 @@ export interface CatalogFilters {
 export interface Screening {
   screenedOn: string;
   method: ContactMethod;
-  outcome: 'NHIS_ASSESSMENT_REQUIRED';
+  outcome: 'NHIS_ASSESSMENT_REQUIRED' | 'LOCAL_ASSESSMENT_REQUIRED';
 }
+
+export type AssessmentRoute = 'NHIS' | 'LOCAL';
+export type ReviewDecision = 'KEEP_PLAN' | 'FOLLOW_UP_NEEDED' | 'PLAN_CHANGE_RECOMMENDED';
 
 export interface Assessment {
   assessedOn: string;
   resultReceivedOn: string;
-  outcome: 'SUPPORT_PLAN_REQUIRED';
+  outcome: 'SUPPORT_PLAN_REQUIRED' | 'NOT_ELIGIBLE';
+  route: AssessmentRoute;
+  reason: string | null;
 }
 
 export interface Linkage {
@@ -137,12 +144,14 @@ export interface Observation {
 }
 
 export interface Monitoring {
+  sequence: number;
   monitoredOn: string;
   method: ContactMethod;
   condition: Condition;
   reviewNeeded: boolean;
   reviewReason: string | null;
   observations: Observation[];
+  review: { reviewedOn: string; decision: ReviewDecision; reason: string; reviewer: string } | null;
 }
 
 export interface CaseEvent {
@@ -171,6 +180,7 @@ export interface CaseDetail extends CaseSummary {
   assessment: Assessment | null;
   plan: Plan | null;
   monitoring: Monitoring | null;
+  monitorings: Monitoring[];
   events: CaseEvent[];
   allowedActions: AllowedAction[];
 }
