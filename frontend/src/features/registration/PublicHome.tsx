@@ -1,3 +1,4 @@
+import { NOTICE_METHOD_LABEL } from '../../api/labels';
 import { AppFooter } from '../../layout/AppFooter';
 import { AppHeader } from '../../layout/AppHeader';
 import { AccountArea, PublicMenu } from '../../layout/PublicNav';
@@ -20,6 +21,7 @@ const SUPPORT = [
   },
 ];
 const PROCESS = ['신청', '조사·판정', '지원계획', '서비스 제공', '모니터링'];
+const NOTICE_METHODS = `${NOTICE_METHOD_LABEL.SMS}·${NOTICE_METHOD_LABEL.MAIL}`;
 
 export function PublicHome({ guide }: { guide: boolean }) {
   return (
@@ -145,7 +147,7 @@ function ApplyGuide() {
             <ul className="guide-check">
               <li>돌봄을 받는 분의 이름, 생년월일, 주소와 관할 지역</li>
               <li>가족이나 후견인이 신청하는 경우 신청인 정보와 대상자와의 관계</li>
-              <li>필요한 돌봄과 안내받을 방법(문자·우편), 신청 유형에 맞는 증빙</li>
+              <li>필요한 돌봄과 안내받을 방법({NOTICE_METHODS}), 신청 유형에 맞는 증빙</li>
             </ul>
           </section>
 
@@ -171,7 +173,7 @@ function ApplyGuide() {
           <dl className="guide-aside-info">
             <div><dt>소요 시간</dt><dd>약 5분</dd></div>
             <div><dt>준비물</dt><dd>대상자 정보, 가상 증빙(선택)</dd></div>
-            <div><dt>결과 안내</dt><dd>내 신청 현황, 문자·우편</dd></div>
+            <div><dt>결과 안내</dt><dd>내 신청 현황, {NOTICE_METHODS}</dd></div>
           </dl>
           <Link className="krds-btn large primary guide-aside-btn" to="/apply/new">신청서 작성</Link>
           <Link className="krds-btn medium secondary guide-aside-btn" to="/my/applications">내 신청 현황</Link>

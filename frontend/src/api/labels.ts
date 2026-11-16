@@ -50,7 +50,7 @@ export const STATUS_ORDER: CaseStatus[] = [
 
 export const NOTICE_METHOD_LABEL: Record<NoticeMethod, string> = {
   SMS: '문자',
-  MAIL: '우편',
+  MAIL: '서면',
 };
 
 export const CONTACT_METHOD_LABEL: Record<ContactMethod, string> = {

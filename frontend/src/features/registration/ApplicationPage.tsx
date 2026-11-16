@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { ApiError, newRequestKey } from '../../api/client';
+import { NOTICE_METHOD_LABEL } from '../../api/labels';
 import {
   APPLICATION_TYPES, CARE_NEEDS, EVIDENCE_LABELS, EVIDENCE_PHOTO_MAX_BYTES, EVIDENCE_PHOTO_TYPES, EVIDENCE_SAMPLES, RELATIONSHIPS,
   evidenceUrl, getApplicantProfile, getRegions, getSubmission, previewForms, submitApplication,
@@ -472,7 +473,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
                     ]}
                     onChange={(event) => setNoticeRecipient(event.target.value as ApplicationForm['noticeRecipient'])} />
                   <SelectField id="notice-method" label="안내 방식" value={noticeMethod}
-                    options={[{ value: 'SMS', label: '문자' }, { value: 'MAIL', label: '우편' }]}
+                    options={(['SMS', 'MAIL'] as const).map((value) => ({ value, label: NOTICE_METHOD_LABEL[value] }))}
                     onChange={(event) => setNoticeMethod(event.target.value as ApplicationForm['noticeMethod'])} />
                 </div>
               </FormSection>
