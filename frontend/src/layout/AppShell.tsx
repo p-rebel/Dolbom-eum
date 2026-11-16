@@ -5,11 +5,12 @@ import { Link, usePath } from '../router';
 import { AppFooter } from './AppFooter';
 import { AppHeader } from './AppHeader';
 import { AccountArea, PublicMenu } from './PublicNav';
+import { siteText } from '../siteConfig';
 
 const STAFF_MENU = [
   { to: '/cases', label: '신청 목록', match: (path: string) => path.startsWith('/cases') },
   { to: '/catalog', label: '공단 서비스 조회', match: (path: string) => path === '/catalog' },
-  ...(MOCK_API_ENABLED ? [] : [{ to: '/intake', label: '가상 제출함', match: (path: string) => path.startsWith('/intake') }]),
+  ...(MOCK_API_ENABLED ? [] : [{ to: '/intake', label: siteText('가상 제출함', '온라인 신청 접수함'), match: (path: string) => path.startsWith('/intake') }]),
 ];
 
 /**

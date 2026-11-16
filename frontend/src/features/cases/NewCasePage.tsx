@@ -13,6 +13,7 @@ import { useApiData } from '../../hooks/useApiData';
 import { PageHead } from '../../layout/PageHead';
 import { Link, navigate, useUnsavedChanges } from '../../router';
 import { useFieldErrors } from './fieldErrors';
+import { siteText } from '../../siteConfig';
 
 const CRUMBS = [{ label: '신청 목록', to: '/cases' }];
 
@@ -104,7 +105,7 @@ function NewCaseForm() {
       return;
     }
     const next: Partial<Record<Field, string>> = {};
-    if (!profileCode) next.profileCode = '가상 프로필을 선택해 주세요.';
+    if (!profileCode) next.profileCode = siteText('가상 프로필을 선택해 주세요.', '대상자 프로필을 선택해 주세요.');
     next.receivedOn = checkDate(receivedOn, { required: '접수일을 입력해 주세요.' });
     if (!noticeMethod) next.noticeMethod = '안내방식을 선택해 주세요.';
     if (!evidenceChecked) next.evidenceChecked = '증빙 서류 확인 후 체크해 주세요.';
@@ -131,7 +132,7 @@ function NewCaseForm() {
           접수 정보
         </h2>
         <RequiredNotice />
-        {profiles.loading && <LoadingBlock label="가상 프로필을 불러오는 중입니다." />}
+        {profiles.loading && <LoadingBlock label={siteText('가상 프로필을 불러오는 중입니다.', '대상자 프로필을 불러오는 중입니다.')} />}
         {profiles.error && <ErrorBlock message={profiles.error.message} onRetry={profiles.reload} />}
         {message && <FormMessage tone="error">{message}</FormMessage>}
         {conflict && (
@@ -147,7 +148,7 @@ function NewCaseForm() {
               <legend>접수 입력</legend>
             <SelectField
               id="profile-code"
-              label="가상 프로필"
+              label={siteText('가상 프로필', '대상자 프로필')}
               emptyOption="선택"
               value={profileCode}
               options={profiles.data.items.map((item) => ({ value: item.code, label: `${item.code} · ${item.beneficiaryName}` }))}
@@ -157,7 +158,7 @@ function NewCaseForm() {
             />
 
             {profile && (
-              <dl className="info-list" aria-label="선택한 가상 프로필">
+              <dl className="info-list" aria-label={siteText('선택한 가상 프로필', '선택한 대상자 프로필')}>
                 <div>
                   <dt>대상자</dt>
                   <dd>{profile.beneficiaryName}</dd>

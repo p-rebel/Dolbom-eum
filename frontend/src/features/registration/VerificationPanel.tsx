@@ -7,6 +7,7 @@ import {
 import { ErrorBlock, FormMessage, LoadingBlock } from '../../components/Feedback';
 import { TextField } from '../../components/TextField';
 import { useApiData } from '../../hooks/useApiData';
+import { siteText } from '../../siteConfig';
 
 const RESULT_LABELS: Record<ComparisonStatus, string> = {
   MATCH: '일치', DIFFERENT: '불일치', NEEDS_REVIEW: '확인 필요',
@@ -89,22 +90,22 @@ export function VerificationPanel({ id, sample, revision, latest }: {
   return (
     <section className="registration-verification" aria-labelledby="verification-heading">
       <div className="registration-section-title">
-        <h2 id="verification-heading">가상 증빙 대조</h2>
+        <h2 id="verification-heading">{siteText('가상 증빙 대조', '증빙 대조')}</h2>
         {latest && <button type="button" className="krds-btn medium primary" disabled={Boolean(busy || draft || result.loading || result.error)}
           onClick={runVerification}>{busy === 'ocr' ? '증빙을 판독하는 중…' : verification ? 'OCR 다시 대조' : 'OCR 자동 대조'}</button>}
       </div>
       <div className="registration-verification-body">
         <figure>
-          <img src={image} alt={sample ? EVIDENCE_SAMPLES[sample] : '신청자가 제출한 가상 증빙 사진'} />
+          <img src={image} alt={sample ? EVIDENCE_SAMPLES[sample] : siteText('신청자가 제출한 가상 증빙 사진', '신청자가 제출한 증빙 사진')} />
           <figcaption><a className="registration-text-link" href={image} target="_blank" rel="noreferrer">증빙 원본 열기 (새 창)</a></figcaption>
         </figure>
         <div className="registration-verification-details">
-          <p>{sample ? '신청값을 증빙 판독값 및 가상 기준값과 각각 대조합니다.' : '신청값을 제출된 사진의 판독값과 대조합니다.'} 흐릿하거나 찾기 어려운 항목은 원본을 확인해 주세요.</p>
+          <p>{sample ? siteText('신청값을 증빙 판독값 및 가상 기준값과 각각 대조합니다.', '신청값을 증빙 판독값 및 기준값과 각각 대조합니다.') : '신청값을 제출된 사진의 판독값과 대조합니다.'} 흐릿하거나 찾기 어려운 항목은 원본을 확인해 주세요.</p>
           {result.loading && <LoadingBlock label="기존 대조 결과를 불러오는 중" />}
           {result.error && <ErrorBlock message={result.error.message} onRetry={result.reload} />}
           {error && <FormMessage tone="error">{error}</FormMessage>}
           {notice && busy === null && <FormMessage tone="success">{notice}</FormMessage>}
-          {busy === 'ocr' && <p role="status">가상 증빙 이미지에서 성명, 생년월일, 식별자, 주소를 읽고 있습니다.</p>}
+          {busy === 'ocr' && <p role="status">{siteText('가상 증빙 이미지', '증빙 이미지')}에서 성명, 생년월일, 식별자, 주소를 읽고 있습니다.</p>}
           {verification && !result.loading && !result.error && (
             <>
               <ul className="registration-verification-rows" aria-label="항목별 대조 결과">
@@ -121,7 +122,7 @@ export function VerificationPanel({ id, sample, revision, latest }: {
                       <dl className="registration-verification-values">
                         <div><dt>신청값</dt><dd>{row.submitted}</dd></div>
                         <div><dt>OCR 판독값</dt><dd>{row.scanned ?? '판독값 없음'} <ComparisonResult result={row.evidenceResult} /></dd></div>
-                        {row.referenceResult && <div><dt>가상 기준값</dt><dd>{row.reference} <ComparisonResult result={row.referenceResult} /></dd></div>}
+                        {row.referenceResult && <div><dt>{siteText('가상 기준값', '기준값')}</dt><dd>{row.reference} <ComparisonResult result={row.referenceResult} /></dd></div>}
                       </dl>
                       {review && <p className="registration-verification-review">
                         <strong>담당자 확인</strong> · {review.value ?? '판독 불가'} <ComparisonResult result={review.result} />

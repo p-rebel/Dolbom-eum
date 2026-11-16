@@ -9,6 +9,7 @@ import { Pagination } from '../../components/Pagination';
 import { useApiData } from '../../hooks/useApiData';
 import { PageHead } from '../../layout/PageHead';
 import { Link, navigate } from '../../router';
+import { siteText } from '../../siteConfig';
 
 const PAGE_SIZE = 20;
 
@@ -100,11 +101,11 @@ export function CaseListPage() {
           <>
             <div className="krds-table-wrap mob-scroll">
               <table className="tbl col data">
-                <caption>관할 신청 목록. 접수번호, 가상 대상자, 접수일, 진행 상태로 구성되어 있습니다.</caption>
+                <caption>관할 신청 목록. 접수번호, {siteText('가상 대상자', '대상자')}, 접수일, 진행 상태로 구성되어 있습니다.</caption>
                 <thead>
                   <tr>
                     <th scope="col">접수번호</th>
-                    <th scope="col">가상 대상자</th>
+                    <th scope="col">{siteText('가상 대상자', '대상자')}</th>
                     <th scope="col">접수일</th>
                     <th scope="col">진행 상태</th>
                   </tr>

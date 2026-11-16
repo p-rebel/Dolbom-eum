@@ -4,6 +4,7 @@ import { AppHeader } from '../../layout/AppHeader';
 import { AccountArea, PublicMenu } from '../../layout/PublicNav';
 import { PageHead } from '../../layout/PageHead';
 import { Link, PageTitle } from '../../router';
+import { siteText } from '../../siteConfig';
 
 const OFFICIAL_GUIDE = 'https://www.mohw.go.kr/menu.es?mid=a60200000000';
 const SUPPORT = [
@@ -106,8 +107,8 @@ function HomeOverview() {
  * 오른쪽에 화면을 내려도 따라오는 ‘온라인 신청’ 상자. 전에는 한 단에 짧은 목록만 있어 왼쪽으로 몰려 보였다.
  */
 const APPLY_METHODS = [
-  { title: '신청 창구', desc: '신청자 주소지 읍면동 행정복지센터, 국민건강보험공단 지사 등', note: '이 누리집의 ‘신청서 작성’으로 온라인 신청(가상 시연)도 할 수 있습니다.' },
-  { title: '신청 방법', desc: '방문 신청, 우편·팩스 신청, 온라인 신청(가상 시연)' },
+  { title: '신청 창구', desc: '신청자 주소지 읍면동 행정복지센터, 국민건강보험공단 지사 등', note: siteText('이 누리집의 ‘신청서 작성’으로 온라인 신청(가상 시연)도 할 수 있습니다.', '이 누리집의 ‘신청서 작성’으로 온라인 신청도 할 수 있습니다.') },
+  { title: '신청 방법', desc: siteText('방문 신청, 우편·팩스 신청, 온라인 신청(가상 시연)', '방문 신청, 우편·팩스 신청, 온라인 신청') },
   { title: '신청자', desc: '대상자, 대상자 가족(8촌 이내의 친족), 후견인, 시군구(직권 신청), 기관 담당자', note: '기관 담당자는 본인의 동의가 있는 경우 신청할 수 있습니다.' },
 ];
 const GUIDE_STEPS = [
@@ -169,10 +170,10 @@ function ApplyGuide() {
 
         <aside className="guide-aside" aria-labelledby="guide-apply-title">
           <h2 id="guide-apply-title">온라인 신청</h2>
-          <p>가상 정보로 신청서와 동의서를 작성해 가상 통합돌봄 접수처에 제출합니다.</p>
+          <p>{siteText('가상 정보로 신청서와 동의서를 작성해 가상 통합돌봄 접수처에 제출합니다.', '신청서와 동의서를 작성해 통합돌봄 접수처에 제출합니다.')}</p>
           <dl className="guide-aside-info">
             <div><dt>소요 시간</dt><dd>약 5분</dd></div>
-            <div><dt>준비물</dt><dd>대상자 정보, 가상 증빙(선택)</dd></div>
+            <div><dt>준비물</dt><dd>{siteText('대상자 정보, 가상 증빙(선택)', '대상자 정보, 증빙 서류(선택)')}</dd></div>
             <div><dt>결과 안내</dt><dd>내 신청 현황, {NOTICE_METHODS}</dd></div>
           </dl>
           <Link className="krds-btn large primary guide-aside-btn" to="/apply/new">신청서 작성</Link>

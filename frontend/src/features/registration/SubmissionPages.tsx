@@ -13,6 +13,7 @@ import { PageHead } from '../../layout/PageHead';
 import { Link } from '../../router';
 import { DocumentViewer } from './DocumentViewer';
 import { VerificationPanel } from './VerificationPanel';
+import { siteText } from '../../siteConfig';
 
 const DATE_TIME = new Intl.DateTimeFormat('ko-KR', {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Seoul',
@@ -21,16 +22,16 @@ const DATE_TIME = new Intl.DateTimeFormat('ko-KR', {
 export function SubmissionListPage({ audience }: { audience: SubmissionAudience }) {
   const [page, setPage] = useState(1);
   const result = useApiData((signal) => getSubmissions(audience, page, signal), [audience, page]);
-  const title = audience === 'staff' ? '가상 제출함' : '내 신청 현황';
+  const title = audience === 'staff' ? siteText('가상 제출함', '온라인 신청 접수함') : '내 신청 현황';
   const path = audience === 'staff' ? '/intake' : '/my/applications';
 
   return (
     <div className="inner page registration-submissions">
       <PageHead parents={[{ label: '홈', to: '/' }]} title={title} />
-      {result.loading && <LoadingBlock label="모의 신청을 불러오는 중" />}
+      {result.loading && <LoadingBlock label={siteText('모의 신청을 불러오는 중', '신청을 불러오는 중')} />}
       {result.error && <ErrorBlock message={result.error.message} onRetry={result.reload} />}
       {!result.loading && !result.error && result.data?.items.length === 0 && (
-        <EmptyBlock message={audience === 'staff' ? '관할에 제출된 모의 신청이 없습니다.' : '제출한 모의 신청이 없습니다.'}>
+        <EmptyBlock message={audience === 'staff' ? siteText('관할에 제출된 모의 신청이 없습니다.', '관할에 제출된 신청이 없습니다.') : siteText('제출한 모의 신청이 없습니다.', '제출한 신청이 없습니다.')}>
           {audience === 'applicant' && <Link className="krds-btn medium primary" to="/apply/new">신청서 작성</Link>}
         </EmptyBlock>
       )}
@@ -69,7 +70,7 @@ function SubmittedValues({ form }: { form: ApplicationForm }) {
         {form.applicant && <div><dt>대리 신청인</dt><dd>{form.applicant.name} · {RELATIONSHIPS[form.applicant.relationship]}</dd></div>}
         {form.caregiver && <div><dt>별도 보호자</dt><dd>{form.caregiver.name} · {RELATIONSHIPS[form.caregiver.relationship]}</dd></div>}
         <div><dt>필요한 돌봄</dt><dd>{form.careNeeds.map((need) => CARE_NEEDS[need]).join(', ')}</dd></div>
-        <div><dt>가상 증빙</dt><dd>{form.evidence.map((kind) => EVIDENCE_LABELS[kind]).join(', ') || '별도 증빙 없음'}</dd></div>
+        <div><dt>{siteText('가상 증빙', '증빙')}</dt><dd>{form.evidence.map((kind) => EVIDENCE_LABELS[kind]).join(', ') || '별도 증빙 없음'}</dd></div>
       </dl>
     </section>
   );
@@ -121,7 +122,7 @@ function SubmissionComplete({ submission }: { submission: Submission }) {
         <li><div className="key">접수번호</div><div className="value">{submission.submissionNumber}</div></li>
         <li><div className="key">대상자</div><div className="value">{submission.beneficiaryName}</div></li>
         <li><div className="key">신청 유형</div><div className="value">{APPLICATION_TYPES[submission.applicationType]}</div></li>
-        <li><div className="key">접수처</div><div className="value">가상 통합돌봄 접수처 · {submission.region.name}</div></li>
+        <li><div className="key">접수처</div><div className="value">{siteText('가상 통합돌봄 접수처', '통합돌봄 접수처')} · {submission.region.name}</div></li>
         <li><div className="key">제출 시각</div><div className="value">{DATE_TIME.format(new Date(submission.submittedAt))}</div></li>
       </ul>
       <div className="comp-btn-wrap">
@@ -152,7 +153,7 @@ export function SubmissionDetailPage({ id, audience }: { id: string; audience: S
   );
   const staff = audience === 'staff';
   const listPath = staff ? '/intake' : '/my/applications';
-  const listTitle = staff ? '가상 제출함' : '내 신청 현황';
+  const listTitle = staff ? siteText('가상 제출함', '온라인 신청 접수함') : '내 신청 현황';
   const submission = result.data;
   // 제출 직후 한 번만 완료 안내를 보이고 주소에서 done=1을 지운다. 새로고침·뒤로가기·즐겨찾기로 다시 열면 ‘신청 상세’다.
   const [justSubmitted] = useState(() => !staff && new URLSearchParams(window.location.search).get('done') === '1');
@@ -162,7 +163,7 @@ export function SubmissionDetailPage({ id, audience }: { id: string; audience: S
   const showCompletion = justSubmitted && submission?.latest && submission.status === 'SUBMITTED';
   return (
     <div className="inner page registration-submissions">
-      <PageHead parents={[{ label: listTitle, to: listPath }]} title={staff ? '모의 신청 상세' : showCompletion ? '신청 완료' : '신청 상세'} />
+      <PageHead parents={[{ label: listTitle, to: listPath }]} title={staff ? siteText('모의 신청 상세', '온라인 신청 상세') : showCompletion ? '신청 완료' : '신청 상세'} />
       {result.loading && <LoadingBlock label="제출 서류를 불러오는 중" />}
       {result.error && <ErrorBlock message={result.error.message} onRetry={result.reload} />}
       {submission && !result.error && showCompletion && <SubmissionComplete submission={submission} />}
@@ -170,9 +171,9 @@ export function SubmissionDetailPage({ id, audience }: { id: string; audience: S
         <>
           {/* 방금 제출했으면 접수번호·접수처·시각은 위 완료 안내에 있으므로 서류만 이어서 보인다. */}
           {showCompletion ? <h2 className="registration-submitted-docs">제출한 서류</h2> : (
-          <section className="registration-receipt" aria-label="모의 제출 정보">
-            <div><p>모의 제출번호</p><strong>{submission.submissionNumber}</strong></div>
-            <div><p>수신처</p><strong>가상 통합돌봄 접수처 · {submission.region.name}</strong></div>
+          <section className="registration-receipt" aria-label={siteText('모의 제출 정보', '제출 정보')}>
+            <div><p>{siteText('모의 제출번호', '접수번호')}</p><strong>{submission.submissionNumber}</strong></div>
+            <div><p>수신처</p><strong>{siteText('가상 통합돌봄 접수처', '통합돌봄 접수처')} · {submission.region.name}</strong></div>
             <div><p>제출 시각</p><strong>{DATE_TIME.format(new Date(submission.submittedAt))}</strong></div>
           </section>
           )}
@@ -205,11 +206,11 @@ export function SubmissionDetailPage({ id, audience }: { id: string; audience: S
           {staff && (submission.evidenceSource
             ? <VerificationPanel key={submission.revision} id={submission.id} revision={submission.revision}
                 latest={submission.latest} sample={submission.form.evidenceSample ?? null} />
-            : <p className="registration-verification-empty">첨부된 OCR 대조용 가상 증빙이 없습니다.</p>)}
+            : <p className="registration-verification-empty">{siteText('첨부된 OCR 대조용 가상 증빙이 없습니다.', '첨부된 자동 대조용 증빙이 없습니다.')}</p>)}
           {!staff && submission.evidenceSource && (
-            <p className="registration-verification-empty">제출한 가상 증빙 ·{' '}
+            <p className="registration-verification-empty">{siteText('제출한 가상 증빙', '제출한 증빙')} ·{' '}
               <a className="registration-text-link" href={evidenceUrl(submission.id, submission.revision)} target="_blank" rel="noreferrer">
-                {submission.form.evidenceSample ? EVIDENCE_SAMPLES[submission.form.evidenceSample] : '첨부한 가상 증빙 사진'} (새 창)
+                {submission.form.evidenceSample ? EVIDENCE_SAMPLES[submission.form.evidenceSample] : siteText('첨부한 가상 증빙 사진', '첨부한 증빙 사진')} (새 창)
               </a>
             </p>
           )}

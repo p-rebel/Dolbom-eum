@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { ApiError, apiRequest } from '../../api/client';
 import { TextField } from '../../components/TextField';
+import { siteText } from '../../siteConfig';
 
 interface Props {
   onCreated: (username: string) => void;
@@ -65,7 +66,7 @@ export function ApplicantSignupForm({ onCreated, onCancel }: Props) {
           id="signup-display-name"
           name="displayName"
           label="표시 이름"
-          hint="시연에 사용할 가상의 이름을 입력해 주세요."
+          hint={siteText('시연에 사용할 가상의 이름을 입력해 주세요.', '화면에 표시할 이름을 입력해 주세요.')}
           autoComplete="nickname"
           maxLength={60}
           required

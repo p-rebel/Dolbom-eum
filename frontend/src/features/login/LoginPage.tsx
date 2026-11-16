@@ -10,13 +10,14 @@ import { TextField } from '../../components/TextField';
 import { Link, PageTitle } from '../../router';
 import { HealthStatus } from '../health/HealthStatus';
 import { ApplicantSignupForm } from './ApplicantSignupForm';
+import { siteText } from '../../siteConfig';
 
 /**
  * 오른쪽 안내 칸 소개(D-01 첫 문단 요약). 담당자·신청자 화면 모두 한 문단으로 맞춘다(11/16).
  * 전에는 담당자 화면에만 기능 목록 세 줄이 더 있어 안내 칸이 입력 칸보다 길어지고 아래 여백이 어긋났다.
  */
 const ABOUT_INTRO = '읍면동·시군구 담당자가 통합돌봄 신청을 접수부터 최초 모니터링까지 기록하는 업무 화면입니다.';
-const ABOUT_APPLICANT = '본인이나 보호자가 가상 정보로 신청서를 작성하고 제출한 서류를 확인하는 시연 서비스입니다.';
+const ABOUT_APPLICANT = siteText('본인이나 보호자가 가상 정보로 신청서를 작성하고 제출한 서류를 확인하는 시연 서비스입니다.', '본인이나 보호자가 돌봄 신청서를 작성하고 제출한 서류와 진행 상황을 확인하는 서비스입니다.');
 
 type Field = 'username' | 'password';
 type FieldErrors = Partial<Record<Field, string>>;
@@ -93,7 +94,7 @@ export function LoginPage({ notice, audience }: { notice: string | null; audienc
       {/* KRDS 피그마 서비스패턴_로그인 Step 3: 792px 본문, 작은 안내 + 큰 제목, 위아래 구분선 안에 왼쪽 입력·오른쪽 안내 */}
       <section className="login-box" aria-labelledby="login-title">
         <div className="login-head">
-          <p className="login-service">돌봄e음 · 가상 사례 시연</p>
+          <p className="login-service">{siteText('돌봄e음 · 가상 사례 시연', '돌봄e음')}</p>
           {/* 제목 옆에 서버 연결 상태(DEV-01:85 실행 확인 절차의 ‘API 연결됨’). 제목 글자에는 넣지 않는다. */}
           <div className="login-title-row">
             <PageTitle id="login-title" key={showSignup ? 'signup' : 'login'}>
