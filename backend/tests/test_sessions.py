@@ -38,6 +38,67 @@ def login(client, username="demo-town-a", password=PASSWORD):
     return client.post("/api/v1/session", json={"username": username, "password": password}, headers=JSON_HEADERS)
 
 
+# 신청자 가입 ----------------------------------------------------------------
+
+
+@pytest.fixture()
+def signup_body():
+    return {"username": "trial.applicant", "displayName": "가상 체험 신청자", "password": "trial-demo-pass"}
+
+
+def test_signup_stores_applicant_and_enables_existing_login(client, db_file, signup_body):
+    response = client.post("/api/v1/signup", json=signup_body, headers=JSON_HEADERS)
+    assert response.status_code == 201
+    account = response.json()
+    assert account == {
+        "id": account["id"],
+        "displayName": signup_body["displayName"],
+        "role": "APPLICANT",
+        "districtCode": None,
+        "townCode": None,
+    }
+    conn = connect(db_file)
+    try:
+        row = conn.execute(
+            "SELECT id, password_hash FROM demo_accounts WHERE username = ?", (signup_body["username"],)
+        ).fetchone()
+        assert row["id"] == account["id"]
+        assert row["password_hash"] != signup_body["password"]
+        assert verify_password(signup_body["password"], row["password_hash"])
+    finally:
+        conn.close()
+
+    session = login(client, signup_body["username"], signup_body["password"])
+    assert session.status_code == 200
+    assert session.json() == account
+    assert client.get("/api/v1/applications").json()["items"] == []
+    assert client.get("/api/v1/intake").status_code == 403
+
+
+def test_signup_rejects_duplicate_username_without_overwriting_password(client, signup_body):
+    assert client.post("/api/v1/signup", json=signup_body, headers=JSON_HEADERS).status_code == 201
+    retry_body = {**signup_body, "password": "different-demo-pass"}
+    retry = client.post("/api/v1/signup", json=retry_body, headers=JSON_HEADERS)
+    assert retry.status_code == 409
+    assert retry.json()["error"]["field"] == "username"
+    assert login(client, signup_body["username"], signup_body["password"]).status_code == 200
+    assert login(client, retry_body["username"], retry_body["password"]).status_code == 401
+
+
+@pytest.mark.parametrize(
+    ("fields", "status"),
+    [
+        ({"role": "TOWN"}, 422),
+        ({"displayName": "  "}, 422),
+        ({"password": "short"}, 422),
+        ({"username": "demo-town-a"}, 409),
+    ],
+)
+def test_signup_rejects_invalid_inputs(client, signup_body, fields, status):
+    response = client.post("/api/v1/signup", json={**signup_body, **fields}, headers=JSON_HEADERS)
+    assert response.status_code == status
+
+
 # 로그인 ---------------------------------------------------------------------
 
 

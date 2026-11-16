@@ -1,5 +1,5 @@
 import { ApiError, apiRequest } from './client';
-import type { Page } from './types';
+import type { NoticeMethod, Page } from './types';
 
 export type ApplicationType = 'SELF' | 'FAMILY' | 'GUARDIAN';
 export type Relationship = 'SPOUSE' | 'PARENT' | 'CHILD' | 'RELATIVE' | 'GUARDIAN' | 'OTHER';
@@ -30,7 +30,7 @@ export interface ApplicationForm {
   applicant: RelatedPerson | null;
   caregiver: RelatedPerson | null;
   noticeRecipient: 'BENEFICIARY' | 'APPLICANT';
-  noticeMethod: 'SMS' | 'MAIL';
+  noticeMethod: NoticeMethod;
   careNeeds: CareNeed[];
   consents: { familyRecord: boolean | null; administrative: boolean; personal: boolean; sensitive: boolean; uniqueId: boolean };
   evidence: Evidence[];
