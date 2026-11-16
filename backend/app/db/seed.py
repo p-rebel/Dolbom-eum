@@ -19,6 +19,8 @@ DEMO_ACCOUNTS = (
     ("demo-town-a2", "가상 읍면동 담당자 A-2", "TOWN", "DEMO-A", "DEMO-A-2"),
     ("demo-district-a", "가상 시군구 담당자 A", "DISTRICT", "DEMO-A", None),
     ("demo-town-b", "가상 읍면동 담당자 B-1", "TOWN", "DEMO-B", "DEMO-B-1"),
+    ("demo-applicant-a", "가상 신청자 A", "APPLICANT", None, None),
+    ("demo-applicant-b", "가상 신청자 B", "APPLICANT", None, None),
 )
 
 # (코드, 대상자, 대리 신청인, 안내대상, 시군구 코드, 읍면동 코드, 시도, 시군구)

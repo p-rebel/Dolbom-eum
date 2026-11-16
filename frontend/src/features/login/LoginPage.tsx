@@ -2,10 +2,11 @@ import { useRef, useState, type FormEvent } from 'react';
 import { ApiError } from '../../api/client';
 import { MOCK_API_ENABLED, MOCK_PASSWORD } from '../../api/mockFlag';
 import { useAuth } from '../../auth/AuthContext';
+import type { LoginAudience } from '../../auth/loginRoutes';
 import { AppFooter } from '../../layout/AppFooter';
 import { AppHeader } from '../../layout/AppHeader';
 import { TextField } from '../../components/TextField';
-import { PageTitle } from '../../router';
+import { Link, PageTitle } from '../../router';
 import { HealthStatus } from '../health/HealthStatus';
 
 /** 서비스 소개. D-01 첫 문단 요약. */
@@ -19,8 +20,9 @@ type Field = 'username' | 'password';
 type FieldErrors = Partial<Record<Field, string>>;
 
 /** UI-01 가상 계정 로그인. 성공하면 신청 목록으로 이동한다. */
-export function LoginPage({ notice }: { notice: string | null }) {
+export function LoginPage({ notice, audience }: { notice: string | null; audience: LoginAudience }) {
   const { login } = useAuth();
+  const isApplicant = audience === 'applicant';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -57,7 +59,7 @@ export function LoginPage({ notice }: { notice: string | null }) {
 
     setSubmitting(true);
     try {
-      await login(username.trim(), password);
+      await login(username.trim(), password, audience);
     } catch (error) {
       setSubmitting(false);
       if (error instanceof ApiError && error.status === 422 && (error.field === 'username' || error.field === 'password')) {
@@ -72,7 +74,7 @@ export function LoginPage({ notice }: { notice: string | null }) {
 
   return (
     <>
-    <AppHeader logoTo="/login" />
+    <AppHeader logoTo="/" />
     <main id="main" className="login-page">
       {/* KRDS 피그마 서비스패턴_로그인 Step 3: 792px 본문, 작은 안내 + 큰 제목, 위아래 구분선 안에 왼쪽 입력·오른쪽 안내 */}
       <section className="login-box" aria-labelledby="login-title">
@@ -80,7 +82,7 @@ export function LoginPage({ notice }: { notice: string | null }) {
           <p className="login-service">돌봄e음 · 가상 사례 시연</p>
           {/* 제목 옆에 서버 연결 상태(DEV-01:85 실행 확인 절차의 ‘API 연결됨’). 제목 글자에는 넣지 않는다. */}
           <div className="login-title-row">
-            <PageTitle id="login-title">가상 계정 로그인</PageTitle>
+            <PageTitle id="login-title">{isApplicant ? '신청자 로그인' : '공무원·관리자 로그인'}</PageTitle>
             <span className="login-title-dot" aria-hidden="true">
               ·
             </span>
@@ -100,7 +102,7 @@ export function LoginPage({ notice }: { notice: string | null }) {
             <TextField
               id="login-username"
               label="계정명"
-              hint="예: demo-town-a"
+              hint={isApplicant ? '예: demo-applicant-a' : '예: demo-town-a'}
               name="username"
               autoComplete="username"
               value={username}
@@ -143,19 +145,29 @@ export function LoginPage({ notice }: { notice: string | null }) {
             <h2 id="login-about-title" className="login-about-title">
               돌봄e음은
             </h2>
-            <p className="login-about">{ABOUT_INTRO}</p>
-            <ul className="login-features" aria-label="주요 기능">
+            <p className="login-about">{isApplicant
+              ? '본인이나 보호자가 가상 정보로 신청서를 작성하고 제출한 서류를 확인하는 시연 서비스입니다.'
+              : ABOUT_INTRO}</p>
+            {!isApplicant && <ul className="login-features" aria-label="주요 기능">
               {ABOUT_FEATURES.map((item) => (
                 <li key={item}>{item}</li>
               ))}
-            </ul>
+            </ul>}
+            <p className="login-about login-other-audience">
+              <Link to={isApplicant ? '/login/staff' : '/login/applicant'}>
+                {isApplicant ? '공무원·관리자 로그인' : '신청자 로그인'}
+              </Link>
+            </p>
           </div>
 
         </aside>
         </div>
 
         {/* 목업 모드 안내는 소개 상자와 분리한다(높이 맞춤·영역 이름 유지). ‘목업 모드’ 배지는 공통 상단에 있다. */}
-        {MOCK_API_ENABLED && (
+        {MOCK_API_ENABLED && isApplicant && (
+          <p className="mock-note" role="status">신청자 제출은 실제 API 모드에서 시연할 수 있습니다.</p>
+        )}
+        {MOCK_API_ENABLED && !isApplicant && (
           <aside className="mock-note" aria-label="목업 모드 안내">
             <p>
               계정 <code>demo-town-a</code>(읍면동) 또는 <code>demo-district-a</code>(시군구), 목업 전용 비밀번호{' '}

@@ -11,7 +11,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Request
 from pydantic import AfterValidator, Field, StrictBool, StrictStr, WithJsonSchema
 
-from ..auth import Account, CamelModel, current_account
+from ..auth import Account, CamelModel, require_role
 from ..cases import CaseDetail, Observation, validate_business_date
 from ..db import get_connection
 from ..errors import ErrorResponse
@@ -98,7 +98,7 @@ class MonitoringRequest(VersionedRequest):
 
 async def _workflow_request(
     request: Request,
-    account: Account = Depends(current_account),
+    account: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> WorkflowRequest:
     # 권한과 항목 소속을 확인한 뒤에만 본문을 파싱한다.

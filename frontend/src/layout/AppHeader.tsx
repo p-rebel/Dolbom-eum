@@ -4,7 +4,7 @@ import { Link } from '../router';
 
 /**
  * 공통 상단(KRDS krds-header). 로그인 전후 모든 화면에 같은 위치로 둔다.
- * D-02:15 가상 데이터 시연 표시는 항상 보이고, 계정·주 메뉴는 로그인 후에만 넘긴다.
+ * 가상 데이터 시연 표시는 항상 보인다. 공개 화면은 역할별 로그인 링크를, 업무 화면은 계정과 메뉴를 전달한다.
  * KRDS 로고·정부 누리집 표시(masthead, identifier)는 실제 정부 누리집으로 오인될 수 있어 쓰지 않는다.
  */
 export function AppHeader({ logoTo, account, menu }: { logoTo: string; account?: ReactNode; menu?: ReactNode }) {

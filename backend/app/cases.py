@@ -130,7 +130,7 @@ def can_access(account: Account, case_row: sqlite3.Row) -> bool:
     """읍면동은 소속 읍면동 건, 시군구는 소속 시군구 건 (D-05 공통 전환 조건)."""
     if account.role == "TOWN":
         return case_row["district_code"] == account.district_code and case_row["town_code"] == account.town_code
-    return case_row["district_code"] == account.district_code
+    return account.role == "DISTRICT" and case_row["district_code"] == account.district_code
 
 
 def accessible_case(conn: sqlite3.Connection, case_id: str, account: Account) -> sqlite3.Row:

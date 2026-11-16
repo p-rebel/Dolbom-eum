@@ -20,7 +20,7 @@ from .config import SESSION_COOKIE, SESSION_TTL
 from .db import get_connection, write_transaction
 from .errors import forbidden, unauthenticated
 
-Role = Literal["TOWN", "DISTRICT"]
+Role = Literal["TOWN", "DISTRICT", "APPLICANT"]
 
 # 비밀번호 해시: 표준 라이브러리 scrypt. 형식 scrypt$n$r$p$salt_hex$hash_hex
 _SCRYPT_N, _SCRYPT_R, _SCRYPT_P, _SCRYPT_LEN = 2**14, 8, 1, 32
@@ -34,7 +34,7 @@ class Account(CamelModel):
     id: str
     display_name: str
     role: Role
-    district_code: str
+    district_code: str | None
     town_code: str | None
 
 

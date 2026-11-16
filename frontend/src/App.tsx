@@ -1,11 +1,15 @@
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './auth/AuthContext';
+import { isApplicantPath, isStaffPath, loginAudienceFor, loginDestination, loginPathFor } from './auth/loginRoutes';
 import { LeavePrompt } from './components/LeavePrompt';
 import { LoginPage } from './features/login/LoginPage';
 import { CatalogPage } from './features/catalog/CatalogPage';
 import { CaseDetailPage } from './features/cases/CaseDetailPage';
 import { CaseListPage } from './features/cases/CaseListPage';
 import { NewCasePage } from './features/cases/NewCasePage';
+import { PublicHome } from './features/registration/PublicHome';
+import { ApplicationPage } from './features/registration/ApplicationPage';
+import { SubmissionDetailPage, SubmissionListPage } from './features/registration/SubmissionPages';
 import { NotFoundPage } from './features/placeholder/PlaceholderPage';
 import { AppFooter } from './layout/AppFooter';
 import { AppHeader } from './layout/AppHeader';
@@ -24,21 +28,29 @@ export function App() {
 function Routes() {
   const { state, retry } = useAuth();
   const path = usePath();
+  const isPublic = path === '/' || path === '/apply';
+  const loginAudience = loginAudienceFor(path);
+  const wrongRole = state.status === 'authenticated'
+    && (state.account.role === 'APPLICANT' ? isStaffPath(path) : isApplicantPath(path));
 
-  // 로그인 전에는 /login, 로그인 후 /login·/ 는 신청 목록으로 주소를 맞춘다.
   useEffect(() => {
-    if (state.status === 'anonymous' && path !== '/login') {
-      navigate('/login', { replace: true });
-    } else if (state.status === 'authenticated' && (path === '/login' || path === '/')) {
-      navigate('/cases', { replace: true });
+    if (isPublic) return;
+    if ((state.status === 'anonymous' && loginAudience === null) || wrongRole) {
+      navigate(loginPathFor(path), { replace: true, force: true });
     }
-  }, [state.status, path]);
+    if (state.status === 'authenticated' && loginAudience
+      && (state.account.role === 'APPLICANT') === (loginAudience === 'applicant')) {
+      navigate(loginDestination(loginAudience), { replace: true });
+    }
+  }, [isPublic, loginAudience, path, state, wrongRole]);
+
+  if (isPublic) return <PublicHome guide={path === '/apply'} />;
 
   // 로그인 상태 확인 중·실패 화면에도 공통 상단·푸터를 둔다(모든 화면 같은 위치).
   if (state.status === 'loading') {
     return (
       <>
-        <AppHeader logoTo="/login" />
+        <AppHeader logoTo="/" />
         <main id="main" className="page-state">
           <div className="krds-spinner" role="status">
             <span className="sr-only">로그인 상태를 확인하는 중입니다.</span>
@@ -52,7 +64,7 @@ function Routes() {
   if (state.status === 'error') {
     return (
       <>
-        <AppHeader logoTo="/login" />
+        <AppHeader logoTo="/" />
         <main id="main" className="page-state">
           <div className="form-group" role="alert">
             <p className="form-hint-invalid">{state.message}</p>
@@ -66,15 +78,24 @@ function Routes() {
     );
   }
 
-  if (state.status === 'anonymous') {
-    return <LoginPage notice={state.notice} />;
+  if (loginAudience || state.status === 'anonymous' || wrongRole) {
+    const audience = loginAudience ?? (isApplicantPath(path) ? 'applicant' : 'staff');
+    return <LoginPage key={audience} audience={audience} notice={state.status === 'anonymous' ? state.notice : null} />;
   }
 
-  return <AppShell>{renderAuthenticatedPage(path)}</AppShell>;
+  return <AppShell>{renderAuthenticatedPage(path, state.account.role === 'APPLICANT')}</AppShell>;
 }
 
-function renderAuthenticatedPage(path: string) {
-  if (path === '/cases' || path === '/login' || path === '/') {
+function renderAuthenticatedPage(path: string, applicant: boolean) {
+  if (applicant) {
+    if (path === '/apply/new') return <ApplicationPage />;
+    if (path === '/my/applications') return <SubmissionListPage audience="applicant" />;
+    const match = matchPath('/my/applications/:id', path);
+    if (match) return <SubmissionDetailPage key={match.id} id={match.id} audience="applicant" />;
+    return <NotFoundPage home="/my/applications" />;
+  }
+
+  if (path === '/cases') {
     return <CaseListPage />;
   }
   if (path === '/cases/new') {
@@ -83,6 +104,9 @@ function renderAuthenticatedPage(path: string) {
   if (path === '/catalog') {
     return <CatalogPage />;
   }
+  if (path === '/intake') return <SubmissionListPage audience="staff" />;
+  const submission = matchPath('/intake/:id', path);
+  if (submission) return <SubmissionDetailPage key={submission.id} id={submission.id} audience="staff" />;
   const caseMatch = matchPath('/cases/:caseId', path);
   if (caseMatch) {
     return <CaseDetailPage key={caseMatch.caseId} caseId={caseMatch.caseId} />;

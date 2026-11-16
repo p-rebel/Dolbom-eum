@@ -128,7 +128,10 @@ function route(path: string, init?: RequestInit): Response {
   const method = (init?.method ?? 'GET').toUpperCase();
 
   if (pathname === '/session' && method === 'POST') {
-    const { username, password } = body(init);
+    const { username, password, audience } = body(init);
+    if (audience === 'applicant') {
+      return fail(403, 'FORBIDDEN', '신청자 제출은 실제 API 모드에서 시연해 주세요.');
+    }
     const account = ACCOUNTS.find((item) => item.id === username);
     if (!account || password !== MOCK_PASSWORD) {
       return fail(401, 'UNAUTHENTICATED', '계정명 또는 비밀번호가 올바르지 않습니다.');

@@ -6,7 +6,7 @@ import sqlite3
 
 from fastapi import APIRouter, Depends, Query
 
-from ..auth import Account, CamelModel, current_account
+from ..auth import Account, CamelModel, require_role
 from ..db import get_connection
 from ..db.nhis import DATASET_VERSION
 from ..errors import ApiError
@@ -80,7 +80,7 @@ def search_catalog(
     q: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=50, alias="pageSize"),
-    _: Account = Depends(current_account),
+    _: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> CatalogPage:
     q = _blank_to_none(q)
@@ -114,7 +114,7 @@ def search_catalog(
 @router.get("/catalog/nhis-services/{service_id}", response_model=CatalogItem)
 def read_catalog_item(
     service_id: str,
-    _: Account = Depends(current_account),
+    _: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> CatalogItem:
     item = find_catalog_item(conn, service_id)
@@ -126,7 +126,7 @@ def read_catalog_item(
 @router.get("/catalog/nhis-filters", response_model=CatalogFilters)
 def catalog_filters(
     sido: str | None = None,
-    _: Account = Depends(current_account),
+    _: Account = Depends(require_role("TOWN", "DISTRICT")),
     conn: sqlite3.Connection = Depends(get_connection),
 ) -> CatalogFilters:
     def distinct(column: str, extra: str = "", args: tuple = ()) -> list[str]:

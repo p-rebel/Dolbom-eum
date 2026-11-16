@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import StrictStr
@@ -18,6 +19,7 @@ router = APIRouter()
 class LoginRequest(CamelModel):
     username: StrictStr
     password: StrictStr
+    audience: Literal["applicant", "staff"] | None = None
 
 
 class Region(CamelModel):
@@ -71,6 +73,8 @@ def login(
     account = authenticate(conn, body.username, body.password)
     if account is None:
         raise ApiError(401, "UNAUTHENTICATED", "계정명 또는 비밀번호가 올바르지 않습니다.")
+    if body.audience is not None and (account.role == "APPLICANT") != (body.audience == "applicant"):
+        raise ApiError(403, "FORBIDDEN", "이 계정의 역할에 맞는 로그인 화면을 이용해 주세요.")
     token = start_session(conn, account.id, request.cookies.get(SESSION_COOKIE))
     _set_session_cookie(response, token)
     return account
