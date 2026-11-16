@@ -348,9 +348,126 @@
   font-weight: 650;
 }
 
+.registration-verification {
+  margin-top: 2.2rem;
+  padding: clamp(1.4rem, 3vw, 2.4rem);
+  border: 1px solid #d8e3ef;
+  border-radius: .8rem;
+}
+
+.registration-verification h2 {
+  color: #12365b;
+  font-size: 2rem;
+}
+
+.registration-verification-body {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  align-items: start;
+  gap: 1.8rem;
+}
+
+.registration-verification figure {
+  margin: 0;
+}
+
+.registration-verification img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #d8e3ef;
+  border-radius: .6rem;
+}
+
+.registration-verification figcaption,
+.registration-verification-empty {
+  margin-top: 1rem;
+}
+
+.registration-verification-details {
+  min-width: 0;
+}
+
+.registration-verification-details > p,
+.registration-verification-time {
+  color: #465a71;
+}
+
+.registration-verification-rows {
+  margin-block: 1.4rem .8rem;
+  border-top: 1px solid #d8e3ef;
+}
+
+.registration-verification-rows li {
+  padding: 1.2rem 0;
+  border-bottom: 1px solid #d8e3ef;
+}
+
+.registration-verification-rows h3 {
+  font-size: 1.7rem;
+}
+
+.registration-verification-rows .registration-section-title {
+  margin-bottom: .5rem;
+}
+
+.registration-verification-values div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: .5rem;
+  padding-block: .25rem;
+}
+
+.registration-verification-values dt {
+  color: #465a71;
+  font-size: 1.5rem;
+}
+
+.registration-verification-values dd {
+  margin: 0;
+}
+
+.registration-verification-result {
+  display: inline-block;
+  padding: 0 .65rem;
+  border-radius: .4rem;
+  font-size: 1.4rem;
+  white-space: nowrap;
+}
+
+.registration-verification-result.result-match { background: #e6f4ed; color: #1a5d3d; }
+.registration-verification-result.result-different { background: #fce9e9; color: #952831; }
+.registration-verification-result.result-needs_review { background: #f9efdb; color: #6a4b0b; }
+
+.registration-verification-review {
+  display: grid;
+  gap: .8rem;
+  margin-top: .8rem;
+  padding: 1.2rem;
+  border-radius: .5rem;
+  background: #edf3fc;
+}
+
+.registration-verification-rows p.registration-verification-review {
+  display: block;
+}
+
+.registration-verification-review > span,
+.registration-verification-review > small {
+  display: block;
+  margin-top: .35rem;
+}
+
+.registration-verification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .8rem;
+}
+
 @media (max-width: 790px) {
   .registration-overview,
-  .registration-detail-staff {
+  .registration-detail-staff,
+  .registration-verification-body {
     grid-template-columns: minmax(0, 1fr);
   }
 

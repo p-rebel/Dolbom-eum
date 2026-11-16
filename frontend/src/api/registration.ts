@@ -5,6 +5,7 @@ export type ApplicationType = 'SELF' | 'FAMILY' | 'GUARDIAN';
 export type Relationship = 'SPOUSE' | 'PARENT' | 'CHILD' | 'RELATIVE' | 'GUARDIAN' | 'OTHER';
 export type CareNeed = 'HEALTH' | 'MEAL' | 'MOBILITY' | 'DAILY' | 'HOUSING';
 export type Evidence = 'IDENTITY' | 'FAMILY_RELATION' | 'GUARDIANSHIP' | 'RESIDENCE';
+export type EvidenceSample = 'BENEFICIARY_A' | 'ADDRESS_DIFFERENT' | 'ID_BLURRY';
 export type DocumentKind = 'application' | 'privacy-consent';
 export type SubmissionAudience = 'applicant' | 'staff';
 
@@ -33,6 +34,7 @@ export interface ApplicationForm {
   careNeeds: CareNeed[];
   consents: { familyRecord: boolean | null; administrative: boolean; personal: boolean; sensitive: boolean; uniqueId: boolean };
   evidence: Evidence[];
+  evidenceSample?: EvidenceSample | null;
   confirmed: true;
 }
 export interface SubmissionRegion {
@@ -56,6 +58,41 @@ export interface FormPreviews {
   privacyConsent: string;
 }
 
+export const VERIFICATION_FIELDS = {
+  name: '성명', birthDate: '생년월일', demoId: '가상 식별자', address: '주소',
+} as const;
+export type VerificationField = keyof typeof VERIFICATION_FIELDS;
+export type ComparisonStatus = 'MATCH' | 'DIFFERENT' | 'NEEDS_REVIEW';
+export type Observations = Record<VerificationField, { value: string | null; confidence: number }>;
+
+export interface ComparisonRow {
+  field: VerificationField;
+  submitted: string;
+  scanned: string | null;
+  reference: string;
+  confidence: number;
+  evidenceResult: ComparisonStatus;
+  referenceResult: ComparisonStatus;
+}
+
+export interface ReviewInput {
+  value: string | null;
+  note: string;
+}
+
+interface ManualReview extends ReviewInput {
+  result: ComparisonStatus;
+  reviewer: string;
+  reviewedAt: string;
+}
+
+export interface Verification {
+  id: number;
+  comparedAt: string;
+  rows: ComparisonRow[];
+  reviews: Partial<Record<VerificationField, ManualReview>>;
+}
+
 export const APPLICATION_TYPES: Record<ApplicationType, string> = {
   SELF: '본인 신청', FAMILY: '가족 대리 신청', GUARDIAN: '후견인 신청',
 };
@@ -68,6 +105,11 @@ export const CARE_NEEDS: Record<CareNeed, string> = {
 export const EVIDENCE_LABELS: Record<Evidence, string> = {
   IDENTITY: '신청인 신분 확인', FAMILY_RELATION: '친족 관계 증빙',
   GUARDIANSHIP: '후견등기 증빙', RESIDENCE: '대상자 등본 확인',
+};
+export const EVIDENCE_SAMPLES: Record<EvidenceSample, string> = {
+  BENEFICIARY_A: '가상 대상자 확인서',
+  ADDRESS_DIFFERENT: '주소가 다른 가상 확인서',
+  ID_BLURRY: '식별자가 흐릿한 가상 확인서',
 };
 export const DOCUMENTS: Record<DocumentKind, string> = {
   application: '통합지원 신청서', 'privacy-consent': '개인정보 수집·이용 동의서',
@@ -94,4 +136,22 @@ export function getSubmission(audience: SubmissionAudience, id: string, signal: 
 }
 export function documentUrl(id: string, kind: DocumentKind) {
   return '/api/v1/applications/' + encodeURIComponent(id) + '/documents/' + kind;
+}
+
+export function evidenceUrl(id: string) {
+  return '/api/v1/applications/' + encodeURIComponent(id) + '/evidence';
+}
+
+export function getVerification(id: string, signal: AbortSignal) {
+  return apiRequest<Verification | null>(`/intake/${encodeURIComponent(id)}/verification`, { signal });
+}
+
+export function recordVerification(id: string, readings: Observations) {
+  return apiRequest<Verification>(`/intake/${encodeURIComponent(id)}/verification`, { method: 'POST', body: readings });
+}
+
+export function saveVerificationReview(id: string, attempt: number, field: VerificationField, review: ReviewInput) {
+  return apiRequest<Verification>(`/intake/${encodeURIComponent(id)}/verification/${attempt}/review`, {
+    method: 'PUT', body: { field, ...review },
+  });
 }

@@ -115,3 +115,56 @@ def test_login_audience_and_evidence_are_checked_before_submission(db_file):
         headers = {**ORIGIN, "Idempotency-Key": "registration-evidence-test"}
         assert client.post("/api/v1/applications", json=invalid_form, headers=headers).status_code == 422
         assert client.get("/api/v1/applications").json()["total"] == 0
+
+
+def test_staff_compare_and_review_attached_evidence_in_jurisdiction(db_file):
+    with TestClient(app) as applicant, TestClient(app) as staff, TestClient(app) as other:
+        assert login(applicant, "demo-applicant-a", "applicant").status_code == 200
+        form = {**FORM, "evidenceSample": "ADDRESS_DIFFERENT"}
+        headers = {**ORIGIN, "Idempotency-Key": "registration-attached-evidence"}
+        submitted = applicant.post("/api/v1/applications", json=form, headers=headers)
+        assert submitted.status_code == 201, submitted.text
+        application_id = submitted.json()["id"]
+        evidence_url = f"/api/v1/applications/{application_id}/evidence"
+        verification_url = f"/api/v1/intake/{application_id}/verification"
+
+        applicant_scan = applicant.get(evidence_url)
+        assert applicant_scan.headers["content-type"] == "image/png"
+        assert applicant_scan.content.startswith(b"\x89PNG")
+        assert login(staff, "demo-town-a", "staff").status_code == 200
+        assert staff.get(evidence_url).content == applicant_scan.content
+        assert staff.get(verification_url).json() is None
+        assert login(other, "demo-town-a2", "staff").status_code == 200
+        assert other.get(evidence_url).status_code == 404
+        assert other.get(verification_url).status_code == 404
+
+        readings = {
+            "name": {"value": "가상대상자 A", "confidence": 96},
+            "birthDate": {"value": "1945–05–03", "confidence": 91},
+            "demoId": {"value": "DEMO-ID-0101", "confidence": 55},
+            "address": {"value": "가상 A시 돌봄로 30", "confidence": 92},
+        }
+        assert applicant.post(verification_url, json=readings, headers=ORIGIN).status_code == 403
+        assert other.post(verification_url, json=readings, headers=ORIGIN).status_code == 404
+        created = staff.post(verification_url, json=readings, headers=ORIGIN)
+        assert created.status_code == 201, created.text
+        attempt = created.json()
+        rows = {row["field"]: row for row in attempt["rows"]}
+        assert [row["evidenceResult"] for row in rows.values()] == ["MATCH", "MATCH", "NEEDS_REVIEW", "DIFFERENT"]
+        assert {row["referenceResult"] for row in rows.values()} == {"MATCH"}
+
+        review_url = f"{verification_url}/{attempt['id']}/review"
+        review = {"field": "demoId", "value": "DEMO-ID-0101", "note": "원본 식별자 확인"}
+        assert other.put(review_url, json=review, headers=ORIGIN).status_code == 404
+        assert applicant.put(review_url, json=review, headers=ORIGIN).status_code == 403
+        saved = staff.put(review_url, json=review, headers=ORIGIN)
+        assert saved.status_code == 200, saved.text
+        assert saved.json()["reviews"]["demoId"]["result"] == "MATCH"
+        assert saved.json()["rows"] == attempt["rows"]
+        assert staff.get(verification_url).json() == saved.json()
+        assert staff.get(evidence_url).content == applicant_scan.content
+
+        rerun = staff.post(verification_url, json=readings, headers=ORIGIN).json()
+        assert rerun["id"] != attempt["id"]
+        assert rerun["reviews"] == saved.json()["reviews"]
+        assert staff.put(review_url, json=review, headers=ORIGIN).status_code == 409

@@ -1,9 +1,10 @@
-"""Applicant submissions and the read-only mock inbox for jurisdiction staff."""
+"""Applicant submissions and evidence review in the mock inbox for jurisdiction staff."""
 
 from __future__ import annotations
 
 import base64
 import hashlib
+import json
 import re
 import sqlite3
 import uuid
@@ -17,6 +18,9 @@ from ..db import get_connection, write_transaction
 from ..errors import ApiError
 from ..registration import REGIONS, ApplicationForm, SubmissionRegion
 from ..registration_pdf import render_forms
+from ..registration_verification import (
+    ManualReview, Observations, ReviewRequest, Verification, compare, compare_evidence, evidence_image,
+)
 
 router = APIRouter()
 DocumentKind = Literal["application", "privacy-consent"]
@@ -107,7 +111,8 @@ def submit(
     key = request.headers.get("idempotency-key")
     if key is None or not _REQUEST_KEY.fullmatch(key):
         raise ApiError(422, "VALIDATION_ERROR", "요청 키를 확인해 주세요.", "Idempotency-Key")
-    snapshot = body.model_dump_json(by_alias=True)
+    omitted = {"evidence_sample"} if body.evidence_sample is None else set()
+    snapshot = body.model_dump_json(by_alias=True, exclude=omitted)
     digest = hashlib.sha256(snapshot.encode("utf-8")).hexdigest()
     with write_transaction(conn):
         existing = conn.execute(
@@ -143,6 +148,11 @@ def submit(
                 now.isoformat(timespec="seconds"), key, digest, snapshot, application, consent,
             ),
         ).fetchone()
+        if body.evidence_sample is not None:
+            conn.execute(
+                "INSERT INTO mock_application_evidence (application_id, image) VALUES (?, ?)",
+                (application_id, evidence_image(body.evidence_sample)),
+            )
         return _detail(row)
 
 
@@ -214,3 +224,102 @@ def document(
         row[column], media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{filename}"', "Cache-Control": "private, no-store"},
     )
+
+
+@router.get("/applications/{application_id}/evidence", response_class=Response)
+def read_evidence(
+    application_id: str,
+    account: Account = Depends(current_account),
+    conn: sqlite3.Connection = Depends(get_connection),
+) -> Response:
+    _find(conn, account, application_id, "id")
+    row = conn.execute(
+        "SELECT image FROM mock_application_evidence WHERE application_id = ?", (application_id,),
+    ).fetchone()
+    if row is None:
+        raise ApiError(404, "NOT_FOUND", "첨부된 가상 증빙이 없습니다.")
+    return Response(row["image"], media_type="image/png", headers={"Cache-Control": "private, no-store"})
+
+
+def _latest_attempt(conn: sqlite3.Connection, application_id: str) -> Verification | None:
+    row = conn.execute(
+        """SELECT id, compared_at, comparison, review
+           FROM mock_verification_attempts WHERE application_id = ? ORDER BY id DESC LIMIT 1""",
+        (application_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return Verification(
+        id=row["id"], compared_at=row["compared_at"], rows=json.loads(row["comparison"]),
+        reviews=json.loads(row["review"]) if row["review"] else {},
+    )
+
+
+@router.get("/intake/{application_id}/verification", response_model=Verification | None)
+def current_verification(
+    application_id: str,
+    account: Account = Depends(require_role("TOWN", "DISTRICT")),
+    conn: sqlite3.Connection = Depends(get_connection),
+) -> Verification | None:
+    _find(conn, account, application_id, "id")
+    return _latest_attempt(conn, application_id)
+
+
+@router.post("/intake/{application_id}/verification", status_code=201, response_model=Verification)
+def verify_submission(
+    application_id: str,
+    body: Observations,
+    account: Account = Depends(require_role("TOWN", "DISTRICT")),
+    conn: sqlite3.Connection = Depends(get_connection),
+) -> Verification:
+    application = _find(conn, account, application_id, "form_snapshot")
+    exists = conn.execute(
+        "SELECT 1 FROM mock_application_evidence WHERE application_id = ?", (application_id,),
+    ).fetchone()
+    if exists is None:
+        raise ApiError(404, "NOT_FOUND", "대조할 가상 증빙이 없습니다.")
+    form = ApplicationForm.model_validate_json(application["form_snapshot"])
+    rows = compare_evidence(form.beneficiary, body)
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    with write_transaction(conn):
+        previous = _latest_attempt(conn, application_id)
+        reviews = previous.reviews if previous else {}
+        cursor = conn.execute(
+            """INSERT INTO mock_verification_attempts (application_id, compared_by, compared_at, comparison, review)
+               VALUES (?, ?, ?, ?, ?)""",
+            (
+                application_id, account.id, now,
+                json.dumps([row.model_dump(by_alias=True) for row in rows], ensure_ascii=False),
+                json.dumps({field: review.model_dump(by_alias=True) for field, review in reviews.items()}, ensure_ascii=False),
+            ),
+        )
+        return Verification(id=cursor.lastrowid, compared_at=now, rows=rows, reviews=reviews)
+
+
+@router.put("/intake/{application_id}/verification/{attempt_id}/review", response_model=Verification)
+def save_evidence_review(
+    application_id: str,
+    attempt_id: int,
+    body: ReviewRequest,
+    account: Account = Depends(require_role("TOWN", "DISTRICT")),
+    conn: sqlite3.Connection = Depends(get_connection),
+) -> Verification:
+    _find(conn, account, application_id, "id")
+    with write_transaction(conn):
+        verification = _latest_attempt(conn, application_id)
+        if verification is None or verification.id != attempt_id:
+            raise ApiError(409, "VERSION_CONFLICT", "더 최근 대조 결과가 있습니다. 새로 불러온 뒤 확인해 주세요.")
+        row = next(item for item in verification.rows if item.field == body.field)
+        verification.reviews[body.field] = ManualReview(
+            value=body.value,
+            result=compare(body.field, row.submitted, body.value),
+            note=body.note,
+            reviewer=account.display_name,
+            reviewed_at=datetime.now(UTC).isoformat(timespec="seconds"),
+        )
+        reviews = {field: review.model_dump(by_alias=True) for field, review in verification.reviews.items()}
+        conn.execute(
+            "UPDATE mock_verification_attempts SET review = ? WHERE id = ?",
+            (json.dumps(reviews, ensure_ascii=False), attempt_id),
+        )
+        return verification

@@ -63,6 +63,22 @@ CREATE TABLE IF NOT EXISTS mock_applications (
 CREATE INDEX IF NOT EXISTS ix_mock_applications_owner ON mock_applications (owner_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS ix_mock_applications_district ON mock_applications (district_code, town_code, submitted_at DESC);
 
+CREATE TABLE IF NOT EXISTS mock_application_evidence (
+    application_id TEXT PRIMARY KEY REFERENCES mock_applications (id) ON DELETE CASCADE,
+    image          BLOB NOT NULL
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS mock_verification_attempts (
+    id              INTEGER PRIMARY KEY,
+    application_id  TEXT NOT NULL REFERENCES mock_applications (id) ON DELETE CASCADE,
+    compared_by     TEXT NOT NULL REFERENCES demo_accounts (id),
+    compared_at     TEXT NOT NULL,
+    comparison      TEXT NOT NULL CHECK (json_valid(comparison)),
+    review          TEXT CHECK (review IS NULL OR json_valid(review))
+) STRICT;
+
+CREATE INDEX IF NOT EXISTS ix_mock_verification_application ON mock_verification_attempts (application_id, id DESC);
+
 -- 공단 카탈로그 (v1.4 정제 CSV의 열을 그대로 보존) ---------------------------
 
 CREATE TABLE IF NOT EXISTS nhis_catalog (

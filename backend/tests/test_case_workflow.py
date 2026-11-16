@@ -267,7 +267,11 @@ def test_delivery_updates_preserve_history_and_are_scoped_to_the_case(clients):
 
 def test_workflow_openapi_documents_error_shape_and_dates():
     document = app.openapi()
-    routes = [methods["put"] for methods in document["paths"].values() if "put" in methods]
+    routes = [
+        methods["put"]
+        for path, methods in document["paths"].items()
+        if path.startswith("/api/v1/cases/") and "put" in methods
+    ]
     assert len(routes) == 8
     for route in routes:
         for code in ("401", "403", "404", "409", "415", "422", "500"):

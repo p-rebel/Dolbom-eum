@@ -10,7 +10,7 @@ from importlib import resources
 from pathlib import Path
 
 DB_PATH_ENV = "DOLBOMEUM_DB_PATH"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 BUSY_TIMEOUT_MS = 5000
 
 # 로컬 개발 기본 경로: 저장소 루트의 var/ (git 제외). 팀 서버는 환경값으로 저장소 밖 경로를 지정한다.
@@ -22,6 +22,8 @@ EXPECTED_TABLES = frozenset(
         "demo_sessions",
         "demo_profiles",
         "mock_applications",
+        "mock_application_evidence",
+        "mock_verification_attempts",
         "nhis_catalog",
         "cases",
         "screenings",

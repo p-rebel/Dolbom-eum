@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { ApiError, newRequestKey } from '../../api/client';
 import {
-  APPLICATION_TYPES, CARE_NEEDS, EVIDENCE_LABELS, RELATIONSHIPS,
+  APPLICATION_TYPES, CARE_NEEDS, EVIDENCE_LABELS, EVIDENCE_SAMPLES, RELATIONSHIPS,
   getRegions, previewForms, submitApplication,
   type ApplicationForm, type ApplicationType, type Beneficiary, type CareNeed,
-  type DocumentKind, type Evidence, type FormPreviews, type Person, type RelatedPerson, type Relationship,
+  type DocumentKind, type Evidence, type EvidenceSample, type FormPreviews, type Person, type RelatedPerson, type Relationship,
 } from '../../api/registration';
 import { ErrorBlock, FormMessage, LoadingBlock } from '../../components/Feedback';
 import { CheckboxField, RadioGroup } from '../../components/FormFields';
@@ -45,14 +45,14 @@ const CONSENT_CHOICES = [
   { value: 'yes', label: '동의함' }, { value: 'no', label: '동의하지 않음' },
 ];
 
-function InputSelect({ id, label, children, value, onChange }: {
-  id: string; label: string; children: ReactNode; value: string; onChange: (value: string) => void;
+function InputSelect({ id, label, children, value, onChange, required = true }: {
+  id: string; label: string; children: ReactNode; value: string; onChange: (value: string) => void; required?: boolean;
 }) {
   return (
     <div className="form-group">
       <div className="form-tit"><label htmlFor={id}>{label}</label></div>
       <div className="form-conts">
-        <select id={id} className="krds-form-select medium" value={value} required onChange={(event) => onChange(event.target.value)}>
+        <select id={id} className="krds-form-select medium" value={value} required={required} onChange={(event) => onChange(event.target.value)}>
           {children}
         </select>
       </div>
@@ -129,6 +129,7 @@ export function ApplicationPage() {
   const [careNeeds, setCareNeeds] = useState<CareNeed[]>([]);
   const [consents, setConsents] = useState(EMPTY_CONSENTS);
   const [preparedEvidence, setPreparedEvidence] = useState<Evidence[]>([]);
+  const [evidenceSample, setEvidenceSample] = useState<EvidenceSample | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [prepared, setPrepared] = useState<{ form: ApplicationForm; key: string; previews: FormPreviews } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -160,6 +161,7 @@ export function ApplicationPage() {
     setApplicant(SAMPLE_APPLICANT);
     setCaregiver(SAMPLE_CAREGIVER);
     setCareNeeds(['MEAL', 'DAILY']);
+    setEvidenceSample('BENEFICIARY_A');
     setRegionCode(regions.data?.[0]?.code ?? '');
     setDirty(true);
   }
@@ -188,7 +190,7 @@ export function ApplicationPage() {
       }
       const form: ApplicationForm = {
         applicationType, regionCode, beneficiary, applicant: applicationType === 'SELF' ? null : applicant, caregiver,
-        noticeRecipient, noticeMethod, careNeeds, confirmed: true, evidence,
+        noticeRecipient, noticeMethod, careNeeds, confirmed: true, evidence, evidenceSample,
         consents: { familyRecord, administrative, personal, sensitive, uniqueId },
       };
       setBusy(true);
@@ -325,6 +327,14 @@ export function ApplicationPage() {
                   ))}
                 </fieldset>
               )}
+              <div className="registration-consent">
+                <InputSelect id="ocr-evidence" label="OCR 대조용 가상 증빙 (선택)" value={evidenceSample ?? ''} required={false}
+                  onChange={(value) => setEvidenceSample(value ? value as EvidenceSample : null)}>
+                  <option value="">첨부하지 않음</option>
+                  {Object.entries(EVIDENCE_SAMPLES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </InputSelect>
+                <p>선택한 가상 확인서를 제출하면 담당자가 신청 정보와 대조할 수 있습니다.</p>
+              </div>
               <CheckboxField id="confirm-demo-submission" label="가상 정보와 제출 내용, 각 동의 선택을 확인했습니다"
                 checked={confirmed} onChange={setConfirmed} />
             </section>
@@ -334,6 +344,7 @@ export function ApplicationPage() {
             <section className="registration-form-section">
               <h2 ref={heading} tabIndex={-1}>최종 서류 확인</h2>
               <p>작성된 서류를 확인해 주세요. 제출한 서류는 가상 통합돌봄 접수처에서 확인할 수 있습니다.</p>
+              {prepared.form.evidenceSample && <p>가상 증빙 · {EVIDENCE_SAMPLES[prepared.form.evidenceSample]}</p>}
               <FormReview previews={prepared.previews} />
             </section>
           )}

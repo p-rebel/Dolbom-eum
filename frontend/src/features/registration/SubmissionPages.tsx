@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
-  APPLICATION_TYPES, CARE_NEEDS, EVIDENCE_LABELS, RELATIONSHIPS, documentUrl, getSubmission, getSubmissions,
+  APPLICATION_TYPES, CARE_NEEDS, EVIDENCE_LABELS, EVIDENCE_SAMPLES, RELATIONSHIPS,
+  documentUrl, evidenceUrl, getSubmission, getSubmissions,
   type ApplicationForm, type SubmissionAudience,
 } from '../../api/registration';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../components/Feedback';
@@ -9,6 +10,7 @@ import { useApiData } from '../../hooks/useApiData';
 import { PageHead } from '../../layout/PageHead';
 import { Link } from '../../router';
 import { DocumentViewer } from './DocumentViewer';
+import { VerificationPanel } from './VerificationPanel';
 
 const DATE_TIME = new Intl.DateTimeFormat('ko-KR', {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Seoul',
@@ -88,6 +90,16 @@ export function SubmissionDetailPage({ id, audience }: { id: string; audience: S
             <div><p>수신처</p><strong>가상 통합돌봄 접수처 · {submission.region.name}</strong></div>
             <div><p>제출 시각</p><strong>{DATE_TIME.format(new Date(submission.submittedAt))}</strong></div>
           </section>
+          {staff && (submission.form.evidenceSample
+            ? <VerificationPanel key={submission.id} id={submission.id} sample={submission.form.evidenceSample} />
+            : <p className="registration-verification-empty">첨부된 OCR 대조용 가상 증빙이 없습니다.</p>)}
+          {!staff && submission.form.evidenceSample && (
+            <p className="registration-verification-empty">제출한 가상 증빙 ·{' '}
+              <a className="registration-text-link" href={evidenceUrl(submission.id)} target="_blank" rel="noreferrer">
+                {EVIDENCE_SAMPLES[submission.form.evidenceSample]} (새 창)
+              </a>
+            </p>
+          )}
           <div className={'registration-detail' + (staff ? ' registration-detail-staff' : '')}>
             <DocumentViewer urls={{
               application: documentUrl(submission.id, 'application'),

@@ -16,6 +16,7 @@ DemoId = Annotated[str, StringConstraints(pattern=r"^DEMO-[A-Z0-9]{2,12}(?:-[A-Z
 BusinessDate = Annotated[str, StringConstraints(pattern=r"^\d{4}-\d{2}-\d{2}$")]
 Relationship = Literal["SPOUSE", "PARENT", "CHILD", "RELATIVE", "GUARDIAN", "OTHER"]
 EvidenceKind = Literal["IDENTITY", "FAMILY_RELATION", "GUARDIANSHIP", "RESIDENCE"]
+EvidenceSample = Literal["BENEFICIARY_A", "ADDRESS_DIFFERENT", "ID_BLURRY"]
 
 RELATIONSHIPS = {
     "SPOUSE": "배우자", "PARENT": "부모", "CHILD": "자녀",
@@ -84,6 +85,7 @@ class ApplicationForm(CamelModel):
     care_needs: list[Literal["HEALTH", "MEAL", "MOBILITY", "DAILY", "HOUSING"]] = Field(min_length=1, max_length=5)
     consents: Consents
     evidence: list[EvidenceKind] = Field(default_factory=list, max_length=4)
+    evidence_sample: EvidenceSample | None = None
     confirmed: Literal[True]
 
     def required_evidence(self) -> list[EvidenceKind]:
