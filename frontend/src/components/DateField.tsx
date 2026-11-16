@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type Ref } from 'react';
-import { isValidDate } from '../dates';
+import { isValidDate, todayKey } from '../dates';
 
 // KRDS 날짜 입력(date_input) + 달력(calendar) 구조를 React로 옮긴 부품.
 // 숫자만 입력해도 연-월-일 사이에 ‘-’를 자동으로 넣어 다음 칸으로 넘어간다(브라우저 기본 날짜 입력은 연도를 6자리까지 받아 4자리 뒤에 멈춘다).
@@ -15,6 +15,10 @@ interface DateFieldProps {
   error?: string;
   /** 이보다 이른 날짜는 달력에서 고를 수 없다(D-05 날짜 순서). */
   min?: string;
+  /** 이보다 늦은 날짜는 달력에서 고를 수 없다(예: 생년월일은 오늘까지). */
+  max?: string;
+  /** 연도 목록의 첫 해. 생년월일처럼 먼 과거를 고를 때 넘긴다(기본: 올해 −7년). */
+  yearsFrom?: number;
   inputRef?: Ref<HTMLInputElement>;
 }
 
@@ -26,11 +30,6 @@ function pad(value: number) {
 
 function toKey(year: number, month: number, day: number) {
   return `${year}-${pad(month + 1)}-${pad(day)}`;
-}
-
-function todayKey() {
-  const now = new Date();
-  return toKey(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
 /** 숫자만 남겨 YYYY-MM-DD 모양으로 만든다. 붙여넣은 2026.11.01·20261101도 같은 값이 된다. */
@@ -52,7 +51,7 @@ function addDays(key: string, days: number) {
   return toKey(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-export function DateField({ id, label, value, onChange, hint, error, min, inputRef }: DateFieldProps) {
+export function DateField({ id, label, value, onChange, hint, error, min, max, yearsFrom, inputRef }: DateFieldProps) {
   const calendarId = useId();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState({ year: 0, month: 0 });
@@ -67,6 +66,7 @@ export function DateField({ id, label, value, onChange, hint, error, min, inputR
   const message = error ?? hint;
   const messageId = message ? `${id}-${error ? 'error' : 'hint'}` : undefined;
   const validMin = min && isValidDate(min) ? min : undefined;
+  const validMax = max && isValidDate(max) ? max : undefined;
   const today = todayKey();
 
   function openCalendar() {
@@ -95,6 +95,17 @@ export function DateField({ id, label, value, onChange, hint, error, min, inputR
     document.addEventListener('mousedown', handlePointer);
     return () => document.removeEventListener('mousedown', handlePointer);
   }, [open]);
+
+  // 연도·월 목록을 열면 지금 보는 연도·월이 목록 안에 보이게 한다(생년월일처럼 목록이 길 때).
+  useEffect(() => {
+    if (!picker) return;
+    const active = areaRef.current?.querySelector<HTMLElement>(`.calendar-${picker === 'year' ? 'year' : 'mon'}-wrap button.active`);
+    // 스크롤되는 것은 KRDS의 바깥 상자(.calendar-select, max-height + overflow)다.
+    const list = active?.closest<HTMLElement>('.calendar-select');
+    if (active && list) {
+      list.scrollTop += active.getBoundingClientRect().top - list.getBoundingClientRect().top - list.clientHeight / 2;
+    }
+  }, [picker]);
 
   // 열 때와 방향키로 옮길 때 해당 날짜 버튼에 초점을 둔다.
   useEffect(() => {
@@ -140,7 +151,9 @@ export function DateField({ id, label, value, onChange, hint, error, min, inputR
     return { key, day: date.getDate(), outside, weekday: date.getDay() };
   });
   const thisYear = new Date().getFullYear();
-  const years = Array.from({ length: 11 }, (_, index) => thisYear - 7 + index);
+  const firstYear = yearsFrom ?? thisYear - 7;
+  const lastYear = validMax ? parseKey(validMax).year : thisYear + 3;
+  const years = Array.from({ length: Math.max(lastYear - firstYear + 1, 1) }, (_, index) => lastYear - index).reverse();
   if (!years.includes(view.year)) years.push(view.year);
   years.sort((a, b) => a - b);
 
@@ -263,7 +276,7 @@ export function DateField({ id, label, value, onChange, hint, error, min, inputR
                       {Array.from({ length: 6 }, (_, week) => (
                         <tr key={week}>
                           {cells.slice(week * 7, week * 7 + 7).map((cell) => {
-                            const beforeMin = !!validMin && cell.key < validMin;
+                            const beforeMin = (!!validMin && cell.key < validMin) || (!!validMax && cell.key > validMax);
                             const selected = cell.key === pending;
                             const className = [
                               cell.outside && (cell.key < toKey(view.year, view.month, 1) ? 'old' : 'new'),
@@ -305,7 +318,7 @@ export function DateField({ id, label, value, onChange, hint, error, min, inputR
                   <button
                     type="button"
                     className="krds-btn small text"
-                    disabled={!!validMin && today < validMin}
+                    disabled={(!!validMin && today < validMin) || (!!validMax && today > validMax)}
                     onClick={() => {
                       const { year, month } = parseKey(today);
                       setView({ year, month });

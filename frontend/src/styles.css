@@ -69,18 +69,6 @@ code {
   border-bottom: 1px solid var(--krds-light-color-divider-gray-light);
 }
 
-.app-account {
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--krds-gap-2) var(--krds-gap-4);
-  font-size: var(--krds-pc-font-size-body-small);
-}
-
-.app-account-meta {
-  margin-left: var(--krds-gap-3);
-  color: var(--krds-light-color-text-subtle);
-}
-
 /* KRDS 코드 키트의 헤더 위아래 여백은 넓은 화면에만 있어 좁은 화면에도 같은 여백을 준다. */
 @media (max-width: 1024px) {
   #krds-header .header-container .inner {
@@ -885,32 +873,6 @@ fieldset.form-group {
   font-size: var(--krds-pc-font-size-body-medium);
 }
 
-.login-features {
-  display: grid;
-  gap: var(--krds-gap-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.login-features li {
-  position: relative;
-  padding-left: 1.6rem;
-  font-size: var(--krds-pc-font-size-body-medium);
-  font-weight: 700;
-}
-
-.login-features li::before {
-  content: '';
-  position: absolute;
-  top: calc(0.5lh - 0.2rem);
-  left: 0.4rem;
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 50%;
-  background-color: var(--krds-light-color-text-basic);
-}
-
 @media (max-width: 767px) {
   .login-panel {
     grid-template-columns: minmax(0, 1fr);
@@ -1029,4 +991,134 @@ fieldset.form-group {
 /* 처리 이력: 처리 시각과 담당자 이름은 줄을 나누지 않는다(좁은 화면은 표가 가로로 스크롤) */
 .history-table .nowrap {
   white-space: nowrap;
+}
+
+/* KRDS 드롭다운(글자크기)은 ui-script.js가 열고 닫는다. 이 앱은 스크립트 대신 React로 .active를 붙여 연다. */
+.krds-drop-wrap.active .drop-menu:not([hidden]) {
+  display: block;
+}
+
+/*
+ * 공식 표시 로고(11/16): 운영기관 로고(정부 상징 + 보건복지부 지역사회 통합돌봄) | 서비스 이름 ‘돌봄e음’.
+ * 원본 이미지는 374×48이라 높이 3.6rem으로 줄이고, 좁은 화면에서는 더 줄인다.
+ */
+.app-logo-official a {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.app-logo-official img {
+  width: auto;
+  height: 3.6rem;
+}
+
+/* 서비스 이름은 운영기관 로고 글자와 굵기·색·크기를 맞춘다(로고 글자는 보통 굵기의 진회색). */
+.app-logo-official .app-logo-service {
+  padding-left: 1.2rem;
+  border-left: 1px solid var(--krds-light-color-divider-gray-light);
+  color: #333;
+  font-size: 2.1rem;
+  font-weight: 500;
+  letter-spacing: -.02em;
+}
+
+@media (max-width: 620px) {
+  .app-logo-official a {
+    flex-wrap: wrap;
+    gap: .4rem 1rem;
+  }
+
+  .app-logo-official img {
+    height: 2.6rem;
+  }
+}
+
+/* KRDS .f-logo는 KRDS 로고를 배경 그림으로 깔아 둔다. 운영기관 로고 이미지만 보이게 지운다. */
+#krds-footer .f-logo.app-footer-logo {
+  width: auto;
+  height: auto;
+  background: none;
+}
+
+.app-footer-logo img {
+  width: auto;
+  height: 3.6rem;
+}
+
+.app-footer-official .info-cs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .4rem .8rem;
+}
+
+.app-footer-gap {
+  margin-left: .8rem;
+}
+
+.app-footer-demo {
+  margin-top: 1.2rem;
+  color: var(--krds-light-color-text-subtle);
+}
+
+/* 짧은 화면(로그인)과 긴 화면 사이를 오갈 때 스크롤바가 생기고 사라지며 화면 전체가 옆으로 밀리지 않게 자리를 늘 비워 둔다. */
+html {
+  scrollbar-gutter: stable;
+  /* 화면 안 목차·#본문 링크로 이동할 때 제목이 위에 붙은 KRDS 상단 밑에 가려지지 않게 한다. */
+  scroll-padding-top: calc(var(--app-header-height, 0px) + 1.6rem);
+}
+
+/* 내 메뉴(KRDS my-drop): 이름 아래 역할·관할 한 줄. */
+#krds-header .my-drop .drop-menu {
+  min-width: 24rem;
+}
+
+#krds-header .my-drop .my-name {
+  font-weight: 700;
+}
+
+#krds-header .my-drop .my-role {
+  margin-top: .4rem;
+  color: var(--krds-light-color-text-subtle);
+  font-size: var(--krds-pc-font-size-body-small);
+}
+
+/*
+ * KRDS는 1023px 이하에서 내 메뉴를 숨기고 스크립트로 여는 ‘전체메뉴’에 넣는다.
+ * 이 앱은 전체메뉴가 없어 좁은 화면에서도 내 메뉴(로그아웃 포함)를 그대로 보인다.
+ */
+@media (max-width: 1023px) {
+  #krds-header .header-container .my-drop,
+  #krds-header .header-container .btn-navi.my {
+    display: inline-flex;
+  }
+}
+
+/*
+ * 정부24 상단처럼 계정 버튼은 아이콘이 앞에 붙은 가로형 글자 버튼(KRDS btn-navi navi-row).
+ * 로그아웃은 KRDS 헤더 아이콘 목록에 없어 ::before 대신 ico-logout 아이콘을 넣는다.
+ */
+#krds-header .header-container .header-actions {
+  align-items: center;
+}
+
+#krds-header .header-container .btn-navi.navi-row {
+  min-height: 4rem;
+  padding: .6rem 1rem;
+}
+
+#krds-header .header-container .btn-navi.logout::before {
+  display: none;
+}
+
+#krds-header .header-container .btn-navi.logout .svg-icon {
+  width: 2rem;
+  height: 2rem;
+}
+
+@media (max-width: 1023px) {
+  #krds-header .header-container .btn-navi.logout {
+    display: inline-flex;
+  }
 }

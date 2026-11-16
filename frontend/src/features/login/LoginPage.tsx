@@ -5,16 +5,17 @@ import { useAuth } from '../../auth/AuthContext';
 import type { LoginAudience } from '../../auth/loginRoutes';
 import { AppFooter } from '../../layout/AppFooter';
 import { AppHeader } from '../../layout/AppHeader';
+import { AccountArea, PublicMenu } from '../../layout/PublicNav';
 import { TextField } from '../../components/TextField';
 import { Link, PageTitle } from '../../router';
 import { HealthStatus } from '../health/HealthStatus';
 
-/** 서비스 소개. D-01 첫 문단 요약. */
-const ABOUT_INTRO =
-  '지역사회 통합돌봄 신청 한 건을 읍면동과 시군구 담당자가 이어받아, 접수부터 최초 모니터링까지 기록하는 업무 화면입니다.';
-
-/** 주요 기능. D-01 REQ-02~07을 세 묶음으로 줄였다. */
-const ABOUT_FEATURES = ['신청 접수·조사·판정 기록', '공단 서비스로 지원계획 작성', '연계·제공·모니터링 기록'] as const;
+/**
+ * 오른쪽 안내 칸 소개(D-01 첫 문단 요약). 담당자·신청자 화면 모두 한 문단으로 맞춘다(11/16).
+ * 전에는 담당자 화면에만 기능 목록 세 줄이 더 있어 안내 칸이 입력 칸보다 길어지고 아래 여백이 어긋났다.
+ */
+const ABOUT_INTRO = '읍면동·시군구 담당자가 통합돌봄 신청을 접수부터 최초 모니터링까지 기록하는 업무 화면입니다.';
+const ABOUT_APPLICANT = '본인이나 보호자가 가상 정보로 신청서를 작성하고 제출한 서류를 확인하는 시연 서비스입니다.';
 
 type Field = 'username' | 'password';
 type FieldErrors = Partial<Record<Field, string>>;
@@ -74,7 +75,7 @@ export function LoginPage({ notice, audience }: { notice: string | null; audienc
 
   return (
     <>
-    <AppHeader logoTo="/" />
+    <AppHeader logoTo="/" account={<AccountArea />} menu={<PublicMenu />} />
     <main id="main" className="login-page">
       {/* KRDS 피그마 서비스패턴_로그인 Step 3: 792px 본문, 작은 안내 + 큰 제목, 위아래 구분선 안에 왼쪽 입력·오른쪽 안내 */}
       <section className="login-box" aria-labelledby="login-title">
@@ -145,14 +146,7 @@ export function LoginPage({ notice, audience }: { notice: string | null; audienc
             <h2 id="login-about-title" className="login-about-title">
               돌봄e음은
             </h2>
-            <p className="login-about">{isApplicant
-              ? '본인이나 보호자가 가상 정보로 신청서를 작성하고 제출한 서류를 확인하는 시연 서비스입니다.'
-              : ABOUT_INTRO}</p>
-            {!isApplicant && <ul className="login-features" aria-label="주요 기능">
-              {ABOUT_FEATURES.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>}
+            <p className="login-about">{isApplicant ? ABOUT_APPLICANT : ABOUT_INTRO}</p>
             <p className="login-about login-other-audience">
               <Link to={isApplicant ? '/login/staff' : '/login/applicant'}>
                 {isApplicant ? '공무원·관리자 로그인' : '신청자 로그인'}
