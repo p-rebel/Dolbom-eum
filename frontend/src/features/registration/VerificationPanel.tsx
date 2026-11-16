@@ -27,6 +27,7 @@ export function VerificationPanel({ id, sample }: { id: string; sample: Evidence
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [draft, setDraft] = useState<ReviewDraft | null>(null);
+  const [noteError, setNoteError] = useState<string | null>(null);
   const verification = result.data;
   const image = evidenceUrl(id);
 
@@ -50,6 +51,7 @@ export function VerificationPanel({ id, sample }: { id: string; sample: Evidence
   function openReview(row: ComparisonRow) {
     const saved = verification?.reviews[row.field];
     setDraft({ field: row.field, value: (saved ? saved.value : row.scanned) ?? '', note: saved?.note ?? '' });
+    setNoteError(null);
     setError(null);
     setNotice(null);
   }
@@ -59,9 +61,12 @@ export function VerificationPanel({ id, sample }: { id: string; sample: Evidence
     if (busy || !draft || !verification) return;
     const note = draft.note.trim();
     if (!note) {
-      setError('원본을 확인한 내용을 입력해 주세요.');
+      // 브라우저 기본 검증 말풍선 대신 칸 아래 KRDS 오류 문구로 알린다(신청서와 같은 방식).
+      setNoteError('원본을 확인한 내용을 입력해 주세요.');
+      document.getElementById('review-note')?.focus();
       return;
     }
+    setNoteError(null);
     setBusy('review');
     setError(null);
     try {
@@ -122,12 +127,13 @@ export function VerificationPanel({ id, sample }: { id: string; sample: Evidence
                         <small>{review.reviewer} · {DATE_TIME.format(new Date(review.reviewedAt))}</small>
                       </p>}
                       {draft?.field === row.field && (
-                        <form className="registration-verification-review" onSubmit={submitReview}>
+                        <form className="registration-verification-review" noValidate onSubmit={submitReview}>
                           <TextField id="reviewed-value" label="원본에서 확인한 값" value={draft.value} maxLength={100}
                             hint="판독이 어려우면 비워 두세요." autoFocus disabled={busy === 'review'}
                             onChange={(event) => setDraft({ ...draft, value: event.target.value })} />
-                          <TextField id="review-note" label="확인 내용" value={draft.note} maxLength={160} required disabled={busy === 'review'}
-                            onChange={(event) => setDraft({ ...draft, note: event.target.value })} />
+                          <TextField id="review-note" label="확인 내용" value={draft.note} maxLength={160} disabled={busy === 'review'}
+                            error={noteError ?? undefined}
+                            onChange={(event) => { setDraft({ ...draft, note: event.target.value }); if (event.target.value.trim()) setNoteError(null); }} />
                           <div className="registration-verification-actions">
                             <button type="button" className="krds-btn small secondary" disabled={busy === 'review'}
                               onClick={() => { setDraft(null); setError(null); }}>취소</button>

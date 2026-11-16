@@ -6,11 +6,14 @@ import {
   type ApplicationForm, type ApplicationType, type Beneficiary, type CareNeed,
   type DocumentKind, type Evidence, type EvidenceSample, type FormPreviews, type Person, type RelatedPerson, type Relationship,
 } from '../../api/registration';
+import { DateField } from '../../components/DateField';
 import { ErrorBlock, FormMessage, LoadingBlock } from '../../components/Feedback';
-import { CheckboxField, RadioGroup } from '../../components/FormFields';
+import { CheckboxField, RadioGroup, SelectField } from '../../components/FormFields';
 import { TextField } from '../../components/TextField';
+import { checkDate, todayKey } from '../../dates';
 import { useApiData } from '../../hooks/useApiData';
-import { navigate, PageTitle, useUnsavedChanges } from '../../router';
+import { PageHead } from '../../layout/PageHead';
+import { navigate, useUnsavedChanges } from '../../router';
 import { DocumentViewer } from './DocumentViewer';
 
 const EMPTY_PERSON: Person = { name: '', address: '', mobile: '' };
@@ -43,51 +46,73 @@ const EMPTY_CONSENTS: Record<ConsentField, boolean | null> = {
 };
 const CONSENT_CHOICES = [
   { value: 'yes', label: '동의함' }, { value: 'no', label: '동의하지 않음' },
-];
+] as const;
 
-function InputSelect({ id, label, children, value, onChange, required = true }: {
-  id: string; label: string; children: ReactNode; value: string; onChange: (value: string) => void; required?: boolean;
-}) {
-  return (
-    <div className="form-group">
-      <div className="form-tit"><label htmlFor={id}>{label}</label></div>
-      <div className="form-conts">
-        <select id={id} className="krds-form-select medium" value={value} required={required} onChange={(event) => onChange(event.target.value)}>
-          {children}
-        </select>
-      </div>
-    </div>
-  );
+/*
+ * 입력 규칙은 서버(backend/app/registration.py)와 같다. 브라우저 기본 검증 말풍선은 잠깐 떴다 사라지고
+ * 브라우저 언어로 나와서, 칸 아래 KRDS 오류 문구로 알리고 첫 오류 칸으로 포커스를 옮긴다(11/16).
+ */
+const NAME_PATTERN = /^가상 [가-힣A-Za-z0-9 ]+$/;
+const ADDRESS_PATTERN = /^가상[가-힣A-Za-z0-9 .(), -]+$/;
+const MOBILE_PATTERN = /^000-0000-[0-9]{4}$/;
+const DEMO_ID_PATTERN = /^DEMO-[A-Z0-9]{2,12}(?:-[A-Z0-9]{1,8})?$/;
+const SAMPLE_NAMES: Record<string, string> = { 대상자: '가상 대상자 A', 신청인: '가상 신청인 B', 보호자: '가상 보호자 C' };
+
+type Errors = Record<string, string>;
+
+function checkPerson(group: string, person: Person, errors: Errors) {
+  const name = person.name.trim();
+  const address = person.address.trim();
+  if (!name) errors[group + '-name'] = group + ' 성명을 입력해 주세요.';
+  else if (!NAME_PATTERN.test(name)) errors[group + '-name'] = `성명은 ‘가상 ’으로 시작해 주세요(예: ${SAMPLE_NAMES[group]}).`;
+  if (!person.mobile) errors[group + '-mobile'] = group + ' 연락처를 입력해 주세요.';
+  else if (!MOBILE_PATTERN.test(person.mobile)) errors[group + '-mobile'] = '연락처는 000-0000-0000 형식의 가상 번호로 입력해 주세요.';
+  if (!address) errors[group + '-address'] = group + ' 주소를 입력해 주세요.';
+  else if (!ADDRESS_PATTERN.test(address)) errors[group + '-address'] = '주소는 ‘가상’으로 시작하고 글자·숫자·띄어쓰기와 . ( ) , - 만 써 주세요.';
 }
 
-function PersonFields({ group, person, onChange }: { group: string; person: Person; onChange: (person: Person) => void }) {
+function PersonFields({ group, person, onChange, errors }: {
+  group: string; person: Person; onChange: (person: Person) => void; errors: Errors;
+}) {
   return (
     <div className="registration-fields">
-      <TextField id={group + '-name'} label={group + ' 성명'} value={person.name} placeholder="가상 대상자 A" required
-        maxLength={14} pattern="가상 [가-힣A-Za-z0-9 ]+"
+      <TextField id={group + '-name'} label={group + ' 성명'} value={person.name} maxLength={14}
+        hint={`‘가상 ’으로 시작합니다. 예: ${SAMPLE_NAMES[group]}`} error={errors[group + '-name']}
         onChange={(event) => onChange({ ...person, name: event.target.value })} />
-      <TextField id={group + '-mobile'} label={group + ' 연락처'} value={person.mobile} placeholder="000-0000-0101" required
-        maxLength={13} type="tel" pattern="000-0000-[0-9]{4}"
+      <TextField id={group + '-mobile'} label={group + ' 연락처'} value={person.mobile} maxLength={13} type="tel"
+        hint="가상 번호 000-0000-0000 형식입니다." error={errors[group + '-mobile']}
         onChange={(event) => onChange({ ...person, mobile: event.target.value })} />
       <div className="registration-field-wide">
-        <TextField id={group + '-address'} label={group + ' 주소'} value={person.address} placeholder="가상 A시 돌봄로 10"
-          required maxLength={52} pattern="가상.+" onChange={(event) => onChange({ ...person, address: event.target.value })} />
+        <TextField id={group + '-address'} label={group + ' 주소'} value={person.address} maxLength={52}
+          hint="‘가상’으로 시작합니다. 예: 가상 A시 돌봄로 10" error={errors[group + '-address']}
+          onChange={(event) => onChange({ ...person, address: event.target.value })} />
       </div>
     </div>
   );
 }
 
-function RelatedFields({ group, person, relationships, onChange }: {
-  group: string; person: RelatedPerson; relationships: readonly Relationship[]; onChange: (person: RelatedPerson) => void;
+function RelatedFields({ group, person, relationships, onChange, errors }: {
+  group: string; person: RelatedPerson; relationships: readonly Relationship[]; onChange: (person: RelatedPerson) => void; errors: Errors;
 }) {
   return (
+    <>
+      <div className="registration-fields">
+        <SelectField id={group + '-relationship'} label="대상자와의 관계" value={person.relationship}
+          options={relationships.map((value) => ({ value, label: RELATIONSHIPS[value] }))}
+          onChange={(event) => onChange({ ...person, relationship: event.target.value as Relationship })} />
+      </div>
+      <PersonFields group={group} person={person} errors={errors} onChange={(value) => onChange({ ...person, ...value })} />
+    </>
+  );
+}
+
+/** 입력 묶음. 제목(legend)을 상자 테두리 위가 아니라 상자 안 첫 줄에 둔다(h2 묶음과 같은 모양). */
+function FormSection({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
+  return (
     <fieldset className="registration-form-section">
-      <legend>{group} 정보</legend>
-      <InputSelect id={group + '-relationship'} label="대상자와의 관계" value={person.relationship}
-        onChange={(value) => onChange({ ...person, relationship: value as Relationship })}>
-        {relationships.map((value) => <option key={value} value={value}>{RELATIONSHIPS[value]}</option>)}
-      </InputSelect>
-      <PersonFields group={group} person={person} onChange={(value) => onChange({ ...person, ...value })} />
+      <legend>{title}</legend>
+      {action && <div className="registration-section-action">{action}</div>}
+      {children}
     </fieldset>
   );
 }
@@ -104,6 +129,10 @@ function choiceRequired(type: ApplicationType, consents: typeof EMPTY_CONSENTS):
 function pdfUrl(encoded: string) {
   const bytes = Uint8Array.from(atob(encoded), (value) => value.charCodeAt(0));
   return URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+}
+
+function fileSize(bytes: number) {
+  return bytes >= 1024 * 1024 ? (bytes / 1024 / 1024).toFixed(1) + 'MB' : Math.max(1, Math.round(bytes / 1024)) + 'KB';
 }
 
 function FormReview({ previews }: { previews: FormPreviews }) {
@@ -139,6 +168,8 @@ export function ApplicationPage() {
   const [uncertain, setUncertain] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  // 다음 단계를 누를 때 찾은 오류와 그때의 값. 값을 고치면 그 칸 오류만 지우고 다시 검사는 다음 단계를 누를 때 한다(DEV-03 11/13 규칙).
+  const [shown, setShown] = useState<{ errors: Errors; values: Record<string, string> }>({ errors: {}, values: {} });
   const heading = useRef<HTMLHeadingElement>(null);
   const photoInput = useRef<HTMLInputElement>(null);
   useUnsavedChanges(dirty);
@@ -156,6 +187,69 @@ export function ApplicationPage() {
   const evidence = choiceRequired(applicationType, consents);
   const consentFields = (Object.keys(CONSENT_LABELS) as ConsentField[])
     .filter((field) => field !== 'familyRecord' || applicationType === 'FAMILY');
+
+  /** 화면 순서대로 오류를 모은다. 첫 항목으로 포커스를 옮긴다. */
+  function validateInfo(): Errors {
+    const errors: Errors = {};
+    if (!regionCode) errors['application-region'] = '주소지 관할을 선택해 주세요.';
+    checkPerson('대상자', beneficiary, errors);
+    if (!beneficiary.demoId) errors['demo-id'] = '가상 식별자를 입력해 주세요.';
+    else if (!DEMO_ID_PATTERN.test(beneficiary.demoId)) errors['demo-id'] = '가상 식별자는 DEMO-로 시작하는 대문자·숫자로 입력해 주세요(예: DEMO-ID-0101).';
+    const birth = checkDate(beneficiary.birthDate, {
+      required: '가상 생년월일을 입력해 주세요.',
+      notAfter: { date: todayKey(), message: '생년월일은 오늘이나 이전 날짜로 입력해 주세요.' },
+    });
+    if (birth) errors['birth-date'] = birth;
+    const residence = beneficiary.residence?.trim();
+    if (residence && !ADDRESS_PATTERN.test(residence)) errors.residence = '실거주지는 ‘가상’으로 시작하고 글자·숫자·띄어쓰기와 . ( ) , - 만 써 주세요.';
+    if (applicationType !== 'SELF') checkPerson('신청인', applicant, errors);
+    if (caregiver) checkPerson('보호자', caregiver, errors);
+    if (!careNeeds.length) errors['care-HEALTH'] = '필요한 돌봄을 하나 이상 선택해 주세요.';
+    return errors;
+  }
+
+  function validateConsents(): Errors {
+    const errors: Errors = {};
+    for (const field of consentFields) {
+      if (consents[field] === null) errors[field + '-yes'] = '동의 여부를 선택해 주세요.';
+    }
+    for (const item of evidence) {
+      if (!preparedEvidence.includes(item)) errors['evidence-' + item] = '준비한 가상 증빙을 확인해 주세요.';
+    }
+    if (photoError) errors['evidence-photo-button'] = photoError;
+    if (!confirmed) errors['confirm-demo-submission'] = '제출 전에 입력 내용을 확인했는지 선택해 주세요.';
+    return errors;
+  }
+
+  /** 오류 칸마다 지금 값. 다음 단계를 누를 때와 달라졌으면 그 칸 오류를 숨긴다. */
+  function fieldValues(): Record<string, string> {
+    const values: Record<string, string> = {
+      'application-region': regionCode, 'demo-id': beneficiary.demoId, 'birth-date': beneficiary.birthDate,
+      residence: beneficiary.residence ?? '', 'care-HEALTH': careNeeds.join(','),
+      'evidence-photo-button': photoError ?? '', 'confirm-demo-submission': String(confirmed),
+    };
+    const people: [string, Person | null][] = [['대상자', beneficiary], ['신청인', applicant], ['보호자', caregiver]];
+    for (const [group, person] of people) {
+      if (!person) continue;
+      values[group + '-name'] = person.name;
+      values[group + '-mobile'] = person.mobile;
+      values[group + '-address'] = person.address;
+    }
+    for (const field of Object.keys(CONSENT_LABELS) as ConsentField[]) values[field + '-yes'] = String(consents[field]);
+    for (const item of evidence) values['evidence-' + item] = String(preparedEvidence.includes(item));
+    return values;
+  }
+
+  const current = fieldValues();
+  const errors: Errors = Object.fromEntries(Object.entries(shown.errors).filter(([id]) => current[id] === shown.values[id]));
+
+  function stopAtFirstError(found: Errors) {
+    setShown({ errors: found, values: fieldValues() });
+    const first = Object.keys(found)[0];
+    if (!first) return false;
+    document.getElementById(first)?.focus();
+    return true;
+  }
 
   function changeType(type: ApplicationType) {
     setApplicationType(type);
@@ -187,6 +281,7 @@ export function ApplicationPage() {
     if (!file.size || file.size > EVIDENCE_PHOTO_MAX_BYTES
       || !(file.type ? EVIDENCE_PHOTO_TYPES.includes(file.type) : /\.(jpe?g|png|webp)$/i.test(file.name))) {
       if (photoInput.current) photoInput.current.value = '';
+      setPhoto(null);
       setPhotoError('8MB 이하의 JPG, PNG, WebP 사진을 선택해 주세요.');
       return;
     }
@@ -200,28 +295,21 @@ export function ApplicationPage() {
     if (busy) return;
     setError(null);
     if (step === 0) {
-      if (!careNeeds.length) {
-        setError('필요한 돌봄을 하나 이상 선택해 주세요.');
-        document.getElementById('care-HEALTH')?.focus();
-        return;
-      }
+      if (stopAtFirstError(validateInfo())) return;
       setStep(1);
       return;
     }
 
     if (step === 1) {
-      if (photoError) return;
+      if (stopAtFirstError(validateConsents())) return;
       const { familyRecord, administrative, personal, sensitive, uniqueId } = consents;
-      if (!confirmed || administrative === null || personal === null || sensitive === null || uniqueId === null
-        || (applicationType === 'FAMILY' && familyRecord === null)
-        || evidence.some((item) => !preparedEvidence.includes(item))) {
-        setError('동의 선택과 가상 증빙 준비를 확인해 주세요.');
-        return;
-      }
       const form: ApplicationForm = {
-        applicationType, regionCode, beneficiary, applicant: applicationType === 'SELF' ? null : applicant, caregiver,
+        applicationType, regionCode,
+        // 공백만 넣은 실거주지는 입력하지 않은 것으로 보낸다(서버가 공백을 지운 뒤 형식 오류로 거절한다).
+        beneficiary: { ...beneficiary, residence: beneficiary.residence?.trim() ? beneficiary.residence : null },
+        applicant: applicationType === 'SELF' ? null : applicant, caregiver,
         noticeRecipient, noticeMethod, careNeeds, confirmed: true, evidence, evidenceSample,
-        consents: { familyRecord, administrative, personal, sensitive, uniqueId },
+        consents: { familyRecord, administrative: administrative!, personal: personal!, sensitive: sensitive!, uniqueId: uniqueId! },
       };
       setBusy(true);
       try {
@@ -240,7 +328,8 @@ export function ApplicationPage() {
     setBusy(true);
     try {
       const submission = await submitApplication(prepared.form, prepared.key, prepared.photo);
-      navigate('/my/applications/' + submission.id, { force: true });
+      // KRDS 신청 패턴 ‘완료’: 제출 뒤에는 반드시 완료 화면으로 보낸다(done=1이면 완료 안내를 먼저 보인다).
+      navigate('/my/applications/' + submission.id + '?done=1', { force: true });
     } catch (cause) {
       const pending = !(cause instanceof ApiError) || cause.status === 0 || cause.status >= 500;
       setUncertain(pending);
@@ -254,142 +343,208 @@ export function ApplicationPage() {
 
   return (
     <div className="inner page registration-form-page">
-      <PageTitle>돌봄 신청서 작성</PageTitle>
+      <PageHead parents={[{ label: '홈', to: '/' }]} title="돌봄 신청서 작성" />
       <p className="registration-lead">가상 정보를 한 번 입력하면 공식 양식의 신청서와 동의서에 반영됩니다.</p>
-      <ol className="registration-stepper" aria-label="신청 단계">
-        {STEP_NAMES.map((name, index) => <li key={name} aria-current={index === step ? 'step' : undefined}>
-          <span aria-hidden="true">{index + 1}</span>{name}
-        </li>)}
+      {/* KRDS 단계 표시(step indicator): 지난 단계 done, 현재 단계 active와 ‘현재단계’ 숨김 글자 */}
+      <ol className="krds-step-wrap registration-steps" aria-label="신청 단계">
+        {STEP_NAMES.map((name, index) => (
+          <li key={name} className={index < step ? 'done' : index === step ? 'active' : undefined}
+            aria-current={index === step ? 'step' : undefined}>
+            <span>
+              {index === step && <em className="sr-only">현재단계</em>}
+              <i className="step">{index + 1}단계</i>
+              <span className="step-tit">{name}</span>
+            </span>
+          </li>
+        ))}
       </ol>
+      {/* 화면낭독기는 위 단계 표시의 숨김 글자로 읽으므로 이 줄은 건너뛴다. */}
+      <p className="registration-step-caption" aria-hidden="true">{step + 1}/{STEP_NAMES.length}단계 · {STEP_NAMES[step]}</p>
 
       {regions.loading && <LoadingBlock label="신청 가능한 지역을 불러오는 중" />}
       {regions.error && <ErrorBlock message={regions.error.message} onRetry={regions.reload} />}
       {regions.data && (
-        <form onSubmit={handleStep} onChange={() => setDirty(true)}>
+        <form noValidate onSubmit={handleStep} onChange={() => setDirty(true)}>
           <fieldset className="registration-step-fields" disabled={busy}>
           {step === 0 && (
             <>
-              <section className="registration-form-section">
-                <div className="registration-section-title">
-                  <h2>신청 대상과 유형</h2>
-                  <button type="button" className="krds-btn small secondary" onClick={loadSample}>가상 정보 불러오기</button>
-                </div>
+              <FormSection title="신청 대상과 유형"
+                action={<button type="button" className="krds-btn small secondary" onClick={loadSample}>가상 정보 불러오기</button>}>
                 <div className="registration-fields">
-                  <InputSelect id="application-type" label="신청 유형" value={applicationType} onChange={(value) => changeType(value as ApplicationType)}>
-                    {Object.entries(APPLICATION_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </InputSelect>
-                  <InputSelect id="application-region" label="주소지 관할" value={regionCode} onChange={setRegionCode}>
-                    <option value="">관할 지역을 선택해 주세요</option>
-                    {regions.data.map(({ code, name }) => <option key={code} value={code}>{name}</option>)}
-                  </InputSelect>
+                  <SelectField id="application-type" label="신청 유형" value={applicationType}
+                    options={Object.entries(APPLICATION_TYPES).map(([value, label]) => ({ value, label }))}
+                    onChange={(event) => changeType(event.target.value as ApplicationType)} />
+                  <SelectField id="application-region" label="주소지 관할" value={regionCode} emptyOption="관할 지역을 선택해 주세요"
+                    options={regions.data.map(({ code, name }) => ({ value: code, label: name }))}
+                    error={errors['application-region']} onChange={(event) => setRegionCode(event.target.value)} />
                 </div>
-              </section>
-              <fieldset className="registration-form-section">
-                <legend>돌봄을 받는 분</legend>
-                <PersonFields group="대상자" person={beneficiary} onChange={(person) => setBeneficiary({ ...beneficiary, ...person })} />
+              </FormSection>
+
+              <FormSection title="돌봄을 받는 분">
+                <PersonFields group="대상자" person={beneficiary} errors={errors}
+                  onChange={(person) => setBeneficiary({ ...beneficiary, ...person })} />
                 <div className="registration-fields">
-                  <TextField id="demo-id" label="가상 식별자" value={beneficiary.demoId} placeholder="DEMO-ID-0101" required maxLength={26}
-                    pattern="DEMO-[A-Z0-9]{2,12}(-[A-Z0-9]{1,8})?"
+                  <TextField id="demo-id" label="가상 식별자" value={beneficiary.demoId} maxLength={26}
+                    hint="DEMO-로 시작합니다. 예: DEMO-ID-0101" error={errors['demo-id']}
                     onChange={(event) => setBeneficiary({ ...beneficiary, demoId: event.target.value })} />
-                  <TextField id="birth-date" label="가상 생년월일" type="date" value={beneficiary.birthDate} required
-                    onChange={(event) => setBeneficiary({ ...beneficiary, birthDate: event.target.value })} />
-                  <div className="form-group">
-                    <label htmlFor="beneficiary-sex">성별 (선택)</label>
-                    <select id="beneficiary-sex" className="krds-form-select medium" value={beneficiary.sex ?? ''}
-                      onChange={(event) => setBeneficiary({ ...beneficiary, sex: (event.target.value || null) as Beneficiary['sex'] })}>
-                      <option value="">선택 안 함</option><option value="FEMALE">여성</option><option value="MALE">남성</option>
-                    </select>
-                  </div>
-                  <TextField id="residence" label="실거주지 (주소와 다른 경우)" value={beneficiary.residence ?? ''} maxLength={52} pattern="가상.+"
+                  <DateField id="birth-date" label="가상 생년월일" value={beneficiary.birthDate} max={todayKey()} yearsFrom={1900}
+                    hint="숫자만 입력해도 됩니다(예: 19450503 → 1945-05-03)" error={errors['birth-date']}
+                    onChange={(value) => { setBeneficiary({ ...beneficiary, birthDate: value }); setDirty(true); }} />
+                  <SelectField id="beneficiary-sex" label="성별" optional value={beneficiary.sex ?? ''} emptyOption="선택 안 함"
+                    options={[{ value: 'FEMALE', label: '여성' }, { value: 'MALE', label: '남성' }]}
+                    onChange={(event) => setBeneficiary({ ...beneficiary, sex: (event.target.value || null) as Beneficiary['sex'] })} />
+                  <TextField id="residence" label="실거주지" optional value={beneficiary.residence ?? ''} maxLength={52}
+                    hint="주소와 다른 곳에 사는 경우에만 입력합니다." error={errors.residence}
                     onChange={(event) => setBeneficiary({ ...beneficiary, residence: event.target.value || null })} />
                 </div>
-              </fieldset>
-              {applicationType !== 'SELF' && <RelatedFields group="신청인" person={applicant}
-                relationships={applicationType === 'GUARDIAN' ? ['GUARDIAN'] : FAMILY_RELATIONSHIPS} onChange={setApplicant} />}
-              <div className="registration-caregiver">
+              </FormSection>
+
+              {applicationType !== 'SELF' && (
+                <FormSection title="신청인 정보">
+                  <RelatedFields group="신청인" person={applicant} errors={errors}
+                    relationships={applicationType === 'GUARDIAN' ? ['GUARDIAN'] : FAMILY_RELATIONSHIPS} onChange={setApplicant} />
+                </FormSection>
+              )}
+
+              <FormSection title="보호자 정보">
                 <CheckboxField id="separate-caregiver" label="돌봄을 맡은 보호자가 별도로 있습니다" checked={Boolean(caregiver)}
                   onChange={(checked) => setCaregiver(checked ? EMPTY_APPLICANT : null)} />
-              </div>
-              {caregiver && <RelatedFields group="보호자" person={caregiver} relationships={CAREGIVER_RELATIONSHIPS} onChange={setCaregiver} />}
-              <fieldset className="registration-form-section">
-                <legend>필요한 돌봄과 안내 방법</legend>
-                <div className="registration-options">
-                  {(Object.keys(CARE_NEEDS) as CareNeed[]).map((value) => <CheckboxField key={value} id={'care-' + value}
-                    label={CARE_NEEDS[value]} checked={careNeeds.includes(value)}
-                    onChange={(checked) => setCareNeeds(checked ? [...careNeeds, value] : careNeeds.filter((item) => item !== value))} />)}
-                </div>
+                {caregiver && <RelatedFields group="보호자" person={caregiver} relationships={CAREGIVER_RELATIONSHIPS}
+                  errors={errors} onChange={setCaregiver} />}
+              </FormSection>
+
+              <FormSection title="필요한 돌봄과 안내 방법">
+                {/* 체크박스 묶음도 라디오 묶음(RadioGroup)처럼 fieldset 이름을 두고 오류를 묶음 아래 한 줄로 둔다. */}
+                <fieldset className="form-group registration-care-needs" aria-describedby={errors['care-HEALTH'] ? 'care-needs-error' : undefined}>
+                  <legend>필요한 돌봄</legend>
+                  <div className="form-tit" aria-hidden="true"><span>필요한 돌봄</span></div>
+                  <div className={errors['care-HEALTH'] ? 'form-conts is-error' : 'form-conts'}>
+                    <div className="krds-check-area">
+                      {(Object.keys(CARE_NEEDS) as CareNeed[]).map((value) => (
+                        <div className="krds-form-check" key={value}>
+                          <input type="checkbox" id={'care-' + value} checked={careNeeds.includes(value)}
+                            aria-invalid={errors['care-HEALTH'] ? true : undefined}
+                            onChange={(event) => setCareNeeds(event.target.checked
+                              ? [...careNeeds, value] : careNeeds.filter((item) => item !== value))} />
+                          <label htmlFor={'care-' + value}>{CARE_NEEDS[value]}</label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {errors['care-HEALTH'] && <p id="care-needs-error" className="form-hint-invalid">{errors['care-HEALTH']}</p>}
+                </fieldset>
                 <div className="registration-fields">
-                  <InputSelect id="notice-recipient" label="안내 대상" value={noticeRecipient}
-                    onChange={(value) => setNoticeRecipient(value as ApplicationForm['noticeRecipient'])}>
-                    <option value="BENEFICIARY">대상자 본인</option>
-                    {applicationType !== 'SELF' && <option value="APPLICANT">친족·후견인 신청자</option>}
-                  </InputSelect>
-                  <InputSelect id="notice-method" label="안내 방식" value={noticeMethod}
-                    onChange={(value) => setNoticeMethod(value as ApplicationForm['noticeMethod'])}>
-                    <option value="SMS">문자</option><option value="MAIL">우편</option>
-                  </InputSelect>
+                  <SelectField id="notice-recipient" label="안내 대상" value={noticeRecipient}
+                    options={[
+                      { value: 'BENEFICIARY', label: '대상자 본인' },
+                      ...(applicationType !== 'SELF' ? [{ value: 'APPLICANT', label: '친족·후견인 신청자' }] : []),
+                    ]}
+                    onChange={(event) => setNoticeRecipient(event.target.value as ApplicationForm['noticeRecipient'])} />
+                  <SelectField id="notice-method" label="안내 방식" value={noticeMethod}
+                    options={[{ value: 'SMS', label: '문자' }, { value: 'MAIL', label: '우편' }]}
+                    onChange={(event) => setNoticeMethod(event.target.value as ApplicationForm['noticeMethod'])} />
                 </div>
-              </fieldset>
+              </FormSection>
             </>
           )}
 
           {step === 1 && (
-            <section className="registration-form-section">
-              <h2 ref={heading} tabIndex={-1}>동의와 가상 증빙</h2>
-              <p>항목별 동의 여부를 선택해 주세요. 선택한 내용이 서류에 표시됩니다.</p>
-              <a className="registration-text-link" href="https://www.mohw.go.kr/board.es?act=view&bid=0073&list_no=1489873&mid=a60401000000"
-                target="_blank" rel="noreferrer">공식 신청서와 동의서 안내</a>
-              {consentFields.map((field) => (
-                <div className="registration-consent" key={field}>
-                  <RadioGroup name={field} legend={CONSENT_LABELS[field]} options={CONSENT_CHOICES}
-                    value={consents[field] === null ? '' : consents[field] ? 'yes' : 'no'}
-                    onChange={(value) => setConsents({ ...consents, [field]: value === 'yes' })} />
+            <>
+              <section className="registration-form-section" aria-labelledby="consent-heading">
+                <h2 id="consent-heading" ref={heading} tabIndex={-1}>항목별 동의</h2>
+                <p className="registration-section-lead">
+                  항목별 동의 여부를 선택해 주세요. 선택한 내용이 서류에 표시됩니다.{' '}
+                  <a className="registration-text-link" href="https://www.mohw.go.kr/board.es?act=view&bid=0073&list_no=1489873&mid=a60401000000"
+                    target="_blank" rel="noreferrer">공식 신청서와 동의서 안내 (새 창)</a>
+                </p>
+                {consentFields.map((field) => (
+                  <div className="registration-consent" key={field}>
+                    <RadioGroup name={field} legend={CONSENT_LABELS[field]} options={[...CONSENT_CHOICES]}
+                      value={consents[field] === null ? '' : consents[field] ? 'yes' : 'no'} error={errors[field + '-yes']}
+                      onChange={(value) => setConsents({ ...consents, [field]: value === 'yes' })} />
+                  </div>
+                ))}
+              </section>
+
+              <section className="registration-form-section" aria-labelledby="evidence-heading">
+                <h2 id="evidence-heading">가상 증빙</h2>
+                {evidence.length > 0 && (
+                  <fieldset className="registration-consent">
+                    <legend>필요한 가상 증빙</legend>
+                    {evidence.map((item) => (
+                      <CheckboxField key={item} id={'evidence-' + item} label={EVIDENCE_LABELS[item] + ' 시연 자료를 준비했습니다'}
+                        checked={preparedEvidence.includes(item)} error={errors['evidence-' + item]}
+                        onChange={(checked) => setPreparedEvidence(checked
+                          ? [...preparedEvidence, item] : preparedEvidence.filter((value) => value !== item))} />
+                    ))}
+                  </fieldset>
+                )}
+
+                {/* KRDS 파일 업로드: 안내 문구 + ‘파일 선택’ 버튼, 고른 파일은 목록으로 보여 주고 ‘삭제’로 뺀다. */}
+                <div className="krds-file-upload registration-photo-upload">
+                  <div className="file-head">
+                    <h3 className="tit" id="evidence-photo-title">가상 증빙 사진 직접 첨부 <span className="field-optional">(선택)</span></h3>
+                  </div>
+                  <div className={photoError ? 'file-upload is-error' : 'file-upload'}>
+                    <p className="txt" id="evidence-photo-hint">
+                      가상 정보가 담긴 JPG, PNG, WebP 사진 한 장(최대 8MB)을 골라 주세요.
+                      사진에 ‘성명’, ‘생년월일’, ‘가상 식별자’, ‘주소’를 값과 함께 적으면 담당자가 자동으로 대조할 수 있습니다.
+                    </p>
+                    <div className="file-upload-btn-wrap">
+                      <input ref={photoInput} id="evidence-photo" type="file" hidden accept={EVIDENCE_PHOTO_TYPES.join(',')}
+                        onChange={(event) => { const file = event.target.files?.[0]; if (file) choosePhoto(file); }} />
+                      <button type="button" id="evidence-photo-button" className="krds-btn medium"
+                        aria-describedby={['evidence-photo-hint', photoError && 'evidence-photo-error'].filter(Boolean).join(' ')}
+                        aria-invalid={photoError ? true : undefined}
+                        onClick={() => photoInput.current?.click()}>
+                        <i className="svg-icon ico-upload" aria-hidden="true" />{photo ? '다른 사진 선택' : '사진 선택'}
+                        <span className="sr-only"> (가상 증빙 사진)</span>
+                      </button>
+                    </div>
+                  </div>
+                  {photoError && <p id="evidence-photo-error" className="form-hint-invalid">{photoError}</p>}
+                  {photo && (
+                    <div className="file-list">
+                      <ul className="upload-list">
+                        <li>
+                          <div className="file-info">
+                            <div className="file-name">{photo.name} [{fileSize(photo.size)}]</div>
+                            <div className="btn-wrap">
+                              <button type="button" className="krds-btn medium text" onClick={clearPhoto}>
+                                삭제<span className="sr-only"> {photo.name}</span> <i className="svg-icon ico-delete-fill" aria-hidden="true" />
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      </ul>
+                      {photoUrl && <img className="registration-photo-preview" src={photoUrl} alt="첨부할 가상 증빙 사진" />}
+                    </div>
+                  )}
                 </div>
-              ))}
-              {evidence.length > 0 && (
-                <fieldset className="registration-consent">
-                  <legend>필요한 가상 증빙</legend>
-                  {evidence.map((item) => (
-                    <CheckboxField key={item} id={'evidence-' + item} label={EVIDENCE_LABELS[item] + ' 시연 자료를 준비했습니다'}
-                      checked={preparedEvidence.includes(item)}
-                      onChange={(checked) => setPreparedEvidence(checked
-                        ? [...preparedEvidence, item] : preparedEvidence.filter((value) => value !== item))} />
-                  ))}
-                </fieldset>
-              )}
-              <div className="registration-consent">
-                <div className="form-group registration-photo-field">
-                  <div className="form-tit"><label htmlFor="evidence-photo">가상 증빙 사진 직접 첨부 (선택)</label></div>
-                  <p id="evidence-photo-hint">가상 정보가 담긴 JPG, PNG, WebP 사진 한 장을 올려 주세요. 최대 8MB입니다.</p>
-                  <input ref={photoInput} id="evidence-photo" type="file" accept={EVIDENCE_PHOTO_TYPES.join(',')}
-                    aria-describedby="evidence-photo-hint" aria-invalid={Boolean(photoError)}
-                    onChange={(event) => { const file = event.target.files?.[0]; if (file) choosePhoto(file); }} />
-                  <p>사진에 ‘성명’, ‘생년월일’, ‘가상 식별자’, ‘주소’를 값과 함께 적으면 담당자가 자동으로 대조할 수 있습니다.</p>
-                  {photoError && <FormMessage tone="error">{photoError}</FormMessage>}
-                  {(photo || photoError) && <div className="registration-photo-selection">
-                    {photo && <span>{photo.name}</span>}
-                    <button type="button" className="krds-btn small secondary" onClick={clearPhoto}>{photo ? '사진 제거' : '선택 취소'}</button>
-                  </div>}
-                  {photoUrl && <img className="registration-photo-preview" src={photoUrl} alt="첨부할 가상 증빙 사진" />}
+
+                <div className="registration-fields">
+                  <SelectField id="ocr-evidence" label="예시 확인서" optional value={evidenceSample ?? ''} emptyOption="예시 선택 안 함"
+                    hint="사진 대신 준비된 가상 확인서로 OCR 대조를 시연할 수 있습니다. 고르면 첨부한 사진은 빠집니다."
+                    options={Object.entries(EVIDENCE_SAMPLES).map(([value, label]) => ({ value, label }))}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value) clearPhoto();
+                      setEvidenceSample(value ? value as EvidenceSample : null);
+                    }} />
                 </div>
-                <InputSelect id="ocr-evidence" label="예시 확인서" value={evidenceSample ?? ''} required={false}
-                  onChange={(value) => {
-                    if (value) clearPhoto();
-                    setEvidenceSample(value ? value as EvidenceSample : null);
-                  }}>
-                  <option value="">예시 선택 안 함</option>
-                  {Object.entries(EVIDENCE_SAMPLES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                </InputSelect>
+              </section>
+
+              <div className="registration-confirm">
+                <CheckboxField id="confirm-demo-submission" label="가상 정보와 제출 내용, 각 동의 선택을 확인했습니다"
+                  checked={confirmed} error={errors['confirm-demo-submission']} onChange={setConfirmed} />
               </div>
-              <CheckboxField id="confirm-demo-submission" label="가상 정보와 제출 내용, 각 동의 선택을 확인했습니다"
-                checked={confirmed} onChange={setConfirmed} />
-            </section>
+            </>
           )}
 
           {step === 2 && prepared && (
-            <section className="registration-form-section">
-              <h2 ref={heading} tabIndex={-1}>최종 서류 확인</h2>
-              <p>작성된 서류를 확인해 주세요. 제출한 서류는 가상 통합돌봄 접수처에서 확인할 수 있습니다.</p>
+            <section className="registration-form-section" aria-labelledby="review-heading">
+              <h2 id="review-heading" ref={heading} tabIndex={-1}>최종 서류 확인</h2>
+              <p className="registration-section-lead">작성된 서류를 확인해 주세요. 제출한 서류는 가상 통합돌봄 접수처에서 확인할 수 있습니다.</p>
               {prepared.form.evidenceSample && <p>가상 증빙 · {EVIDENCE_SAMPLES[prepared.form.evidenceSample]}</p>}
               {prepared.photo && <div className="registration-photo-field">
                 <p>가상 증빙 사진 · {prepared.photo.name}</p>
@@ -404,7 +559,7 @@ export function ApplicationPage() {
           <div className="registration-actions">
             {step > 0 && (
               <button type="button" className="krds-btn medium secondary" disabled={busy || uncertain}
-                onClick={() => { setError(null); setStep(step - 1); }}>이전</button>
+                onClick={() => { setError(null); setShown({ errors: {}, values: {} }); setStep(step - 1); }}>이전</button>
             )}
             <button type="submit" className="krds-btn large primary" disabled={busy}>
               {busy ? '처리 중…' : step === 0 ? '동의와 증빙으로' : step === 1 ? '서류 미리보기' : '가상 접수처에 제출'}

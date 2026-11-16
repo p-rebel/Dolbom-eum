@@ -11,6 +11,8 @@ interface TextFieldProps extends InputProps {
   /** 오류 문구. 있으면 KRDS 오류 상태(is-error)로 표시한다. */
   error?: string;
   inputRef?: Ref<HTMLInputElement>;
+  /** 선택 입력이면 이름 옆에 ‘(선택)’을 붙인다(SelectField와 같은 표시). */
+  optional?: boolean;
   /** KRDS 입력칸 크기(`fieldSize.ts`). 검색·필터 영역은 medium. */
   fieldSize?: FieldSize;
 }
@@ -19,7 +21,7 @@ interface TextFieldProps extends InputProps {
  * KRDS 텍스트 입력(text_input) 구조.
  * form-group > form-tit(label) > form-conts(input) > form-hint / form-hint-invalid
  */
-export function TextField({ id, label, hint, error, inputRef, type = 'text', fieldSize, ...inputProps }: TextFieldProps) {
+export function TextField({ id, label, hint, error, inputRef, optional, type = 'text', fieldSize, ...inputProps }: TextFieldProps) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = type === 'password';
   const hintId = hint && !error ? `${id}-hint` : undefined;
@@ -31,7 +33,10 @@ export function TextField({ id, label, hint, error, inputRef, type = 'text', fie
   return (
     <div className="form-group">
       <div className="form-tit">
-        <label htmlFor={id}>{label}</label>
+        <label htmlFor={id}>
+          {label}
+          {optional && <span className="field-optional"> (선택)</span>}
+        </label>
       </div>
       <div className={contsClass}>
         <input
