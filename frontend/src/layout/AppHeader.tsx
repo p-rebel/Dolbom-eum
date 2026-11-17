@@ -6,9 +6,7 @@ import { SiteUtility } from './SiteUtility';
 
 /**
  * 공통 상단(KRDS krds-header). 로그인 전후 모든 화면에 같은 위치로 둔다.
- * 가상 데이터 시연 표시는 항상 보인다. 공개 화면은 역할별 로그인 링크를, 업무 화면은 계정과 메뉴를 전달한다.
- * KRDS 공식 누리집 표시(masthead)는 정부 누리집 탑재 때만 켠다(`siteConfig.ts`, 기본 꺼짐).
- * 시연 서버에서 켜면 실제 정부 누리집으로 오인될 수 있다.
+ * 공개 화면은 역할별 로그인 링크를, 업무 화면은 계정과 메뉴를 전달한다.
  */
 export function AppHeader({ logoTo, account, menu }: { logoTo: string; account?: ReactNode; menu?: ReactNode }) {
   const headerRef = useRef<HTMLElement>(null);
@@ -31,17 +29,6 @@ export function AppHeader({ logoTo, account, menu }: { logoTo: string; account?:
       <div id="krds-skip-link">
         <a href="#main">본문 바로가기</a>
       </div>
-      {OFFICIAL_SITE && (
-        <div id="krds-masthead">
-          <div className="toggle-wrap">
-            <div className="toggle-head">
-              <div className="inner">
-                <span className="nuri-txt">이 누리집은 대한민국 공식 전자정부 누리집입니다.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       <header id="krds-header" ref={headerRef}>
         <div className="header-in">
           <div className="header-container">

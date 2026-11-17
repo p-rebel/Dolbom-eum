@@ -5,9 +5,10 @@ from __future__ import annotations
 from datetime import date
 from typing import Annotated, Literal
 
-from pydantic import Field, StrictBool, StringConstraints, field_validator, model_validator
+from pydantic import AfterValidator, Field, StrictBool, StrictInt, StringConstraints, field_validator, model_validator
 
 from .auth import CamelModel
+from .errors import ApiError
 
 DemoName = Annotated[str, StringConstraints(strip_whitespace=True, max_length=14, pattern=r"^가상 [가-힣A-Za-z0-9 ]+$")]
 DemoAddress = Annotated[str, StringConstraints(strip_whitespace=True, max_length=52, pattern=r"^가상[가-힣A-Za-z0-9 .(), -]+$")]
@@ -74,6 +75,27 @@ class Consents(CamelModel):
     unique_id: StrictBool
 
 
+# Coordinates use the browser pad's 480 × 200 drawing area.
+SignaturePoint = tuple[Annotated[StrictInt, Field(ge=0, le=480)], Annotated[StrictInt, Field(ge=0, le=200)]]
+SignatureStroke = Annotated[list[SignaturePoint], Field(min_length=1, max_length=1200)]
+
+
+def _check_ink(strokes: list[SignatureStroke]) -> list[SignatureStroke]:
+    if sum(map(len, strokes)) > 1200 or not any(
+        any(point != stroke[0] for point in stroke[1:]) for stroke in strokes
+    ):
+        raise ValueError("서명란에 서명을 그려 주세요.")
+    return strokes
+
+
+Signature = Annotated[list[SignatureStroke], Field(min_length=1, max_length=64), AfterValidator(_check_ink)]
+
+
+class ApplicationSignatures(CamelModel):
+    applicant: Signature
+    privacy_consent: Signature | None = None
+
+
 class ApplicationForm(CamelModel):
     application_type: Literal["SELF", "FAMILY", "GUARDIAN"]
     region_code: Literal["DEMO-A-1", "DEMO-B-1"]
@@ -120,3 +142,14 @@ class ApplicationForm(CamelModel):
         if sorted(self.evidence) != sorted(self.required_evidence()):
             raise ValueError("신청 유형과 동의 선택에 필요한 가상 증빙을 준비해 주세요.")
         return self
+
+
+class SignedApplicationForm(ApplicationForm):
+    signatures: ApplicationSignatures | None = None
+
+    def require_signatures(self) -> ApplicationSignatures:
+        if self.signatures is None:
+            raise ApiError(422, "VALIDATION_ERROR", "신청인 서명을 그려 주세요.", "signatures.applicant")
+        if (self.applicant is not None or self.caregiver is not None) and self.signatures.privacy_consent is None:
+            raise ApiError(422, "VALIDATION_ERROR", "개인정보 동의서 서명을 그려 주세요.", "signatures.privacyConsent")
+        return self.signatures

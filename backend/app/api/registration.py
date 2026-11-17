@@ -17,7 +17,7 @@ from pydantic import Field, StrictBool, StrictInt, StringConstraints
 from ..auth import Account, CamelModel, current_account, require_role
 from ..db import get_connection, write_transaction
 from ..errors import ApiError
-from ..registration import REGIONS, ApplicationForm, Beneficiary, SubmissionRegion
+from ..registration import REGIONS, ApplicationForm, Beneficiary, SignedApplicationForm, SubmissionRegion
 from ..registration_pdf import render_forms
 from ..registration_photo import ApplicationSubmission, uploaded_photo
 from ..registration_verification import (
@@ -155,11 +155,14 @@ def _submission_content(
     photo = uploaded_photo(body.evidence_photo) if body.evidence_photo is not None else None
     if retained is not None:
         photo = (retained["image"], retained["media_type"])
-    excluded = {"evidence_photo", "revision", "retain_evidence"}
+    excluded = {"signatures", "evidence_photo", "revision", "retain_evidence"}
     if body.evidence_sample is None:
         excluded.add("evidence_sample")
     snapshot = body.model_dump_json(by_alias=True, exclude=excluded)
     digest = hashlib.sha256(snapshot.encode("utf-8"))
+    if body.signatures is not None:
+        digest.update(b"\0")
+        digest.update(body.signatures.model_dump_json(by_alias=True).encode("utf-8"))
     if photo:
         digest.update(b"\0")
         digest.update(photo[0])
@@ -195,10 +198,10 @@ def regions() -> list[SubmissionRegion]:
 
 @router.post("/applications/preview")
 def preview(
-    body: ApplicationForm,
+    body: SignedApplicationForm,
     _: Account = Depends(require_role("APPLICANT")),
 ) -> dict[str, str]:
-    application, consent = render_forms(body, datetime.now(_SEOUL).date().isoformat())
+    application, consent = render_forms(body, datetime.now(_SEOUL).date().isoformat(), body.require_signatures())
     return {
         "application": base64.b64encode(application).decode("ascii"),
         "privacyConsent": base64.b64encode(consent).decode("ascii"),
@@ -234,7 +237,7 @@ def submit(
                FROM mock_applications WHERE submission_number LIKE ?""",
             (len(prefix) + 1, prefix + "%"),
         ).fetchone()[0]
-        application, consent = render_forms(body, local_day.isoformat())
+        application, consent = render_forms(body, local_day.isoformat(), body.require_signatures())
         region = REGIONS[body.region_code]
         application_id = str(uuid.uuid4())
         conn.execute(
@@ -309,7 +312,7 @@ def resubmit(
         if original["latest_revision"] != body.revision or not original["reason"]:
             raise ApiError(409, "INVALID_TRANSITION", "최신 제출본에 보완 요청이 있을 때 다시 제출할 수 있습니다.")
         now = datetime.now(UTC)
-        application, consent = render_forms(body, now.astimezone(_SEOUL).date().isoformat())
+        application, consent = render_forms(body, now.astimezone(_SEOUL).date().isoformat(), body.require_signatures())
         conn.execute(
             """INSERT INTO mock_application_resubmissions
                (application_id, supersedes, submitted_at, idempotency_key, request_hash,

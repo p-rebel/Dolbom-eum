@@ -13,7 +13,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 
-from .registration import RELATIONSHIPS, ApplicationForm
+from .registration import RELATIONSHIPS, ApplicationForm, ApplicationSignatures, Signature
 
 _ASSETS = Path(__file__).with_name("assets") / "registration"
 # The template positions use the original PDF pages rendered at 100 dpi, measured from the upper-left.
@@ -62,6 +62,35 @@ class Overlay:
         for part, position in zip(value.split("-"), x, strict=True):
             self.text(position, y, part, 22 if len(part) == 4 else 13, size=7.6)
 
+    def signature(self, strokes: Signature, box: tuple[int, int, int, int]) -> None:
+        # Fit the ink itself inside the blank area, with room for the pen width.
+        left, top, right, bottom = box
+        xs, ys = zip(*(point for stroke in strokes for point in stroke), strict=True)
+        width, height = max(xs) - min(xs), max(ys) - min(ys)
+        scale = min((right - left - 4) / max(width, 1), (bottom - top - 4) / max(height, 1))
+        start_x = (left + right - width * scale) / 2
+        start_y = (top + bottom - height * scale) / 2
+        min_x, min_y = min(xs), min(ys)
+
+        self.canvas.setStrokeColor(_BLUE)
+        self.canvas.setFillColor(_BLUE)
+        self.canvas.setLineWidth(0.9)
+        self.canvas.setLineCap(1)
+        self.canvas.setLineJoin(1)
+        for stroke in strokes:
+            points = [
+                ((start_x + (x - min_x) * scale) * _POINT, self.height - (start_y + (y - min_y) * scale) * _POINT)
+                for x, y in stroke
+            ]
+            if len(points) == 1:
+                self.canvas.circle(*points[0], 0.45, stroke=0, fill=1)
+                continue
+            path = self.canvas.beginPath()
+            path.moveTo(*points[0])
+            for point in points[1:]:
+                path.lineTo(*point)
+            self.canvas.drawPath(path)
+
     def finish(self):
         self.canvas.showPage()
         self.canvas.save()
@@ -69,7 +98,7 @@ class Overlay:
         return PdfReader(self.stream).pages[0]
 
 
-def _application_front(page: Overlay, form: ApplicationForm, day: str) -> None:
+def _application_front(page: Overlay, form: ApplicationForm, day: str, signature: Signature) -> None:
     person = form.beneficiary
     page.text(184, 309, person.name, 82)
     page.text(281, 312, person.demo_id, 195)
@@ -99,19 +128,22 @@ def _application_front(page: Overlay, form: ApplicationForm, day: str) -> None:
     page.check(232 if form.application_type == "SELF" else 276, 849)
     page.date(day, (557, 604, 641), 873)
     signer = form.applicant or person
-    page.text(429, 892, f"{signer.name} · 모의 확인", 171)
+    page.text(429, 892, signer.name, 92)
+    page.signature(signature, (525, 879, 609, 900))
 
 
-def _application_back(page: Overlay, form: ApplicationForm, _day: str) -> None:
+def _application_back(page: Overlay, form: ApplicationForm, _day: str, signature: Signature) -> None:
     signer = form.applicant or form.beneficiary
     if form.consents.family_record is not None:
         page.check(202 if form.consents.family_record else 275, 551)
-        page.text(464, 550, f"{signer.name} · 모의 확인", 139)
+        page.text(464, 550, signer.name, 73)
+        page.signature(signature, (541, 533, 609, 555))
     page.check(202 if form.consents.administrative else 275, 685)
-    page.text(464, 684, f"{signer.name} · 모의 확인", 139)
+    page.text(464, 684, signer.name, 73)
+    page.signature(signature, (541, 667, 609, 690))
 
 
-def _consent_front(page: Overlay, form: ApplicationForm, day: str) -> None:
+def _consent_front(page: Overlay, form: ApplicationForm, day: str, _signature: Signature) -> None:
     person = form.beneficiary
     page.text(219, 252, person.name, 103)
     page.text(174, 287, person.demo_id, 147)
@@ -129,32 +161,33 @@ def _consent_front(page: Overlay, form: ApplicationForm, day: str) -> None:
     page.check(580 if form.consents.personal else 629, 696)
 
 
-def _consent_back(page: Overlay, form: ApplicationForm, day: str) -> None:
+def _consent_back(page: Overlay, form: ApplicationForm, day: str, signature: Signature) -> None:
     page.check(580 if form.consents.sensitive else 629, 274)
     page.check(580 if form.consents.unique_id else 629, 677)
     page.date(day, (538, 594, 640), 799)
     signer = form.caregiver or form.beneficiary
-    page.text(391, 824, signer.name, 140)
-    page.text(542, 824, "모의 확인", 61)
+    page.text(391, 824, signer.name, 122)
+    page.signature(signature, (517, 807, 607, 832))
 
 
-def _document(name: str, pages, form: ApplicationForm, day: str) -> bytes:
+def _document(name: str, pages, form: ApplicationForm, day: str, signature: Signature) -> bytes:
     writer = PdfWriter()
     source = PdfReader(BytesIO(_source(name)))
     for original, fill in zip(source.pages, pages, strict=True):
         page = writer.add_page(original)
         overlay = Overlay(float(page.mediabox.width), float(page.mediabox.height))
-        fill(overlay, form, day)
+        fill(overlay, form, day, signature)
         page.merge_page(overlay.finish())
     stream = BytesIO()
     writer.write(stream)
     return stream.getvalue()
 
 
-def render_forms(form: ApplicationForm, day: str) -> tuple[bytes, bytes]:
+def render_forms(form: ApplicationForm, day: str, signatures: ApplicationSignatures) -> tuple[bytes, bytes]:
     # ReportLab shares its registered font objects between canvases.
     with _DRAW_LOCK:
         return (
-            _document("application.pdf", (_application_front, _application_back), form, day),
-            _document("privacy-consent.pdf", (_consent_front, _consent_back), form, day),
+            _document("application.pdf", (_application_front, _application_back), form, day, signatures.applicant),
+            _document("privacy-consent.pdf", (_consent_front, _consent_back), form, day,
+                      signatures.privacy_consent or signatures.applicant),
         )

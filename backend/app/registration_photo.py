@@ -11,7 +11,7 @@ from PIL import Image
 from pydantic import Field
 
 from .errors import ApiError
-from .registration import ApplicationForm
+from .registration import SignedApplicationForm
 
 MAX_PHOTO_BYTES = 8 * 1024 * 1024
 MAX_ENCODED_PHOTO = 4 * ((MAX_PHOTO_BYTES + 2) // 3)
@@ -19,7 +19,7 @@ MAX_SUBMISSION_BYTES = MAX_ENCODED_PHOTO + 32 * 1024
 _MEDIA_TYPES = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
 
 
-class ApplicationSubmission(ApplicationForm):
+class ApplicationSubmission(SignedApplicationForm):
     evidence_photo: Annotated[str, Field(min_length=1, max_length=MAX_ENCODED_PHOTO)] | None = None
 
 

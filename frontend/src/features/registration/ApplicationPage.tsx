@@ -6,6 +6,7 @@ import {
   evidenceUrl, getApplicantProfile, getRegions, getSubmission, previewForms, submitApplication,
   type ApplicationForm, type ApplicationType, type Beneficiary, type CareNeed,
   type DocumentKind, type Evidence, type EvidenceSample, type FormPreviews, type Person, type RelatedPerson, type Relationship, type Submission,
+  type Signature, type SignedApplicationForm,
 } from '../../api/registration';
 import { DateField } from '../../components/DateField';
 import { ErrorBlock, FormMessage, LoadingBlock } from '../../components/Feedback';
@@ -16,6 +17,7 @@ import { useApiData } from '../../hooks/useApiData';
 import { PageHead } from '../../layout/PageHead';
 import { Link, navigate, PageTitle, useUnsavedChanges } from '../../router';
 import { DocumentViewer } from './DocumentViewer';
+import { hasSignature, SignaturePad } from './SignaturePad';
 import { siteText } from '../../siteConfig';
 
 const EMPTY_PERSON: Person = { name: '', address: '', mobile: '' };
@@ -24,6 +26,7 @@ const EMPTY_APPLICANT: RelatedPerson = { ...EMPTY_PERSON, relationship: 'CHILD' 
 const FAMILY_RELATIONSHIPS = ['SPOUSE', 'PARENT', 'CHILD', 'RELATIVE'] as const;
 const CAREGIVER_RELATIONSHIPS = [...FAMILY_RELATIONSHIPS, 'GUARDIAN', 'OTHER'] as const;
 const STEP_NAMES = ['신청 정보', '동의와 증빙', '서류 확인·제출'];
+const EMPTY_SIGNATURES: Record<keyof SignedApplicationForm['signatures'], Signature> = { applicant: [], privacyConsent: [] };
 
 const SAMPLE_BENEFICIARY: Beneficiary = {
   name: '가상 대상자 A', address: '가상 A시 돌봄로 10', mobile: '000-0000-0101',
@@ -183,7 +186,8 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
-  const [prepared, setPrepared] = useState<{ form: ApplicationForm; photo: File | null; retainEvidence: boolean; key: string; previews: FormPreviews } | null>(null);
+  const [signatures, setSignatures] = useState(EMPTY_SIGNATURES);
+  const [prepared, setPrepared] = useState<{ form: SignedApplicationForm; photo: File | null; retainEvidence: boolean; key: string; previews: FormPreviews } | null>(null);
   const [busy, setBusy] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -207,6 +211,9 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
   const evidence = choiceRequired(applicationType, consents);
   const consentFields = (Object.keys(CONSENT_LABELS) as ConsentField[])
     .filter((field) => field !== 'familyRecord' || applicationType === 'FAMILY');
+  const needsPrivacySignature = applicationType !== 'SELF' || caregiver !== null;
+  const applicantSigner = applicationType === 'SELF' ? beneficiary : applicant;
+  const privacySigner = caregiver ?? beneficiary;
 
   /** 화면 순서대로 오류를 모은다. 첫 항목으로 포커스를 옮긴다. */
   function validateInfo(): Errors {
@@ -238,6 +245,10 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
     }
     if (photoError) errors['evidence-photo-button'] = photoError;
     if (!confirmed) errors['confirm-demo-submission'] = '제출 전에 입력 내용을 확인했는지 선택해 주세요.';
+    if (!hasSignature(signatures.applicant)) errors['applicant-signature'] = '신청인 서명을 그려 주세요.';
+    if (needsPrivacySignature && !hasSignature(signatures.privacyConsent)) {
+      errors['privacy-signature'] = '개인정보 수집·이용 동의서에 서명해 주세요.';
+    }
     return errors;
   }
 
@@ -247,6 +258,8 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
       'application-region': regionCode, 'demo-id': beneficiary.demoId, 'birth-date': beneficiary.birthDate,
       residence: beneficiary.residence ?? '', 'care-HEALTH': careNeeds.join(','),
       'evidence-photo-button': photoError ?? '', 'confirm-demo-submission': String(confirmed),
+      'applicant-signature': String(hasSignature(signatures.applicant)),
+      'privacy-signature': String(hasSignature(signatures.privacyConsent)),
     };
     const people: [string, Person | null][] = [['대상자', beneficiary], ['신청인', applicant], ['보호자', caregiver]];
     for (const [group, person] of people) {
@@ -277,6 +290,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
     setNoticeRecipient(type === 'SELF' ? 'BENEFICIARY' : 'APPLICANT');
     setConsents((value) => ({ ...value, familyRecord: null }));
     setPreparedEvidence([]);
+    setSignatures(EMPTY_SIGNATURES);
   }
 
   function loadSample() {
@@ -295,6 +309,7 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
     if (applicationType !== 'SELF' || !profile.data) return;
     setBeneficiary(profile.data.beneficiary);
     setRegionCode(profile.data.region.code);
+    setSignatures(EMPTY_SIGNATURES);
     setDirty(true);
   }
 
@@ -318,6 +333,11 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
     setPhotoError(null);
   }
 
+  function changeSignature(key: keyof typeof signatures, value: Signature) {
+    setSignatures((currentSignatures) => ({ ...currentSignatures, [key]: value }));
+    setDirty(true);
+  }
+
   async function handleStep(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -331,13 +351,14 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
     if (step === 1) {
       if (stopAtFirstError(validateConsents())) return;
       const { familyRecord, administrative, personal, sensitive, uniqueId } = consents;
-      const form: ApplicationForm = {
+      const form: SignedApplicationForm = {
         applicationType, regionCode,
         // 공백만 넣은 실거주지는 입력하지 않은 것으로 보낸다(서버가 공백을 지운 뒤 형식 오류로 거절한다).
         beneficiary: { ...beneficiary, residence: beneficiary.residence?.trim() ? beneficiary.residence : null },
         applicant: applicationType === 'SELF' ? null : applicant, caregiver,
         noticeRecipient, noticeMethod, careNeeds, confirmed: true, evidence, evidenceSample,
         consents: { familyRecord, administrative: administrative!, personal: personal!, sensitive: sensitive!, uniqueId: uniqueId! },
+        signatures: { applicant: signatures.applicant, privacyConsent: needsPrivacySignature ? signatures.privacyConsent : null },
       };
       setBusy(true);
       try {
@@ -395,7 +416,10 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
       {regions.loading && <LoadingBlock label="신청 가능한 지역을 불러오는 중" />}
       {regions.error && <ErrorBlock message={regions.error.message} onRetry={regions.reload} />}
       {regions.data && (
-        <form noValidate onSubmit={handleStep} onChange={() => setDirty(true)}>
+        <form noValidate onSubmit={handleStep} onChange={() => {
+          setDirty(true);
+          if (step === 0) setSignatures(EMPTY_SIGNATURES);
+        }}>
           <fieldset className="registration-step-fields" disabled={busy}>
           {step === 0 && (
             <>
@@ -422,7 +446,11 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
                     onChange={(event) => setBeneficiary({ ...beneficiary, demoId: event.target.value })} />
                   <DateField id="birth-date" label={siteText('가상 생년월일', '생년월일')} value={beneficiary.birthDate} max={todayKey()} yearsFrom={1900}
                     hint="숫자만 입력해도 됩니다(예: 19450503 → 1945-05-03)" error={errors['birth-date']}
-                    onChange={(value) => { setBeneficiary({ ...beneficiary, birthDate: value }); setDirty(true); }} />
+                    onChange={(value) => {
+                      setBeneficiary({ ...beneficiary, birthDate: value });
+                      setSignatures(EMPTY_SIGNATURES);
+                      setDirty(true);
+                    }} />
                   <SelectField id="beneficiary-sex" label="성별" optional value={beneficiary.sex ?? ''} emptyOption="선택 안 함"
                     options={[{ value: 'FEMALE', label: '여성' }, { value: 'MALE', label: '남성' }]}
                     onChange={(event) => setBeneficiary({ ...beneficiary, sex: (event.target.value || null) as Beneficiary['sex'] })} />
@@ -494,7 +522,10 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
                   <div className="registration-consent" key={field}>
                     <RadioGroup name={field} legend={CONSENT_LABELS[field]} options={[...CONSENT_CHOICES]}
                       value={consents[field] === null ? '' : consents[field] ? 'yes' : 'no'} error={errors[field + '-yes']}
-                      onChange={(value) => setConsents({ ...consents, [field]: value === 'yes' })} />
+                      onChange={(value) => {
+                        setConsents({ ...consents, [field]: value === 'yes' });
+                        setSignatures(EMPTY_SIGNATURES);
+                      }} />
                   </div>
                 ))}
               </section>
@@ -577,6 +608,20 @@ export function ApplicationPage({ revision }: { revision?: Submission } = {}) {
                 <CheckboxField id="confirm-demo-submission" label={siteText('가상 정보와 제출 내용, 각 동의 선택을 확인했습니다', '입력한 정보와 제출 내용, 각 동의 선택을 확인했습니다')}
                   checked={confirmed} error={errors['confirm-demo-submission']} onChange={setConfirmed} />
               </div>
+              <section className="registration-form-section" aria-labelledby="signature-heading">
+                <h2 id="signature-heading">서류 서명</h2>
+                <p className="registration-section-lead" id="signature-hint">
+                  마우스 왼쪽 버튼을 누른 채 움직이거나 손가락으로 칸 안에 서명을 그려 주세요. 아래 서명이 PDF 서명란에 들어갑니다.
+                </p>
+                <SignaturePad id="applicant-signature"
+                  label={`${needsPrivacySignature ? '통합지원 신청서' : '통합지원 신청서 및 개인정보 동의서'} · ${applicantSigner.name}`}
+                  value={signatures.applicant} onChange={(value) => changeSignature('applicant', value)}
+                  disabled={busy} error={errors['applicant-signature']} />
+                {needsPrivacySignature && <SignaturePad id="privacy-signature"
+                  label={`개인정보 수집·이용 동의서 · ${privacySigner.name}`}
+                  value={signatures.privacyConsent} onChange={(value) => changeSignature('privacyConsent', value)}
+                  disabled={busy} error={errors['privacy-signature']} />}
+              </section>
             </>
           )}
 

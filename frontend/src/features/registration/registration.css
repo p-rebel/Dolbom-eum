@@ -226,6 +226,38 @@
   min-height: 4.4rem;
 }
 
+.registration-signature {
+  margin-top: 1.6rem;
+}
+
+.registration-signature h3 {
+  font-size: 1.7rem;
+  margin-bottom: .8rem;
+}
+
+.registration-signature-box {
+  max-width: 48rem;
+  border: 1px solid #8a9eb5;
+  border-radius: .6rem;
+  background: #fff;
+}
+
+.registration-signature-box.is-error {
+  border-color: var(--krds-light-color-border-danger, #d50136);
+}
+
+.registration-signature canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.registration-signature .krds-btn {
+  margin-top: .8rem;
+}
+
 .registration-documents {
   min-width: 0;
   margin-top: 1.6rem;

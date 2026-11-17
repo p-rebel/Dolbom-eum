@@ -37,6 +37,11 @@ export interface ApplicationForm {
   evidenceSample?: EvidenceSample | null;
   confirmed: true;
 }
+
+export type Signature = [number, number][][];
+export interface SignedApplicationForm extends ApplicationForm {
+  signatures: { applicant: Signature; privacyConsent: Signature | null };
+}
 export interface SubmissionRegion {
   code: string;
   districtCode: string;
@@ -130,7 +135,7 @@ export function getApplicantProfile(signal: AbortSignal) {
   return apiRequest<{ region: SubmissionRegion; beneficiary: Beneficiary } | null>('/applicant-profile', { signal });
 }
 
-export function previewForms(form: ApplicationForm) {
+export function previewForms(form: SignedApplicationForm) {
   return apiRequest<FormPreviews>('/applications/preview', { method: 'POST', body: form });
 }
 function readPhoto(file: File): Promise<string> {
@@ -143,7 +148,7 @@ function readPhoto(file: File): Promise<string> {
 }
 
 export async function submitApplication(
-  form: ApplicationForm, key: string, photo: File | null,
+  form: SignedApplicationForm, key: string, photo: File | null,
   revision?: { id: string; revision: number; retainEvidence: boolean },
 ) {
   const endpoint = revision ? `/applications/${encodeURIComponent(revision.id)}/revisions` as const : '/applications';
