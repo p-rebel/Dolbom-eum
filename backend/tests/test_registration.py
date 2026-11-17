@@ -1,4 +1,4 @@
-from base64 import b64encode
+from base64 import b64decode, b64encode
 from io import BytesIO
 
 import pytest
@@ -13,6 +13,10 @@ from app.registration_photo import MAX_SUBMISSION_BYTES
 
 ORIGIN = {"Origin": "http://127.0.0.1:5173"}
 PASSWORD = "registration-test"
+SIGNATURES = {
+    "applicant": [[[40, 140], [170, 40], [330, 140]]],
+    "privacyConsent": [[[50, 45], [150, 150], [370, 45]]],
+}
 FORM = {
     "applicationType": "FAMILY",
     "regionCode": "DEMO-A-1",
@@ -44,6 +48,7 @@ FORM = {
     },
     "evidence": ["IDENTITY"],
     "confirmed": True,
+    "signatures": SIGNATURES,
 }
 
 
@@ -65,6 +70,89 @@ def login(client, username, audience):
     return client.post(
         "/api/v1/session", json={"username": username, "password": PASSWORD, "audience": audience}, headers=ORIGIN,
     )
+
+
+def signature_paths(page):
+    pen_width = 0.0
+    path = []
+    signatures = []
+    for operands, operator in page.get_contents().operations:
+        if operator == b"w":
+            pen_width = float(operands[0])
+        if abs(pen_width - 0.9) < 0.001 and operator in (b"m", b"l"):
+            x, y = map(float, operands)
+            signatures_at_100_dpi = (x / 0.72, (float(page.mediabox.height) - y) / 0.72)
+            path.append(signatures_at_100_dpi)
+        if operator == b"S" and path:
+            signatures.append(path)
+            path = []
+    return signatures
+
+
+def assert_signature_in_box(path, box, *, peaks_up):
+    left, top, right, bottom = box
+    assert len(path) == 3
+    assert all(left < x < right and top < y < bottom for x, y in path)
+    assert path[0][0] < path[1][0] < path[2][0]
+    assert (path[1][1] < path[0][1]) == peaks_up
+
+
+def test_preview_and_submitted_pdfs_place_each_signature_in_its_form_field(db_file):
+    with TestClient(app) as client:
+        assert login(client, "demo-applicant-a", "applicant").status_code == 200
+        preview_url = "/api/v1/applications/preview"
+        headers = {**ORIGIN, "Idempotency-Key": "signed"}
+        for signatures in (
+            None,
+            {"applicant": SIGNATURES["applicant"]},
+            {**SIGNATURES, "applicant": [[[100, 100], [100, 100]]]},
+            {**SIGNATURES, "applicant": [[[100, 100], [481, 140]]]},
+        ):
+            invalid = {**FORM, "signatures": signatures}
+            assert client.post(preview_url, json=invalid, headers=ORIGIN).status_code == 422
+            assert client.post("/api/v1/applications", json=invalid, headers=headers).status_code == 422
+
+        preview = client.post(preview_url, json=FORM, headers=ORIGIN)
+        assert preview.status_code == 200, preview.text
+        assert client.get("/api/v1/applications").json()["total"] == 0
+        submitted = client.post("/api/v1/applications", json=FORM, headers=headers)
+        assert submitted.status_code == 201, submitted.text
+        assert "signatures" not in submitted.json()["form"]
+        changed = {**FORM, "signatures": {**SIGNATURES, "applicant": SIGNATURES["privacyConsent"]}}
+        assert client.post("/api/v1/applications", json=changed, headers=headers).status_code == 409
+
+        for kind, key, boxes in (
+            ("application", "application", [[(525, 879, 609, 900)], [(541, 533, 609, 555), (541, 667, 609, 690)]]),
+            ("privacy-consent", "privacyConsent", [[], [(517, 807, 607, 832)]]),
+        ):
+            file = client.get(f"/api/v1/applications/{submitted.json()['id']}/documents/{kind}")
+            assert file.status_code == 200
+            preview_pdf = PdfReader(BytesIO(b64decode(preview.json()[key])))
+            submitted_pdf = PdfReader(BytesIO(file.content))
+            for before, after, page_boxes in zip(preview_pdf.pages, submitted_pdf.pages, boxes, strict=True):
+                assert "모의 확인" not in after.extract_text()
+                paths = signature_paths(after)
+                assert signature_paths(before) == paths
+                for path, box in zip(paths, page_boxes, strict=True):
+                    assert_signature_in_box(path, box, peaks_up=kind == "application")
+
+
+def test_self_applicant_can_use_one_signature_for_both_forms(db_file):
+    form = {
+        **FORM, "applicationType": "SELF", "applicant": None, "caregiver": None, "noticeRecipient": "BENEFICIARY",
+        "evidence": [], "consents": {**FORM["consents"], "familyRecord": None},
+        "signatures": {"applicant": SIGNATURES["applicant"]},
+    }
+    with TestClient(app) as client:
+        assert login(client, "demo-applicant-a", "applicant").status_code == 200
+        preview = client.post("/api/v1/applications/preview", json=form, headers=ORIGIN)
+        assert preview.status_code == 200, preview.text
+        consent = PdfReader(BytesIO(b64decode(preview.json()["privacyConsent"])))
+        path, = signature_paths(consent.pages[1])
+        assert_signature_in_box(path, (517, 807, 607, 832), peaks_up=True)
+        application = PdfReader(BytesIO(b64decode(preview.json()["application"])))
+        path, = signature_paths(application.pages[1])
+        assert_signature_in_box(path, (541, 667, 609, 690), peaks_up=True)
 
 
 def test_submitted_forms_are_visible_only_to_owner_and_jurisdiction(db_file):
