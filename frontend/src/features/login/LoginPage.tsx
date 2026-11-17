@@ -8,7 +8,6 @@ import { AppHeader } from '../../layout/AppHeader';
 import { AccountArea, PublicMenu } from '../../layout/PublicNav';
 import { TextField } from '../../components/TextField';
 import { Link, PageTitle } from '../../router';
-import { HealthStatus } from '../health/HealthStatus';
 import { ApplicantSignupForm } from './ApplicantSignupForm';
 import { siteText } from '../../siteConfig';
 
@@ -95,16 +94,9 @@ export function LoginPage({ notice, audience }: { notice: string | null; audienc
       <section className="login-box" aria-labelledby="login-title">
         <div className="login-head">
           <p className="login-service">{siteText('돌봄e음 · 가상 사례 시연', '돌봄e음')}</p>
-          {/* 제목 옆에 서버 연결 상태(DEV-01:85 실행 확인 절차의 ‘API 연결됨’). 제목 글자에는 넣지 않는다. */}
-          <div className="login-title-row">
-            <PageTitle id="login-title" key={showSignup ? 'signup' : 'login'}>
-              {showSignup ? '신청자 회원가입' : isApplicant ? '신청자 로그인' : '공무원·관리자 로그인'}
-            </PageTitle>
-            <span className="login-title-dot" aria-hidden="true">
-              ·
-            </span>
-            <HealthStatus />
-          </div>
+          <PageTitle id="login-title" key={showSignup ? 'signup' : 'login'}>
+            {showSignup ? '신청자 회원가입' : isApplicant ? '신청자 로그인' : '공무원·관리자 로그인'}
+          </PageTitle>
         </div>
 
         <div className="login-panel">
@@ -123,7 +115,6 @@ export function LoginPage({ notice, audience }: { notice: string | null; audienc
                     <TextField
                       id="login-username"
                       label="계정명"
-                      hint={isApplicant ? '예: demo-applicant-a' : '예: demo-town-a'}
                       name="username"
                       autoComplete="username"
                       value={username}

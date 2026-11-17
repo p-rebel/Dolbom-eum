@@ -102,7 +102,7 @@ npm ci
 npm run dev
 ```
 
-브라우저에서 `http://127.0.0.1:5173`을 열어 ‘API 연결됨’을 확인합니다. 같은 출처의 `/api/v1/health`는 Vite를 거쳐 FastAPI에 연결되어 `{"status":"ok"}`를 반환합니다. API 주소를 바꾸면 `frontend/.env`의 `DOLBOMEUM_API_PROXY_TARGET`도 맞춥니다. 프론트 타입 검사와 빌드는 `frontend`에서 `npm run build`로 실행합니다.
+브라우저에서 `http://127.0.0.1:5173`을 열어 로그인 화면을 확인합니다. 같은 출처의 `/api/v1/health`는 Vite를 거쳐 FastAPI에 연결되어 `{"status":"ok"}`를 반환합니다. API 주소를 바꾸면 `frontend/.env`의 `DOLBOMEUM_API_PROXY_TARGET`도 맞춥니다. 프론트 타입 검사와 빌드는 `frontend`에서 `npm run build`로 실행합니다.
 
 화면은 실제 API에 연결되어 동작합니다(`frontend/.env`의 `VITE_USE_MOCK_API=false`). 신청자는 직접 가입한 계정이나 `app.db seed`로 만든 기본 계정으로 로그인할 수 있습니다. 백엔드 없이 화면만 보려면 `true`로 바꾸고 `npm run dev`를 다시 시작합니다. 이때 상단에 ‘목업 모드’가 표시되고 [예시 응답](frontend/src/api/mock.ts)을 사용하며, 목업 전용 비밀번호 `demo-password`로 로그인합니다. 목업은 접수부터 초안까지만 흉내 내므로 회원가입, 확정 이후 단계, 통합 확인·배포는 `false`에서 확인합니다.
 
