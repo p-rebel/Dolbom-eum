@@ -4,6 +4,12 @@ A public service platform simplifying access to integrated community care.
 
 돌봄e음 팀의 프로젝트 계획과 산출물을 관리하는 저장소입니다.
 
+## 서비스 시연 영상
+
+돌봄e음 팀의 주요 기능과 통합돌봄 신청부터 담당자의 신청 내역 확인 및 후속 처리까지의 과정을 시연한 영상입니다.
+
+[돌봄e음 서비스 시연 영상 보기](https://youtu.be/TugMutPtbhA)
+
 ## 팀원용 로컬 시연
 
 Python 3.12 이상과 Node.js 22.12 이상(npm 포함)이 필요합니다. 처음 받는 팀원은 `git clone https://github.com/p-rebel/Dolbom-eum.git`으로 저장소를 받은 뒤 `Dolbom-eum` 폴더를 엽니다. 저장소 루트에서 다음을 실행합니다.
